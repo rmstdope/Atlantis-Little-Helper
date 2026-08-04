@@ -24,7 +24,6 @@
 //#include "wx/resource.h"
 
 #include "cstr.h"
-#include "collection.h"
 #include "cfgfile.h"
 #include "files.h"
 #include "atlaparser.h"
@@ -71,7 +70,6 @@ static CGameDataHelper ThisGameDataHelper;
 
 CAhApp::CAhApp() : m_HexDescrSrc    (128),
                    m_UnitDescrSrc   (128),
-                   m_ItemWeights    ( 32),
                    m_OrderHash      (  3),
                    m_TradeItemsHash (  2),
                    m_MenHash        (  2),
@@ -323,7 +321,11 @@ bool CAhApp::OnInit()
     }
 
     m_pAtlantis = new CAtlaParser(&ThisGameDataHelper);
-    m_Reports.Insert(m_pAtlantis);
+    {
+        auto _it = std::lower_bound(m_Reports.begin(), m_Reports.end(), m_pAtlantis,
+            [](CAtlaParser* a, CAtlaParser* b) { return a->m_YearMon < b->m_YearMon; });
+        m_Reports.insert(_it, m_pAtlantis);
+    }
 
     // Read list of year/month for report
     i = GetSectionFirst(SZ_SECT_REPORTS, szName, szValue);
@@ -417,7 +419,8 @@ int CAhApp::OnExit()
     m_MaxSkillHash.clear();
     m_MagicSkillsHash.clear();
 
-    m_Reports.FreeAll();
+    for (auto* p : m_Reports) delete p;
+    m_Reports.clear();
 
     for (i=0; i<FONT_COUNT; i++)
         delete m_Fonts[i];
@@ -426,8 +429,10 @@ int CAhApp::OnExit()
     if (m_pAccel)
         delete m_pAccel;
 
-    m_MoveModes.FreeAll();
-    m_ItemWeights.FreeAll();
+    m_MoveModes.clear();
+    m_MoveModesRaw.clear();
+    for (auto* p : m_ItemWeights) { free(p->name); free(p->weights); delete p; }
+    m_ItemWeights.clear();
     m_ConfigSectionsState.clear();
     m_OrderHash.clear();
     m_Attitudes.FreeAll();
@@ -1021,8 +1026,16 @@ BOOL CAhApp::GetItemWeights(const char * item, int *& weights, const char **& mo
 
     Dummy.name = (char *)item;
 
-    if (m_ItemWeights.Search(&Dummy, i))
-        pWeights = (ItemWeights *)m_ItemWeights.At(i);
+    {
+        auto _it = std::lower_bound(m_ItemWeights.begin(), m_ItemWeights.end(), &Dummy,
+            [](ItemWeights* a, ItemWeights* b) { return SafeCmp(a->name, b->name) < 0; });
+        if (_it != m_ItemWeights.end() && SafeCmp((*_it)->name, item) == 0)
+            pWeights = *_it;
+        else
+            pWeights = nullptr;
+    }
+    if (pWeights)
+        ; // found above
     else
     {
         CStr S;
@@ -1033,10 +1046,10 @@ BOOL CAhApp::GetItemWeights(const char * item, int *& weights, const char **& mo
         Ok = (p && *p);
         pWeights          = new ItemWeights;
         pWeights->name    = strdup(item);
-        pWeights->weights = (int*)malloc(m_MoveModes.Count()*sizeof(int));
+        pWeights->weights = (int*)malloc((int)m_MoveModes.size()*sizeof(int));
 
 
-        for (i=0; i<m_MoveModes.Count(); i++)
+        for (i=0; i<(int)m_MoveModes.size(); i++)
         {
             p = SkipSpaces(S.GetToken(p, ','));
             if (i==4 && S.IsEmpty())
@@ -1061,7 +1074,7 @@ BOOL CAhApp::GetItemWeights(const char * item, int *& weights, const char **& mo
         {
             // Update swimming for 2.3.2
             S.Empty();
-            for (i=0; i<m_MoveModes.Count(); i++)
+            for (i=0; i<(int)m_MoveModes.size(); i++)
             {
                 if (i>0)
                     S << ',';
@@ -1069,12 +1082,18 @@ BOOL CAhApp::GetItemWeights(const char * item, int *& weights, const char **& mo
             }
             SetConfig(SZ_SECT_WEIGHT_MOVE, item, S.GetData());
         }
-        m_ItemWeights.Insert(pWeights);
+        {
+            auto _it = std::lower_bound(m_ItemWeights.begin(), m_ItemWeights.end(), pWeights,
+                [](ItemWeights* a, ItemWeights* b) { return SafeCmp(a->name, b->name) < 0; });
+            m_ItemWeights.insert(_it, pWeights);
+        }
     }
 
     weights   = pWeights->weights;
-    movenames = (const char **)m_MoveModes.GetItems();
-    movecount = m_MoveModes.Count();
+    m_MoveModesRaw.clear();
+    for (const auto& s : m_MoveModes) m_MoveModesRaw.push_back(s.c_str());
+    movenames = m_MoveModesRaw.data();
+    movecount = (int)m_MoveModes.size();
 
     if (!Ok)
     {
@@ -1098,7 +1117,9 @@ BOOL CAhApp::GetItemWeights(const char * item, int *& weights, const char **& mo
 
 void CAhApp::GetMoveNames(const char **& movenames)
 {
-    movenames = (const char **)m_MoveModes.GetItems();
+    m_MoveModesRaw.clear();
+    for (const auto& s : m_MoveModes) m_MoveModesRaw.push_back(s.c_str());
+    movenames = m_MoveModesRaw.data();
 }
 
 //-------------------------------------------------------------------------
@@ -2708,21 +2729,21 @@ int  CAhApp::LoadReport  (const char * FNameIn, BOOL Join)
 
         if (!m_FirstLoad && !Join)
         {
-            if (m_Reports.Search(m_pAtlantis, i))
-                m_Reports.AtFree(i);
-            m_Reports.Insert(m_pAtlantis);
+            if (([&]() -> bool { auto _ri = std::lower_bound(m_Reports.begin(), m_Reports.end(), m_pAtlantis, [](CAtlaParser* a, CAtlaParser* b){ return a->m_YearMon < b->m_YearMon; }); if (_ri != m_Reports.end() && (*_ri)->m_YearMon == (m_pAtlantis)->m_YearMon) { i = (int)(_ri - m_Reports.begin()); return true; } return false; })())
+                { delete m_Reports[i]; m_Reports.erase(m_Reports.begin() + (i)); }
+            { auto _ri = std::lower_bound(m_Reports.begin(), m_Reports.end(), m_pAtlantis, [](CAtlaParser* a, CAtlaParser* b){ return a->m_YearMon < b->m_YearMon; }); m_Reports.insert(_ri, m_pAtlantis); }
 
             n = atol(GetConfig(SZ_SECT_COMMON, SZ_KEY_REP_CACHE_COUNT));
             if (n<=0)
                 n = 1;
-            if (m_Reports.Count()>n)
+            if ((int)m_Reports.size()>n)
             {
                 if (i > n/2)
                     n = 0;
                 else
-                    n = m_Reports.Count()-1;
-                if (m_pAtlantis != m_Reports.At(n))
-                    m_Reports.AtFree(n);
+                    n = (int)m_Reports.size()-1;
+                if (m_pAtlantis != m_Reports[n])
+                    { delete m_Reports[n]; m_Reports.erase(m_Reports.begin() + (n)); }
             }
         }
         m_FirstLoad = FALSE;
@@ -3015,9 +3036,9 @@ void CAhApp::SwitchToYearMon(long YearMon)
     if (GetOrdersChanged())
         return;
     pDummy->m_YearMon = YearMon;
-    if (m_Reports.Search(pDummy, i))
+    if (([&]() -> bool { auto _ri = std::lower_bound(m_Reports.begin(), m_Reports.end(), pDummy, [](CAtlaParser* a, CAtlaParser* b){ return a->m_YearMon < b->m_YearMon; }); if (_ri != m_Reports.end() && (*_ri)->m_YearMon == (pDummy)->m_YearMon) { i = (int)(_ri - m_Reports.begin()); return true; } return false; })())
     {
-        m_pAtlantis = (CAtlaParser *)m_Reports.At(i);
+        m_pAtlantis = m_Reports[i];
         PostLoadReport();
     }
     else
@@ -3136,9 +3157,9 @@ BOOL CAhApp::GetPrevTurnReport(CAtlaParser *& pPrevTurn)
         long YearMon = m_ReportDates[idx];
     
         pDummy->m_YearMon = YearMon;
-        if (m_Reports.Search(pDummy, i))
+        if (([&]() -> bool { auto _ri = std::lower_bound(m_Reports.begin(), m_Reports.end(), pDummy, [](CAtlaParser* a, CAtlaParser* b){ return a->m_YearMon < b->m_YearMon; }); if (_ri != m_Reports.end() && (*_ri)->m_YearMon == (pDummy)->m_YearMon) { i = (int)(_ri - m_Reports.begin()); return true; } return false; })())
         {
-            pPrevTurn = (CAtlaParser *)m_Reports.At(i);
+            pPrevTurn = m_Reports[i];
         }
         else
         {
@@ -3162,7 +3183,7 @@ BOOL CAhApp::GetPrevTurnReport(CAtlaParser *& pPrevTurn)
             wxEndBusyCursor();
             m_DisableErrs = FALSE;
             if (pPrevTurn->m_YearMon == YearMon)
-                m_Reports.Insert(pPrevTurn);
+                { auto _ri = std::lower_bound(m_Reports.begin(), m_Reports.end(), pPrevTurn, [](CAtlaParser* a, CAtlaParser* b){ return a->m_YearMon < b->m_YearMon; }); m_Reports.insert(_ri, pPrevTurn); }
             else
             {
                 delete pPrevTurn;
@@ -3267,21 +3288,21 @@ BOOL CAhApp::GetPrevTurnReport(CAtlaParser *& pPrevTurn)
 
         if (!m_FirstLoad && !Join)
         {
-            if (m_Reports.Search(m_pAtlantis, i))
-                m_Reports.AtFree(i);
-            m_Reports.Insert(m_pAtlantis);
+            if (([&]() -> bool { auto _ri = std::lower_bound(m_Reports.begin(), m_Reports.end(), m_pAtlantis, [](CAtlaParser* a, CAtlaParser* b){ return a->m_YearMon < b->m_YearMon; }); if (_ri != m_Reports.end() && (*_ri)->m_YearMon == (m_pAtlantis)->m_YearMon) { i = (int)(_ri - m_Reports.begin()); return true; } return false; })())
+                { delete m_Reports[i]; m_Reports.erase(m_Reports.begin() + (i)); }
+            { auto _ri = std::lower_bound(m_Reports.begin(), m_Reports.end(), m_pAtlantis, [](CAtlaParser* a, CAtlaParser* b){ return a->m_YearMon < b->m_YearMon; }); m_Reports.insert(_ri, m_pAtlantis); }
 
             n = atol(GetConfig(SZ_SECT_COMMON, SZ_KEY_REP_CACHE_COUNT));
             if (n<=0)
                 n = 1;
-            if (m_Reports.Count()>n)
+            if ((int)m_Reports.size()>n)
             {
                 if (i > n/2)
                     n = 0;
                 else
-                    n = m_Reports.Count()-1;
-                if (m_pAtlantis != m_Reports.At(n))
-                    m_Reports.AtFree(n);
+                    n = (int)m_Reports.size()-1;
+                if (m_pAtlantis != m_Reports[n])
+                    { delete m_Reports[n]; m_Reports.erase(m_Reports.begin() + (n)); }
             }
         }
         m_FirstLoad = FALSE;
@@ -4850,7 +4871,7 @@ void CAhApp::InitMoveModes()
     while (p && *p)
     {
         p = SkipSpaces(S.GetToken(p, ','));
-        m_MoveModes.Insert(strdup(S.GetData()));
+        m_MoveModes.push_back(S.GetData());
     }
 
     // do update here for 2.3.2
@@ -4861,20 +4882,20 @@ void CAhApp::InitMoveModes()
         p = SkipSpaces(S.GetToken(p, ','));
         n++;
 
-        if (n > m_MoveModes.Count())
+        if (n > (int)m_MoveModes.size())
         {
-            m_MoveModes.Insert(strdup(S.GetData()));
+            m_MoveModes.push_back(S.GetData());
             Update = TRUE;
         }
     }
     if (Update)
     {
         S.Empty();
-        for (n=0; n<m_MoveModes.Count(); n++)
+        for (n=0; n<(int)m_MoveModes.size(); n++)
         {
             if (n>0)
                 S << ',';
-            S << (const char *)m_MoveModes.At(n);
+            S << m_MoveModes[n].c_str();
         }
         SetConfig(SZ_SECT_COMMON, SZ_KEY_MOVEMENTS, S.GetData());
     }

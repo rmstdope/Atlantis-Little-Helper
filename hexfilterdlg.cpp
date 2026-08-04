@@ -25,13 +25,11 @@
 
 
 #include "cstr.h"
-#include "collection.h"
 #include "cfgfile.h"
 #include "files.h"
 #include "atlaparser.h"
 #include "consts.h"
 #include "consts_ah.h"
-#include "hash.h"
 #include "ahapp.h"
 #include "ahframe.h"
 #include "utildlgs.h"
@@ -222,10 +220,9 @@ void CHexFilterDlg::Init()
         m_cbProperty[count]->Append(wxT(""));
         m_cbCompare [count]->Append(wxT(""));
 
-        for (i=0; i<gpApp->m_pAtlantis->m_LandPropertyNames.Count(); i++)
+        for (const auto& propname : gpApp->m_pAtlantis->m_LandPropertyNames)
         {
-            item = (const char *) gpApp->m_pAtlantis->m_LandPropertyNames.At(i);
-            m_cbProperty[count]->Append(wxString::FromAscii(item));
+            m_cbProperty[count]->Append(wxString::FromAscii(propname.c_str()));
         }
 
         for (i=0; (unsigned)i<sizeof(HEX_FILTER_OPERATION)/sizeof(*HEX_FILTER_OPERATION); i++)

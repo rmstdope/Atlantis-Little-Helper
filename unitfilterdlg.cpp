@@ -25,13 +25,11 @@
 
 
 #include "cstr.h"
-#include "collection.h"
 #include "cfgfile.h"
 #include "files.h"
 #include "atlaparser.h"
 #include "consts.h"
 #include "consts_ah.h"
-#include "hash.h"
 #include "ahapp.h"
 #include "ahframe.h"
 #include "utildlgs.h"
@@ -232,9 +230,9 @@ void CUnitFilterDlg::Init()
         m_cbProperty[count]->Append(wxT(""));
         m_cbCompare [count]->Append(wxT(""));
 
-        for (i=0; i<gpApp->m_pAtlantis->m_UnitPropertyNames.Count(); i++)
+        for (const auto& propname : gpApp->m_pAtlantis->m_UnitPropertyNames)
         {
-            item = (const char *) gpApp->m_pAtlantis->m_UnitPropertyNames.At(i);
+            item = propname.c_str();
 
             // do not show 'skill days' property
             S = item;

@@ -109,59 +109,12 @@ void GetFileFromPath(const char * path, CStr & file);
 
 //-------------------------------------------------------------------------------
 
-class CAtlaSortColl : public CSortedCollection
-{
-public:
-    CAtlaSortColl()           : CSortedCollection() {};
-    CAtlaSortColl(int nDelta) : CSortedCollection(nDelta) {};
-protected:
-    virtual void FreeItem(void * pItem)
-    {
-        if (pItem)
-            delete (CAtlaParser*)pItem;
-    };
-    virtual int Compare(void * pItem1, void * pItem2)
-    {
-        if ( ((CAtlaParser*)pItem1)->m_YearMon > ((CAtlaParser*)pItem2)->m_YearMon)
-            return 1;
-        else
-            if ( ((CAtlaParser*)pItem1)->m_YearMon < ((CAtlaParser*)pItem2)->m_YearMon)
-                return -1;
-            else
-                return 0;
-    };
-};
-
-//-------------------------------------------------------------------------------
-
 struct ItemWeights
 {
     char * name;
     int  * weights;
 };
 
-class CWeightsColl : public CSortedCollection
-{
-public:
-    CWeightsColl()           : CSortedCollection() {};
-    CWeightsColl(int nDelta) : CSortedCollection(nDelta) {};
-protected:
-    virtual void FreeItem(void * pItem)
-    {
-        if (pItem)
-        {
-            if (((ItemWeights*)pItem)->name)
-                free(((ItemWeights*)pItem)->name);
-            if (((ItemWeights*)pItem)->weights)
-                free(((ItemWeights*)pItem)->weights);
-            delete (ItemWeights*)pItem;
-        }
-    };
-    virtual int Compare(void * pItem1, void * pItem2)
-    {
-        return SafeCmp(((ItemWeights*)pItem1)->name, ((ItemWeights*)pItem2)->name);
-    };
-};
 
 
 //-------------------------------------------------------------------------------
@@ -335,7 +288,7 @@ private:
     void                 SelectTempUnit(CUnit * pUnit);
 
 
-    CAtlaSortColl        m_Reports;
+    std::vector<CAtlaParser*> m_Reports;
     std::vector<long>    m_ReportDates;
     BOOL                 m_FirstLoad;
     CStr                 m_HexDescrSrc;
@@ -344,8 +297,9 @@ private:
     long                 m_SelUnitIdx;
     int                  m_layout;
     BOOL                 m_DisableErrs;
-    CBufColl             m_MoveModes;
-    CWeightsColl         m_ItemWeights;
+    std::vector<std::string> m_MoveModes;
+    std::vector<const char*> m_MoveModesRaw;
+    std::vector<ItemWeights*> m_ItemWeights;
     CConfigFile          m_Config[CONFIG_FILE_COUNT];
     std::set<std::string, CaseInsensitiveLess> m_ConfigSectionsState;
     BOOL                 m_OrdersAreChanged;

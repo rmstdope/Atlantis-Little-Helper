@@ -20,12 +20,10 @@
 #include "stdhdr.h"
 
 #include "cstr.h"
-#include "collection.h"
 #include "cfgfile.h"
 #include "files.h"
 #include "atlaparser.h"
 #include "data.h"
-#include "hash.h"
 
 #include "objs.h"
 #include "ahapp.h"

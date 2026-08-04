@@ -22,7 +22,6 @@
 
 
 #include "cstr.h"
-#include "collection.h"
 #include "objs.h"
 #include <string.h>
 #include <algorithm>

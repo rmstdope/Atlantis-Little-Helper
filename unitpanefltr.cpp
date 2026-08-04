@@ -29,7 +29,6 @@
 #include "atlaparser.h"
 #include "consts.h"
 #include "consts_ah.h"
-#include "hash.h"
 
 #include "ahapp.h"
 #include "ahframe.h"
