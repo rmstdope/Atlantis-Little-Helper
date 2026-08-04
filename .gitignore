@@ -30,3 +30,8 @@ Makefile
 ah
 ah.stderr
 ah.stdout
+
+# Game files
+*.cfg
+*.his
+*.ord
