@@ -301,7 +301,7 @@ BOOL CLand::AddUnit(CUnit * pUnit)
         pUnit->LandId = Id;
         Flags |= LAND_UNITS;
         UnitsSeq.Insert(pUnit);
-        pUnit->SetProperty(PRP_SEQUENCE, eLong, (void*)UnitsSeq.Count(), eNormal);
+        pUnit->SetProperty(PRP_SEQUENCE, eLong, reinterpret_cast<void*>(static_cast<intptr_t>(UnitsSeq.Count())), eNormal);
         return TRUE;
     }
     else
@@ -516,7 +516,7 @@ void CLand::SetFlagsFromUnits()
         if (!((pUnit->GetProperty(PRP_FRIEND_OR_FOE,type,stance,eNormal)) && (type==eLong)))
         {
             // set the default stance if none is defined
-            stance = (void *) gpDataHelper->GetAttitudeForFaction(0);
+            stance = reinterpret_cast<void*>(static_cast<intptr_t>(gpDataHelper->GetAttitudeForFaction(0)));
         }
         if ((pUnit->Flags & UNIT_FLAG_GUARDING) && !(pUnit->Flags & UNIT_FLAG_GIVEN))
         {

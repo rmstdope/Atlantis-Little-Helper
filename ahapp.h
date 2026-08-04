@@ -98,7 +98,7 @@ void FontToStr(const wxFont * font, std::string & s);
 wxFont * NewFontFromStr(const char * p);
 
 void StrToColor(wxColour * cr, const char * p);
-void ColorToStr(char * p, wxColour * cr);
+void ColorToStr(char * p, size_t n, wxColour * cr);
 void MakePathRelative(const char * cur_dir, std::string & path);
 void MakePathFull(const char * cur_dir, std::string & path);
 void GetDirFromPath(const char * path, std::string & dir);

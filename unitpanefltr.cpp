@@ -177,6 +177,7 @@ void CUnitPaneFltr::Update(CUnitFilterDlg * pFilter)
 
     // should we run Python?
     if (!ShowGoneUnits && TrackingGroup.empty())
+    {
         if (pFilter)
         {
             bUsePython = TrackingGroup.empty() && pFilter->m_rbUsePython->GetValue();
@@ -188,6 +189,7 @@ void CUnitPaneFltr::Update(CUnitFilterDlg * pFilter)
             bUsePython = (0==stricmp(S.c_str(), SZ_KEY_UNIT_FLTR_SOURCE_PYTHON));
             sPythonText= gpApp->GetConfig(sConfSect.c_str(), SZ_KEY_UNIT_FLTR_PYTHON_CODE);
         }
+    }
 
     if (bUsePython)
     {

@@ -553,10 +553,12 @@ void CAhApp::OpenUnitFrameFltr(BOOL PopUpSettings)
         wxCommandEvent    event;
 
         if (pUnitPaneF)
+        {
             if  (PopUpSettings)
                 pUnitPaneF->OnPopupMenuFilter(event);
             else
                 pUnitPaneF->Update(NULL);
+        }
     }
     else
         m_Frames[AH_FRAME_UNITS_FLTR]->Raise();
@@ -810,7 +812,7 @@ void CAhApp::SetConfig(const char * szSection, const char * szName, long lNewVal
     char   buf[64];
     int    fileno = GetConfigFileNo(szSection);
 
-    sprintf(buf, "%ld", lNewValue);
+    snprintf(buf, sizeof(buf), "%ld", lNewValue);
     m_Config[fileno].SetByName(szSection, szName, buf);
 }
 
@@ -1617,7 +1619,7 @@ int  CAhApp::SaveOrders(const char * FNameOut, int FactionId)
                                  );
     if (ERR_OK==err)
     {
-        sprintf(buf, "%ld", m_pAtlantis->m_YearMon);
+        snprintf(buf, sizeof(buf), "%ld", m_pAtlantis->m_YearMon);
         SetConfig(Section.c_str(), buf, FName.c_str());
     }
 
@@ -1759,7 +1761,7 @@ void CAhApp::LoadComments()
     for (i=0; i<m_pAtlantis->m_Units.Count(); i++)
     {
         pUnit = (CUnit*)m_pAtlantis->m_Units.At(i);
-        sprintf(buf, "%ld", pUnit->Id);
+        snprintf(buf, sizeof(buf), "%ld", pUnit->Id);
 
         DecodeConfigLine(pUnit->DefOrders, GetConfig(SZ_SECT_DEF_ORDERS, buf));
 
@@ -1791,7 +1793,7 @@ void CAhApp::SaveComments()
         }
         else
             p = NULL;
-        sprintf(buf, "%ld", pUnit->Id);
+        snprintf(buf, sizeof(buf), "%ld", pUnit->Id);
         SetConfig(SZ_SECT_DEF_ORDERS, buf, p);
     }
     m_CommentsChanged = FALSE;
@@ -1810,7 +1812,7 @@ void CAhApp::LoadUnitFlags()
     for (i=0; i<m_pAtlantis->m_Units.Count(); i++)
     {
         pUnit = (CUnit*)m_pAtlantis->m_Units.At(i);
-        sprintf(buf, "%ld", pUnit->Id);
+        snprintf(buf, sizeof(buf), "%ld", pUnit->Id);
 
         x = atol(GetConfig(SZ_SECT_UNIT_FLAGS, buf));
         if (x & UNIT_CUSTOM_FLAG_MASK)
@@ -1834,7 +1836,7 @@ void CAhApp::SaveUnitFlags()
     for (i=0; i<m_pAtlantis->m_Units.Count(); i++)
     {
         pUnit = (CUnit*)m_pAtlantis->m_Units.At(i);
-        sprintf(buf, "%ld", pUnit->Id);
+        snprintf(buf, sizeof(buf), "%ld", pUnit->Id);
 
         S.clear();
         if (pUnit->Flags & UNIT_CUSTOM_FLAG_MASK)
@@ -4374,12 +4376,15 @@ void CAhApp::ShowLandFinancial(CLand * pCurLand)
             if (pUnit->GetProperty(PRP_MEN, type, (const void *&)men, eNormal) && eLong==type)
             {
                 if (pUnit->Flags & UNIT_FLAG_TAXING)
+                {
                     if (pUnit->FactionId == CurFaction)
                         TaxOur += men*TaxPerTaxer;
                     else
                         TaxTheir += men*TaxPerTaxer;
+                }
 
                 if (pUnit->IsWorking)
+                {
                     if (pUnit->FactionId == CurFaction)
                     {
                         Workers += men;
@@ -4387,13 +4392,16 @@ void CAhApp::ShowLandFinancial(CLand * pCurLand)
                     }
                     else
                         WorkTheir +=  (long)(men*pCurLand->Wages);
+                }
 
                 if (pUnit->FactionId == CurFaction && (!pUnit->pMovement || pUnit->pMovement->empty()))
+                {
                     if (pUnit->GetProperty(PRP_LEADER, type, (const void *&)leadership, eNormal) && eCharPtr==type &&
                         (0==strcmp(leadership, SZ_LEADER) || 0==strcmp(leadership, SZ_HERO)))
                         Maintain += men*20;
                     else
                         Maintain += men*10;
+                }
             }
 
         }
@@ -4661,6 +4669,7 @@ void CAhApp::ExportHexes()
 
     if ( GetExportHexOptions(sName, sData, options, HexIncl, InclTurnNoAcl) &&
          Dest.Open(sName.c_str(), sData.c_str()) )
+    {
         if (HexCurrent==HexIncl)
         {
             pPlane   = (CPlane*)m_pAtlantis->m_Planes.At(pMapPane->m_SelPlane);
@@ -4679,6 +4688,7 @@ void CAhApp::ExportHexes()
 
             Hexes.DeleteAll();
         }
+    }
         Dest.Close();
 }
 
@@ -5185,9 +5195,9 @@ void FontToStr(const wxFont * font, std::string & s)
 wxFont * NewFontFromStr(const char * p)
 {
     int            size;
-    int            family;
-    int            style;
-    int            weight;
+    wxFontFamily   family;
+    wxFontStyle    style;
+    wxFontWeight   weight;
     int            encoding;
     wxString       facename;
     wxFont     *   font;
@@ -5198,18 +5208,18 @@ wxFont * NewFontFromStr(const char * p)
     if (p && *p)
     {
         p = GetToken(S, SkipSpaces(p), ',');  size     = atol(S.c_str());
-        p = GetToken(S, SkipSpaces(p), ',');  family   = atol(S.c_str());
-        p = GetToken(S, SkipSpaces(p), ',');  style    = atol(S.c_str());
-        p = GetToken(S, SkipSpaces(p), ',');  weight   = atol(S.c_str());
+        p = GetToken(S, SkipSpaces(p), ',');  family   = static_cast<wxFontFamily>(atol(S.c_str()));
+        p = GetToken(S, SkipSpaces(p), ',');  style    = static_cast<wxFontStyle>(atol(S.c_str()));
+        p = GetToken(S, SkipSpaces(p), ',');  weight   = static_cast<wxFontWeight>(atol(S.c_str()));
         p = GetToken(S, SkipSpaces(p), ',');  encoding = atol(S.c_str());
                                              facename = wxString::FromAscii(SkipSpaces(p));
     }
     else
     {
         size     = AH_DEFAULT_FONT_SIZE;
-        family   = wxDEFAULT;
-        style    = wxNORMAL;
-        weight   = wxNORMAL;
+        family   = wxFONTFAMILY_DEFAULT;
+        style    = wxFONTSTYLE_NORMAL;
+        weight   = wxFONTWEIGHT_NORMAL;
         encoding = wxFONTENCODING_SYSTEM;
         facename = wxT("");
     }
@@ -5240,9 +5250,9 @@ void StrToColor(wxColour * cr, const char * p)
 
 //--------------------------------------------------------------------------
 
-void ColorToStr(char * p, wxColour * cr)
+void ColorToStr(char * p, size_t n, wxColour * cr)
 {
-    sprintf(p, "%d, %d, %d",
+    snprintf(p, n, "%d, %d, %d",
             (int)(cr->Red()  ),
             (int)(cr->Green()),
             (int)(cr->Blue() )

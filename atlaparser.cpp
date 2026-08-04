@@ -1328,10 +1328,12 @@ plain (5,39) in Partry, contains Drimnin [city], 3217 peasants (high
                     p = SkipSpaces(GetToken(N1, p, ' ', TRIM_ALL));
                     n1= atol(N1.c_str());
                     if (0==n1)
+                    {
                         if (0==stricmp(N1.c_str(), "none"))
                             n1 = -1;
                         else if  (0==stricmp(N1.c_str(), "unlimited"))
                             n1 = 10000000;
+                    }
                     if (n1 >= 0)
                     {
                         pProd = new CProduct;
@@ -2142,7 +2144,7 @@ int CAtlaParser::ParseUnit(std::string & FirstLine, BOOL Join)
     }
     if((attitude >= 0) && (attitude < ATT_UNDECLARED))
     {
-        SetUnitProperty(pUnit,PRP_FRIEND_OR_FOE,eLong,(void *) attitude,eNormal);
+        SetUnitProperty(pUnit,PRP_FRIEND_OR_FOE,eLong,reinterpret_cast<void*>(static_cast<intptr_t>(attitude)),eNormal);
     }
 
     // ===== Now analize the rest of unit text
@@ -2259,6 +2261,7 @@ int CAtlaParser::ParseUnit(std::string & FirstLine, BOOL Join)
 
 
             if (0!=stricmp("none", S1.c_str()))
+            {
                 if (!p || !pUnit)
             {
                 Format(Buf, "Unit description - skills error at line %d", m_nCurLine);
@@ -2299,7 +2302,7 @@ int CAtlaParser::ParseUnit(std::string & FirstLine, BOOL Join)
                     SetUnitProperty(pUnit, Buf.c_str(), eLong, (void*)n, eBoth);
                 }
             }
-
+            }
         }
 
 
@@ -3791,9 +3794,9 @@ int  CAtlaParser::SaveOrders(const char * FNameOut, const char * password, BOOL 
             t = *localtime(&now);
             i = m_YearMon%100-1;
             if ( (i < 12) && (i >=0) )
-                sprintf(buf, "%s year %ld,  %s", Monthes[i], m_YearMon/100, asctime(&t));
+                snprintf(buf, sizeof(buf), "%s year %ld,  %s", Monthes[i], m_YearMon/100, asctime(&t));
             else
-                sprintf(buf, "%02ld/%02ld,  %s", m_YearMon%100, m_YearMon/100, asctime(&t));
+                snprintf(buf, sizeof(buf), "%02ld/%02ld,  %s", m_YearMon%100, m_YearMon/100, asctime(&t));
             S << ORDER_CMNT << pFaction->Name << " orders for " << buf  << EOL_FILE << EOL_FILE;
         }
         Dest.WriteBuf(S.c_str(), S.size());
@@ -4774,7 +4777,7 @@ void CAtlaParser::RunLandOrders(CLand * pLand, const char * sCheckTeach)
                             
                             // set attitude:
                             int attitude = gpDataHelper->GetAttitudeForFaction(pUnit->FactionId);
-                            SetUnitProperty(pUnitNew,PRP_FRIEND_OR_FOE,eLong,(void *) attitude,eNormal);
+                            SetUnitProperty(pUnitNew,PRP_FRIEND_OR_FOE,eLong,reinterpret_cast<void*>(static_cast<intptr_t>(attitude)),eNormal);
 
                             if (pUnit->GetProperty(PRP_STRUCT_ID, type, value, eOriginal) )
                                 pUnitNew->SetProperty(PRP_STRUCT_ID, type, value, eBoth);
@@ -4806,12 +4809,14 @@ void CAtlaParser::RunLandOrders(CLand * pLand, const char * sCheckTeach)
                         if (SQ_FORM!=sequence)
                         {
                             if (!pUnitMaster)
+                            {
                                 if (SQ_FORM+1 == sequence)
                                 {
                                     SHOW_WARN_CONTINUE(" - FORM was not called!");
                                 }
                                 else
                                     continue;
+                            }
 
                             if  (SQ_TEACH==sequence)  // have to call it here or new units teaching will not be calculated
                                 OrderProcess_Teach(skiperror, pUnit);
@@ -5478,6 +5483,7 @@ BOOL CAtlaParser::GetItemAndAmountForGive(std::string & Line, std::string & Erro
         params = SkipSpaces(GetToken(Item, params, " \t", ch, TRIM_ALL));
 
         if (0 != stricmp("UNIT", S1.c_str()))
+        {
             if (0 == stricmp("TAKE", command))
             {
                 pUnit2->GetProperty(Item.c_str(), type, (const void*&)item_avail, eNormal);
@@ -5492,6 +5498,7 @@ BOOL CAtlaParser::GetItemAndAmountForGive(std::string & Line, std::string & Erro
                     break;
                 }
             }
+        }
 
         if (0 == stricmp("UNIT", S1.c_str()))
             Item = S1;
@@ -5717,11 +5724,13 @@ BOOL CAtlaParser::FindTargetsForSend(std::string & Line, std::string & ErrorLine
                     }
 
                     if (pLand->pPlane->Width > 0)
+                    {
                         if (X>pLand->pPlane->EastEdge)
                             X = pLand->pPlane->WestEdge;
                         else
                             if (X<pLand->pPlane->WestEdge)
                                 X = pLand->pPlane->EastEdge;
+                    }
 
                     ID = LandCoordToId(X,Y, pLand->pPlane->Id);
                     pLand2 = GetLand(ID);
@@ -6410,11 +6419,13 @@ void CAtlaParser::RunOrder_Move(std::string & Line, std::string & ErrorLine, BOO
                     }
 
                     if (pLand->pPlane->Width > 0)
+                    {
                         if (X>pLand->pPlane->EastEdge)
                             X = pLand->pPlane->WestEdge;
                         else
                             if (X<pLand->pPlane->WestEdge)
                                 X = pLand->pPlane->EastEdge;
+                    }
 
                     ID = LandCoordToId(X,Y, pLand->pPlane->Id);
                     if (!pUnit->pMovement)
@@ -6556,11 +6567,13 @@ void CAtlaParser::RunOrder_SailAIII(std::string & Line, std::string & ErrorLine,
 
 
                 if (pLand->pPlane->Width > 0)
+                {
                     if (X>pLand->pPlane->EastEdge)
                         X = pLand->pPlane->WestEdge;
                     else
                         if (X<pLand->pPlane->WestEdge)
                             X = pLand->pPlane->EastEdge;
+                }
 
                 ID = LandCoordToId(X,Y, pLand->pPlane->Id);
 

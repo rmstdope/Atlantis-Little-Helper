@@ -386,9 +386,9 @@ void COptionsDialog::OnCancel(wxCommandEvent& event)
                 gpApp->m_Fonts[i]->SetFaceName (m_FontData[i].face    ) ;*/
                 delete gpApp->m_Fonts[i];
                 gpApp->m_Fonts[i] = new wxFont(m_FontData[i].size,
-                                            m_FontData[i].family,
-                                            m_FontData[i].style,
-                                            m_FontData[i].weight,
+                                            static_cast<wxFontFamily>(m_FontData[i].family),
+                                            static_cast<wxFontStyle>(m_FontData[i].style),
+                                            static_cast<wxFontWeight>(m_FontData[i].weight),
                                             FALSE,
                                             m_FontData[i].face,
                                             m_FontData[i].encoding   );
@@ -480,7 +480,7 @@ void COptionsDialog::OnColor    (wxCommandEvent& event)
         wxColourData retData = dialog->GetColourData();
         wxColour col = retData.GetColour();
 
-        ColorToStr(newcolour, &col);
+        ColorToStr(newcolour, sizeof(newcolour), &col);
         gpApp->SetConfig(SZ_SECT_COLORS, colname.mb_str(), newcolour);
         gpApp->ApplyColors();
     }

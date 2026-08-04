@@ -43,10 +43,12 @@ static const char * stristr( const char * string, const char * image )
     {
         string = strpbrk(string, first);
         if (string)
+        {
             if (0==strnicmp(string, image, imagelen))
                 return string;
             else
                 string++;
+        }
     }
 
     return NULL;
@@ -204,7 +206,7 @@ void AddDouble(std::string & s, double dNum, int width, int precision)
 {
     char mask[64];
     char buf[512];
-    sprintf(mask, "%s%d.%df", "%", width, precision);
+    snprintf(mask, sizeof(mask), "%s%d.%df", "%", width, precision);
     snprintf(buf, sizeof(buf), mask, dNum);
     s += buf;
 }
