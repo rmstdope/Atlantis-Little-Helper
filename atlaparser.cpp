@@ -6417,7 +6417,7 @@ void CAtlaParser::RunOrder_Move(CStr & Line, CStr & ErrorLine, BOOL skiperror, C
 
                     ID = LandCoordToId(X,Y, pLand->pPlane->Id);
                     if (!pUnit->pMovement)
-                        pUnit->pMovement = new std::vector<long>;
+                        pUnit->pMovement = std::make_unique<std::vector<long>>();
                     pUnit->pMovement->push_back(ID);
 
                     break;
@@ -6569,11 +6569,11 @@ void CAtlaParser::RunOrder_SailAIII(CStr & Line, CStr & ErrorLine, BOOL skiperro
                     LocA3 = Center;
 
                 if (!pUnit->pMovement)
-                    pUnit->pMovement = new std::vector<long>;
+                    pUnit->pMovement = std::make_unique<std::vector<long>>();
                 pUnit->pMovement->push_back(ID);
 
                 if (!pUnit->pMoveA3Points)
-                    pUnit->pMoveA3Points = new std::vector<long>;
+                    pUnit->pMoveA3Points = std::make_unique<std::vector<long>>();
                 pUnit->pMoveA3Points->push_back(LocA3);
 
                 break;
@@ -6673,7 +6673,7 @@ void CAtlaParser::RunOrder_Teach(CStr & Line, CStr & ErrorLine, BOOL skiperror, 
                     SHOW_WARN_CONTINUE(" - There are no men in the student unit!");
 
                 if (!pUnit->pStudents)
-                    pUnit->pStudents = new CBaseCollById;
+                    pUnit->pStudents = std::make_unique<CBaseCollById>();
 
                 if (!pUnit->pStudents->Insert(pUnit2))
                     SHOW_WARN_CONTINUE(" - Unit " << pUnit2->Id << " is already in the students list");

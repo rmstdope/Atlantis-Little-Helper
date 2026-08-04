@@ -24,6 +24,7 @@
 #include <set>
 #include <unordered_map>
 #include <string>
+#include <memory>
 #include "stl_helpers.h"
 
 enum
@@ -236,7 +237,7 @@ public:
     void                 SelectUnitsPane();
     void                 SelectOrdersPane();
 
-    CAtlaParser        * m_pAtlantis;
+    std::unique_ptr<CAtlaParser> m_pAtlantis;
 
     CAhFrame           * m_Frames[AH_FRAME_COUNT];
     wxWindow           * m_Panes [AH_PANE_COUNT ];
@@ -248,7 +249,7 @@ public:
     BOOL                 m_CommentsChanged;
     BOOL                 m_DiscardChanges;
     BOOL                 m_UpgradeLandFlags;
-    wxAcceleratorTable * m_pAccel;
+    std::unique_ptr<wxAcceleratorTable> m_pAccel;
     long                 m_Brightness_Delta;
 
 
@@ -288,7 +289,7 @@ private:
     void                 SelectTempUnit(CUnit * pUnit);
 
 
-    std::vector<CAtlaParser*> m_Reports;
+    std::vector<std::unique_ptr<CAtlaParser>> m_Reports;
     std::vector<long>    m_ReportDates;
     BOOL                 m_FirstLoad;
     CStr                 m_HexDescrSrc;
@@ -322,4 +323,3 @@ extern CAhApp * gpApp;
 
 
 #endif
-

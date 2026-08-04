@@ -25,6 +25,7 @@
 #include "objs.h"
 #include <string.h>
 #include <algorithm>
+#include <memory>
 #include <vector>
 #include "compat.h"
 
@@ -402,9 +403,9 @@ public:
     CStr            Events;
     CStr            StudyingSkill;
     CStr            ProducingItem;
-    std::vector<long> * pMovement; // Collection of ids of hexes to move through
-    std::vector<long> * pMoveA3Points; // Collection of Arcadia III locations for movement
-    CBaseCollById * pStudents;
+    std::unique_ptr<std::vector<long>> pMovement; // Collection of ids of hexes to move through
+    std::unique_ptr<std::vector<long>> pMoveA3Points; // Collection of Arcadia III locations for movement
+    std::unique_ptr<CBaseCollById> pStudents;
     unsigned long   Flags;
     unsigned long   FlagsOrg;
     unsigned long   FlagsLast;
