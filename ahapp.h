@@ -20,6 +20,11 @@
 #ifndef __AH_APP_INCL__
 #define __AH_APP_INCL__
 
+#include <vector>
+#include <set>
+#include <unordered_map>
+#include <string>
+#include "stl_helpers.h"
 
 enum
 {
@@ -104,59 +109,12 @@ void GetFileFromPath(const char * path, CStr & file);
 
 //-------------------------------------------------------------------------------
 
-class CAtlaSortColl : public CSortedCollection
-{
-public:
-    CAtlaSortColl()           : CSortedCollection() {};
-    CAtlaSortColl(int nDelta) : CSortedCollection(nDelta) {};
-protected:
-    virtual void FreeItem(void * pItem)
-    {
-        if (pItem)
-            delete (CAtlaParser*)pItem;
-    };
-    virtual int Compare(void * pItem1, void * pItem2)
-    {
-        if ( ((CAtlaParser*)pItem1)->m_YearMon > ((CAtlaParser*)pItem2)->m_YearMon)
-            return 1;
-        else
-            if ( ((CAtlaParser*)pItem1)->m_YearMon < ((CAtlaParser*)pItem2)->m_YearMon)
-                return -1;
-            else
-                return 0;
-    };
-};
-
-//-------------------------------------------------------------------------------
-
 struct ItemWeights
 {
     char * name;
     int  * weights;
 };
 
-class CWeightsColl : public CSortedCollection
-{
-public:
-    CWeightsColl()           : CSortedCollection() {};
-    CWeightsColl(int nDelta) : CSortedCollection(nDelta) {};
-protected:
-    virtual void FreeItem(void * pItem)
-    {
-        if (pItem)
-        {
-            if (((ItemWeights*)pItem)->name)
-                free(((ItemWeights*)pItem)->name);
-            if (((ItemWeights*)pItem)->weights)
-                free(((ItemWeights*)pItem)->weights);
-            delete (ItemWeights*)pItem;
-        }
-    };
-    virtual int Compare(void * pItem1, void * pItem2)
-    {
-        return SafeCmp(((ItemWeights*)pItem1)->name, ((ItemWeights*)pItem2)->name);
-    };
-};
 
 
 //-------------------------------------------------------------------------------
@@ -200,7 +158,7 @@ public:
     const char *         GetWeatherLine (BOOL IsCurrent, BOOL IsGood, int Zone);
     void                 GetProdDetails (const char * item, TProdDetails & details);
     long                 GetMaxRaceSkillLevel(const char * race, const char * skill, const char * leadership, BOOL IsArcadiaSkillSystem);
-    BOOL                 CanSeeAdvResources(const char * skillname, const char * terrain, CLongColl & Levels, CBufColl & Resources);
+    BOOL                 CanSeeAdvResources(const char * skillname, const char * terrain, std::vector<long> & Levels, std::vector<std::string> & Resources);
     int                  GetAttitudeForFaction(int id);
     void                 SetAttitudeForFaction(int id, int attitude);
 
@@ -233,7 +191,8 @@ public:
     void                 OpenEditsFrame();
     void                 OpenUnitFrameFltr(BOOL PopUpSettings);
     void                 WriteMagesCSV();
-    void                 ShowDescriptionList(CCollection & Items, const char * title); // Collection of CBaseObject
+    void                 ShowDescriptionList(CBaseColl & Items, const char * title); // Collection of CBaseObject
+    void                 ShowDescriptionList(CBaseCollById & Items, const char * title);
 //    void                 ViewSkills(BOOL ViewAll);
     void                 ViewShortNamedObjects(BOOL ViewAll, const char * szSection, const char * szHeader, CBaseColl & ListNew);
     void                 ViewBattlesAll();
@@ -283,7 +242,7 @@ public:
     wxWindow           * m_Panes [AH_PANE_COUNT ];
     wxFont             * m_Fonts [FONT_COUNT];
     const char         * m_FontDescr[FONT_COUNT];
-    CStrStrColl          m_UnitPropertyGroups;
+    std::multimap<std::string, std::string> m_UnitPropertyGroups;
 
 //    BOOL                 m_LandFlagsChanged;
     BOOL                 m_CommentsChanged;
@@ -329,8 +288,8 @@ private:
     void                 SelectTempUnit(CUnit * pUnit);
 
 
-    CAtlaSortColl        m_Reports;
-    CLongSortColl        m_ReportDates;
+    std::vector<CAtlaParser*> m_Reports;
+    std::vector<long>    m_ReportDates;
     BOOL                 m_FirstLoad;
     CStr                 m_HexDescrSrc;
     CStr                 m_UnitDescrSrc;
@@ -338,21 +297,22 @@ private:
     long                 m_SelUnitIdx;
     int                  m_layout;
     BOOL                 m_DisableErrs;
-    CBufColl             m_MoveModes;
-    CWeightsColl         m_ItemWeights;
+    std::vector<std::string> m_MoveModes;
+    std::vector<const char*> m_MoveModesRaw;
+    std::vector<ItemWeights*> m_ItemWeights;
     CConfigFile          m_Config[CONFIG_FILE_COUNT];
-    CStringSortColl      m_ConfigSectionsState;
+    std::set<std::string, CaseInsensitiveLess> m_ConfigSectionsState;
     BOOL                 m_OrdersAreChanged;
     CStr                 m_sTitle;
-    CHashStrToLong       m_OrderHash;
-    CHashStrToLong       m_TradeItemsHash;
-    CHashStrToLong       m_MenHash;
-    CHashStrToLong       m_MaxSkillHash;
-    CHashStrToLong       m_MagicSkillsHash;
+    std::unordered_map<std::string, long> m_OrderHash;
+    std::unordered_map<std::string, long> m_TradeItemsHash;
+    std::unordered_map<std::string, long> m_MenHash;
+    std::unordered_map<std::string, long> m_MaxSkillHash;
+    std::unordered_map<std::string, long> m_MagicSkillsHash;
     int                  m_nStdoutLastPos;
     int                  m_nStderrLastPos;
     CBaseColl            m_Attitudes;
-    CStringSortColl      m_WaterTerrainNames;
+    std::set<std::string, CaseInsensitiveLess> m_WaterTerrainNames;
 
 };
 

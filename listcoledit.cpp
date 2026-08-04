@@ -25,13 +25,11 @@
 
 
 #include "cstr.h"
-#include "collection.h"
 #include "cfgfile.h"
 #include "files.h"
 #include "atlaparser.h"
 #include "consts.h"
 #include "consts_ah.h"
-#include "hash.h"
 #include "ahapp.h"
 #include "ahframe.h"
 #include "listcoledit.h"
@@ -185,15 +183,11 @@ void CListHeaderEditDlg::LoadSetCombo()
 
 void CListHeaderEditDlg::LoadListSrc()
 {
-    int          i;
-    const char * item;
-
     m_SourceIdx       = -1;
     m_lstSource->ClearAll();
-    for (i=0; i<gpApp->m_pAtlantis->m_UnitPropertyNames.Count(); i++)
+    for (const auto& propname : gpApp->m_pAtlantis->m_UnitPropertyNames)
     {
-        item = (const char *) gpApp->m_pAtlantis->m_UnitPropertyNames.At(i);
-        m_lstSource->InsertItem(m_lstSource->GetItemCount() , wxString::FromAscii(item));
+        m_lstSource->InsertItem(m_lstSource->GetItemCount() , wxString::FromAscii(propname.c_str()));
     }
 }
 
@@ -284,7 +278,7 @@ void  CListHeaderEditDlg::SaveListDest()
         Dummy.PropName = m_lstDest->GetItemText(x).mb_str();
         if (m_Fields.Search(&Dummy, idx))
         {
-            pField = (TUnitColData *)m_Fields.At(idx);
+            pField = m_Fields.At(idx);
             S.Format("%03d", x);
             Value.Format("%d, %lu, %s, %s", pField->width, pField->flags, pField->PropName.GetData(), pField->Caption.GetData());
             gpApp->SetConfig(Section.GetData(), S.GetData(), Value.GetData());
@@ -309,16 +303,14 @@ void  CListHeaderEditDlg::AddItem()
         return;
 
     if (m_Fields.Search(&Dummy, idx))
-        pField = (TUnitColData *)m_Fields.At(idx);
+        pField = m_Fields.At(idx);
     else
     {
-        CStrInt      * pSI, SI(Dummy.PropName.GetData(), 0);
-
-        if (gpApp->m_pAtlantis->m_UnitPropertyTypes.Search(&SI, idx))
         {
-            pSI = (CStrInt*)gpApp->m_pAtlantis->m_UnitPropertyTypes.At(idx);
-            if (eLong == (EValueType)pSI->m_value)
-                flags = LIST_FLAG_ALIGN_RIGHT;
+            auto it__ = gpApp->m_pAtlantis->m_UnitPropertyTypes.find(Dummy.PropName.GetData());
+            if (it__ != gpApp->m_pAtlantis->m_UnitPropertyTypes.end())
+                if (eLong == (EValueType)it__->second)
+                    flags = LIST_FLAG_ALIGN_RIGHT;
         }
 
         pField           = new TUnitColData;
@@ -354,7 +346,7 @@ void  CListHeaderEditDlg::ProcessCaption(int oldidx, int newidx)
         Dummy.PropName = m_lstDest->GetItemText(oldidx).mb_str();
         if (m_Fields.Search(&Dummy, idx))
         {
-            pField          = (TUnitColData *)m_Fields.At(idx);
+            pField          = m_Fields.At(idx);
             pField->Caption = m_txtCaption->GetValue().mb_str();
         }
     }
@@ -365,7 +357,7 @@ void  CListHeaderEditDlg::ProcessCaption(int oldidx, int newidx)
         Dummy.PropName = m_lstDest->GetItemText(newidx).mb_str();
         if (m_Fields.Search(&Dummy, idx))
         {
-            pField          = (TUnitColData *)m_Fields.At(idx);
+            pField          = m_Fields.At(idx);
             Caption         = pField->Caption.GetData();
         }
     }

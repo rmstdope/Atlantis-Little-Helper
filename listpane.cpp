@@ -85,7 +85,7 @@ void CListPane::SetSortName(unsigned short key, const char * sortname)
         if (m_pLayout)
             for (i=0; i<m_pLayout->Count(); i++)
             {
-                p = (CListLayoutItem*)m_pLayout->At(i);
+                p = m_pLayout->At(i);
                 if (0==stricmp(p->m_Name, m_SortKey[key]))
                 {
                     width  = GetColumnWidth(i);
@@ -107,7 +107,7 @@ void CListPane::SetSortName(unsigned short key, const char * sortname)
         if (m_pLayout)
             for (i=0; i<m_pLayout->Count(); i++)
             {
-                p = (CListLayoutItem*)m_pLayout->At(i);
+                p = m_pLayout->At(i);
                 if (m_SortKey[key] && (0==stricmp(p->m_Name, m_SortKey[key])))
                 {
                     S.Format("%d ", key+1);
@@ -151,7 +151,7 @@ void CListPane::SetLayout()
     if (m_pLayout)
         for (i=0; i<m_pLayout->Count(); i++)
         {
-            p = (CListLayoutItem*)m_pLayout->At(i);
+            p = m_pLayout->At(i);
 
             InsertColumn(i, wxString::FromAscii(p->m_Caption), (p->m_Flags&LIST_FLAG_ALIGN_RIGHT)?wxLIST_FORMAT_RIGHT:wxLIST_FORMAT_LEFT, p->m_Width);
         }
@@ -181,7 +181,7 @@ void CListPane::SetData(eSelMode selmode, long seldata, BOOL FullUpdate)
             info.m_itemId = row;
             for (col=0; col<m_pLayout->Count(); col++)
             {
-                layoutitem = (CListLayoutItem*)m_pLayout->At(col);
+                layoutitem = m_pLayout->At(col);
 
                 info.m_text.Empty();
                 info.m_col= col;

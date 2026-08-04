@@ -27,14 +27,12 @@
 #include "data.h"
 
 #include "cstr.h"
-#include "collection.h"
 #include "cfgfile.h"
 #include "files.h"
 #include "atlaparser.h"
 #include "consts.h"
 #include "consts_ah.h"
 #include "objs.h"
-#include "hash.h"
 
 #include "ahapp.h"
 
@@ -672,13 +670,13 @@ void CLand::AddNewEdgeStruct(const char * name, int direction)
 
 //=============================================================
 
-CStrStrColl * CUnit::m_PropertyGroupsColl = NULL;
+std::multimap<std::string,std::string> * CUnit::m_PropertyGroupsColl = NULL;
 CStr          CUnit::m_CustomFlagNames[UNIT_CUSTOM_FLAG_COUNT];
 BOOL          CUnit::m_CustomFlagNamesLoaded = FALSE;
 
 
 
-CStrStrColl * CUnit::GetPropertyGroups()
+std::multimap<std::string,std::string> * CUnit::GetPropertyGroups()
 {
     return m_PropertyGroupsColl;
 }
@@ -1165,62 +1163,145 @@ void CStruct::ResetNormalProperties()
 
 //=============================================================
 
-CBaseColl::CBaseColl() : CCollection()
-{
-}
-
-CBaseColl::CBaseColl(int nDelta) : CCollection(nDelta)
-{
-}
+CBaseColl::CBaseColl() {}
+CBaseColl::CBaseColl(int /*nDelta*/) {}
 
 void CBaseColl::FreeItem(void * pItem)
 {
     if (pItem)
     {
         CBaseObject * pBase = (CBaseObject*)pItem;
-
         pBase->Done();
         delete pBase;
     }
 }
 
 //-------------------------------------------------------------
+// CBaseCollById: sorted by Id, owns items (FreeItem deletes)
 
-CBaseCollById::CBaseCollById() : CSortedCollection()
-{
-}
-
-CBaseCollById::CBaseCollById(int nDelta) : CSortedCollection(nDelta)
-{
-}
+CBaseCollById::CBaseCollById() {}
+CBaseCollById::CBaseCollById(int /*nDelta*/) {}
 
 void CBaseCollById::FreeItem(void * pItem)
 {
     if (pItem)
     {
         CBaseObject * pBase = (CBaseObject*)pItem;
-
         pBase->Done();
         delete pBase;
     }
 }
 
+int CBaseCollById::Compare(void * pItem1, void * pItem2) const
+{
+    long id1 = ((CBaseObject*)pItem1)->Id;
+    long id2 = ((CBaseObject*)pItem2)->Id;
+    if (id1 > id2) return  1;
+    if (id1 < id2) return -1;
+    return 0;
+}
+
+BOOL CBaseCollById::Insert(void * pItem)
+{
+    int lo = 0, hi = (int)m_items.size();
+    while (lo < hi)
+    {
+        int mid = (lo + hi) / 2;
+        int cmp = Compare(m_items[mid], pItem);
+        if      (cmp < 0) lo = mid + 1;
+        else if (cmp > 0) hi = mid;
+        else              return FALSE; // duplicate
+    }
+    m_items.insert(m_items.begin() + lo, (CBaseObject*)pItem);
+    return TRUE;
+}
+
+BOOL CBaseCollById::Search(void * pItem, int & nIndex) const
+{
+    int lo = 0, hi = (int)m_items.size();
+    while (lo < hi)
+    {
+        int mid = (lo + hi) / 2;
+        int cmp = Compare(m_items[mid], pItem);
+        if (cmp < 0) lo = mid + 1;
+        else         hi = mid;
+    }
+    nIndex = lo;
+    return (lo < (int)m_items.size() && Compare(m_items[lo], pItem) == 0);
+}
+
 //-------------------------------------------------------------
 
-int  CBaseCollById::Compare(void * pItem1, void * pItem2)
+int  CBaseCollByName::Compare(void * pItem1, void * pItem2) const
 {
     CBaseObject * pBase1 = (CBaseObject*)pItem1;
     CBaseObject * pBase2 = (CBaseObject*)pItem2;
-
-    if (pBase1->Id > pBase2->Id)
-        return 1;
-    else
-        if (pBase1->Id < pBase2->Id)
-            return -1;
-        else
-            return 0;
+    return stricmp(pBase1->Name.GetData(), pBase2->Name.GetData());
 }
 
+//-------------------------------------------------------------
+// CProductColl: sorted by ShortName, owns items
+
+BOOL CProductColl::Insert(void * pItem)
+{
+    int lo = 0, hi = (int)m_items.size();
+    while (lo < hi)
+    {
+        int mid = (lo + hi) / 2;
+        int cmp = Compare(m_items[mid], pItem);
+        if      (cmp < 0) lo = mid + 1;
+        else if (cmp > 0) hi = mid;
+        else              return FALSE;
+    }
+    m_items.insert(m_items.begin() + lo, (CProduct*)pItem);
+    return TRUE;
+}
+
+BOOL CProductColl::Search(void * pItem, int & nIndex) const
+{
+    int lo = 0, hi = (int)m_items.size();
+    while (lo < hi)
+    {
+        int mid = (lo + hi) / 2;
+        int cmp = Compare(m_items[mid], pItem);
+        if (cmp < 0) lo = mid + 1;
+        else         hi = mid;
+    }
+    nIndex = lo;
+    return (lo < (int)m_items.size() && Compare(m_items[lo], pItem) == 0);
+}
+
+//-------------------------------------------------------------
+// CUnitsByHex: sorted by LandId+Id, does NOT own
+
+BOOL CUnitsByHex::Insert(void * pItem)
+{
+    int lo = 0, hi = (int)m_items.size();
+    while (lo < hi)
+    {
+        int mid = (lo + hi) / 2;
+        int cmp = Compare(m_items[mid], pItem);
+        if      (cmp < 0) lo = mid + 1;
+        else if (cmp > 0) hi = mid;
+        else              return FALSE;
+    }
+    m_items.insert(m_items.begin() + lo, (CUnit*)pItem);
+    return TRUE;
+}
+
+BOOL CUnitsByHex::Search(void * pItem, int & nIndex) const
+{
+    int lo = 0, hi = (int)m_items.size();
+    while (lo < hi)
+    {
+        int mid = (lo + hi) / 2;
+        int cmp = Compare(m_items[mid], pItem);
+        if (cmp < 0) lo = mid + 1;
+        else         hi = mid;
+    }
+    nIndex = lo;
+    return (lo < (int)m_items.size() && Compare(m_items[lo], pItem) == 0);
+}
 
 //-------------------------------------------------------------
 
@@ -1230,13 +1311,35 @@ CPlane::~CPlane()
 }
 
 //-------------------------------------------------------------
+// CTaxProdDetailsCollByFaction: sorted by FactionId, owns items
 
-int  CBaseCollByName::Compare(void * pItem1, void * pItem2)
+BOOL CTaxProdDetailsCollByFaction::Insert(void * pItem)
 {
-    CBaseObject * pBase1 = (CBaseObject*)pItem1;
-    CBaseObject * pBase2 = (CBaseObject*)pItem2;
+    int lo = 0, hi = (int)m_items.size();
+    while (lo < hi)
+    {
+        int mid = (lo + hi) / 2;
+        int cmp = Compare(m_items[mid], pItem);
+        if      (cmp < 0) lo = mid + 1;
+        else if (cmp > 0) hi = mid;
+        else              return FALSE;
+    }
+    m_items.insert(m_items.begin() + lo, (CTaxProdDetails*)pItem);
+    return TRUE;
+}
 
-    return stricmp(pBase1->Name.GetData(), pBase2->Name.GetData());
+BOOL CTaxProdDetailsCollByFaction::Search(void * pItem, int & nIndex) const
+{
+    int lo = 0, hi = (int)m_items.size();
+    while (lo < hi)
+    {
+        int mid = (lo + hi) / 2;
+        int cmp = Compare(m_items[mid], pItem);
+        if (cmp < 0) lo = mid + 1;
+        else         hi = mid;
+    }
+    nIndex = lo;
+    return (lo < (int)m_items.size() && Compare(m_items[lo], pItem) == 0);
 }
 
 //-------------------------------------------------------------
@@ -1305,13 +1408,10 @@ BOOL EvaluateBaseObjectByBoxes(CBaseObject * pObj, CStr * Property, eCompareOp *
             if ( !pObj->GetProperty(Property[i].GetData(), type, value, eNormal))
             {
                 // make an empty sValue
-                CStrInt * pSI, SI(Property[i].GetData(), 0);
-                int       idx;
-
-                if (gpApp->m_pAtlantis->m_UnitPropertyTypes.Search(&SI, idx))
+                auto it__ = gpApp->m_pAtlantis->m_UnitPropertyTypes.find(Property[i].GetData());
+                if (it__ != gpApp->m_pAtlantis->m_UnitPropertyTypes.end())
                 {
-                    pSI = (CStrInt*)gpApp->m_pAtlantis->m_UnitPropertyTypes.At(idx);
-                    type = (EValueType)pSI->m_value;
+                    type = (EValueType)it__->second;
                     if (eLong == type)
                         value = 0;
                     else

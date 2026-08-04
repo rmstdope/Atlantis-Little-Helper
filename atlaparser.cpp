@@ -19,10 +19,14 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <vector>
+#include <set>
+#include <unordered_map>
+#include <string>
+#include <algorithm>
 #include "files.h"
 #include "consts.h"
 #include "cstr.h"
-#include "collection.h"
 #include "cfgfile.h"
 
 #include "objs.h"
@@ -157,7 +161,6 @@ BOOL IsInteger(const char * s)
 //======================================================================
 
 CAtlaParser::CAtlaParser()
-            : m_UnitFlagsHash(1)
 {
     int x = 2;
     x = 1/(x-2);
@@ -167,7 +170,7 @@ CAtlaParser::CAtlaParser()
 //----------------------------------------------------------------------
 
 CAtlaParser::CAtlaParser(CGameDataHelper * pHelper)
-            :m_UnitFlagsHash(1), m_sOrderErrors(256)
+            : m_sOrderErrors(256)
 {
     gpDataHelper      = pHelper;
 
@@ -191,24 +194,24 @@ CAtlaParser::CAtlaParser(CGameDataHelper * pHelper)
     m_Errors.Name     = "Errors";
     m_ArcadiaSkills   = FALSE;
 
-    m_UnitFlagsHash.Insert("taxing"                      ,     (void*)UNIT_FLAG_TAXING            );
-    m_UnitFlagsHash.Insert("on guard"                    ,     (void*)UNIT_FLAG_GUARDING          );
-    m_UnitFlagsHash.Insert("avoiding"                    ,     (void*)UNIT_FLAG_AVOIDING          );
-    m_UnitFlagsHash.Insert("behind"                      ,     (void*)UNIT_FLAG_BEHIND            );
-    m_UnitFlagsHash.Insert("revealing unit"              ,     (void*)UNIT_FLAG_REVEALING_UNIT    );
-    m_UnitFlagsHash.Insert("revealing faction"           ,     (void*)UNIT_FLAG_REVEALING_FACTION );
-    m_UnitFlagsHash.Insert("holding"                     ,     (void*)UNIT_FLAG_HOLDING           );
-    m_UnitFlagsHash.Insert("receiving no aid"            ,     (void*)UNIT_FLAG_RECEIVING_NO_AID  );
-    m_UnitFlagsHash.Insert("consuming unit's food"       ,     (void*)UNIT_FLAG_CONSUMING_UNIT    );
-    m_UnitFlagsHash.Insert("consuming faction's food"    ,     (void*)UNIT_FLAG_CONSUMING_FACTION );
-    m_UnitFlagsHash.Insert("won't cross water"           ,     (void*)UNIT_FLAG_NO_CROSS_WATER    );
+    m_UnitFlagsHash["taxing"                      ] = UNIT_FLAG_TAXING            ;
+    m_UnitFlagsHash["on guard"                    ] = UNIT_FLAG_GUARDING          ;
+    m_UnitFlagsHash["avoiding"                    ] = UNIT_FLAG_AVOIDING          ;
+    m_UnitFlagsHash["behind"                      ] = UNIT_FLAG_BEHIND            ;
+    m_UnitFlagsHash["revealing unit"              ] = UNIT_FLAG_REVEALING_UNIT    ;
+    m_UnitFlagsHash["revealing faction"           ] = UNIT_FLAG_REVEALING_FACTION ;
+    m_UnitFlagsHash["holding"                     ] = UNIT_FLAG_HOLDING           ;
+    m_UnitFlagsHash["receiving no aid"            ] = UNIT_FLAG_RECEIVING_NO_AID  ;
+    m_UnitFlagsHash["consuming unit's food"       ] = UNIT_FLAG_CONSUMING_UNIT    ;
+    m_UnitFlagsHash["consuming faction's food"    ] = UNIT_FLAG_CONSUMING_FACTION ;
+    m_UnitFlagsHash["won't cross water"           ] = UNIT_FLAG_NO_CROSS_WATER    ;
     // MZ - Added for Arcadia
-    m_UnitFlagsHash.Insert("sharing"                     ,     (void*)UNIT_FLAG_SHARING           );
+    m_UnitFlagsHash["sharing"                     ] = UNIT_FLAG_SHARING           ;
 
-    m_UnitFlagsHash.Insert("weightless battle spoils"    ,     (void*)UNIT_FLAG_SPOILS            );
-    m_UnitFlagsHash.Insert("flying battle spoils"        ,     (void*)UNIT_FLAG_SPOILS            );
-    m_UnitFlagsHash.Insert("walking battle spoils"       ,     (void*)UNIT_FLAG_SPOILS            );
-    m_UnitFlagsHash.Insert("riding battle spoils"        ,     (void*)UNIT_FLAG_SPOILS            );
+    m_UnitFlagsHash["weightless battle spoils"    ] = UNIT_FLAG_SPOILS            ;
+    m_UnitFlagsHash["flying battle spoils"        ] = UNIT_FLAG_SPOILS            ;
+    m_UnitFlagsHash["walking battle spoils"       ] = UNIT_FLAG_SPOILS            ;
+    m_UnitFlagsHash["riding battle spoils"        ] = UNIT_FLAG_SPOILS            ;
 
 }
 
@@ -217,7 +220,7 @@ CAtlaParser::CAtlaParser(CGameDataHelper * pHelper)
 CAtlaParser::~CAtlaParser()
 {
     Clear();
-    m_UnitFlagsHash.FreeAll();
+    m_UnitFlagsHash.clear();
 }
 
 
@@ -240,16 +243,16 @@ void CAtlaParser::Clear()
 
     m_CrntFactionId = 0;
     m_CrntFactionPwd.Empty();
-    m_OurFactions.FreeAll();
-    m_TaxLandStrs.FreeAll();
-    m_TradeLandStrs.FreeAll();
-    m_BattleLandStrs.FreeAll();
-    m_UnitPropertyNames.FreeAll();
-    m_UnitPropertyTypes.FreeAll();
-    m_LandPropertyNames.FreeAll();
+    m_OurFactions.clear();
+    m_TaxLandStrs.clear();
+    m_TradeLandStrs.clear();
+    m_BattleLandStrs.clear();
+    m_UnitPropertyNames.clear();
+    m_UnitPropertyTypes.clear();
+    m_LandPropertyNames.clear();
     //m_LandPropertyTypes.FreeAll();
 
-    m_TradeUnitIds.DeleteAll();
+    m_TradeUnitIds.clear();
     m_Skills.FreeAll();
     m_Items.FreeAll();
     m_Objects.FreeAll();
@@ -334,7 +337,7 @@ int CAtlaParser::ParseFactionInfo(BOOL GetNo, BOOL Join)
                     pMyFaction->Id  = m_CrntFactionId;
                     if (!m_Factions.Insert(pMyFaction))
                         delete pMyFaction;
-                    m_OurFactions.Insert((void*)m_CrntFactionId);
+                    m_OurFactions.push_back(m_CrntFactionId);
                     if (!Join) gpDataHelper->SetPlayingFaction((long) m_CrntFactionId);
                 }
                 break;
@@ -357,12 +360,11 @@ int CAtlaParser::ParseFactionInfo(BOOL GetNo, BOOL Join)
                 {
                     err = ERR_INV_TURN;
                     if (m_CrntFactionId > 0)
-                        for (i=0; i<(unsigned int)m_OurFactions.Count(); i++)
-                            if ((long)m_OurFactions.At(i)==m_CrntFactionId)
-                            {
-                                m_OurFactions.AtDelete(i);
-                                break;
-                            }
+                    {
+                        auto it = std::find(m_OurFactions.begin(), m_OurFactions.end(), m_CrntFactionId);
+                        if (it != m_OurFactions.end())
+                            m_OurFactions.erase(it);
+                    }
                 }
                 else
                 {
@@ -414,27 +416,18 @@ int  CAtlaParser::ApplyLandFlags()
     CBaseObject  Dummy;
     CUnit      * pUnit;
 
-    for (i=0; i<m_TaxLandStrs.Count(); i++)
-    {
-        s = (const char*)m_TaxLandStrs.At(i);
-        SetLandFlag(s, LAND_TAX);
-    }
+    for (const auto& s : m_TaxLandStrs)
+        SetLandFlag(s.c_str(), LAND_TAX);
 
-    for (i=0; i<m_TradeLandStrs.Count(); i++)
-    {
-        s = (const char*)m_TradeLandStrs.At(i);
-        SetLandFlag(s, LAND_TRADE);
-    }
+    for (const auto& s : m_TradeLandStrs)
+        SetLandFlag(s.c_str(), LAND_TRADE);
 
-    for (i=0; i<m_BattleLandStrs.Count(); i++)
-    {
-        s = (const char*)m_BattleLandStrs.At(i);
-        SetLandFlag(s, LAND_BATTLE);
-    }
+    for (const auto& s : m_BattleLandStrs)
+        SetLandFlag(s.c_str(), LAND_BATTLE);
 
-    for (i=0; i<m_TradeUnitIds.Count(); i++)
+    for (long unitId : m_TradeUnitIds)
     {
-        Dummy.Id = (long)m_TradeUnitIds.At(i);
+        Dummy.Id = unitId;
         if (m_Units.Search(&Dummy, idx))
         {
             pUnit = (CUnit*)m_Units.At(idx);
@@ -442,10 +435,10 @@ int  CAtlaParser::ApplyLandFlags()
         }
     }
 
-    m_TaxLandStrs.FreeAll();
-    m_TradeLandStrs.FreeAll();
-    m_BattleLandStrs.FreeAll();
-    m_TradeUnitIds.DeleteAll();
+    m_TaxLandStrs.clear();
+    m_TradeLandStrs.clear();
+    m_BattleLandStrs.clear();
+    m_TradeUnitIds.clear();
 
 
     return 0;
@@ -559,15 +552,13 @@ BOOL CAtlaParser::ParseOneUnitEvent(CStr & EventLine, BOOL IsEvent, int UnitId)
         {
             p = Buf.GetToken(p, '(', TRIM_ALL);
             p = Buf.GetToken(p, ')', TRIM_ALL);
-            if (!m_TaxLandStrs.Search((void*)Buf.GetData(), idx))
-                m_TaxLandStrs.Insert(strdup(Buf.GetData()));
+            m_TaxLandStrs.insert(Buf.GetData());
         }
         else if (0==stricmp("produces", Buf.GetData()))
         {
             p = Buf.GetToken(p, '(', TRIM_ALL);
             p = Buf.GetToken(p, ')', TRIM_ALL);
-            if (!m_TradeLandStrs.Search((void*)Buf.GetData(), idx))
-                m_TradeLandStrs.Insert(strdup(Buf.GetData()));
+            m_TradeLandStrs.insert(Buf.GetData());
         }
 
         // Performs work, is a trade activity
@@ -583,7 +574,7 @@ BOOL CAtlaParser::ParseOneUnitEvent(CStr & EventLine, BOOL IsEvent, int UnitId)
                 p = Buf.GetToken(EventLine.GetData(), '(', TRIM_ALL);
                 p = Buf.GetToken(p                  , ')', TRIM_ALL);
                 x = atol(Buf.GetData());
-                m_TradeUnitIds.Insert((void*)x);
+                m_TradeUnitIds.insert(x);
 
             }
         }
@@ -2189,10 +2180,11 @@ int CAtlaParser::ParseUnit(CStr & FirstLine, BOOL Join)
             if (pUnit)
             {
                 Line.Normalize();
-                if (m_UnitFlagsHash.Locate(Line.GetData(), data) )
+                auto flagIt = m_UnitFlagsHash.find(Line.GetData());
+                if (flagIt != m_UnitFlagsHash.end())
                 {
-                    pUnit->Flags    |= (unsigned long)data;
-                    pUnit->FlagsOrg |= (unsigned long)data;
+                    pUnit->Flags    |= (unsigned long)flagIt->second;
+                    pUnit->FlagsOrg |= (unsigned long)flagIt->second;
 
                 }
             }
@@ -2661,9 +2653,9 @@ void CAtlaParser::AnalyzeBattle_SummarizeUnits(CBaseColl & Units, CStr & Details
     {
         pUnit = (CUnit*)Units.At(i);
 
-        for (propidx=0; propidx<m_UnitPropertyNames.Count(); propidx++)
+        for (const auto& propnameStr : m_UnitPropertyNames)
         {
-            propname = (const char *) m_UnitPropertyNames.At(propidx);
+            propname = propnameStr.c_str();
             if (!pUnit->GetProperty(propname.GetData(), type, value, eOriginal) || eLong!=type )
                 continue;
             if (propname.FindSubStrR(PRP_SKILL_POSTFIX) == propname.GetLength()-skilllen)
@@ -2850,8 +2842,7 @@ void CAtlaParser::StoreBattle(CStr & Source)
         N3 << "," << S3;
         N3.Normalize();
 
-        if (!m_BattleLandStrs.Search((void*)N3.GetData(), i))
-            m_BattleLandStrs.Insert(strdup(N3.GetData()));
+        m_BattleLandStrs.insert(N3.GetData());
 
         pBattle              = new CBattle;
         pBattle->LandStrId   = N3;
@@ -3394,7 +3385,7 @@ void AddTabbed(CStr & Dest, const char * Src, int Offs)
 
 //----------------------------------------------------------------------
 
-void CAtlaParser::GetUnitList(CCollection * pResultColl, int x, int y, int z)
+void CAtlaParser::GetUnitList(std::vector<CBaseObject*>* pResultColl, int x, int y, int z)
 {
 
     CLand * pLand;
@@ -3403,7 +3394,7 @@ void CAtlaParser::GetUnitList(CCollection * pResultColl, int x, int y, int z)
     pLand = GetLand(x, y, z);
     if (pLand)
         for (i=0; i<pLand->Units.Count(); i++)
-            pResultColl->Insert(pLand->Units.At(i));
+            pResultColl->push_back((CBaseObject*)pLand->Units.At(i));
 }
 
 //-------------------------------------------------------------
@@ -5988,7 +5979,7 @@ void CAtlaParser::AdjustSkillsAfterGivingMen(CUnit * pUnitGive, CUnit * pUnitTak
 {
     int                 idx;
     const char        * propname_days;
-    CStringSortColl     SkillNames(32);
+    std::set<std::string, CaseInsensitiveLess> SkillNames;
     int                 postlen;
     CStr                S, BasePropName, Prop, PropDays, PropStudy;
     CUnit             * tmpunits[2] = {pUnitGive, pUnitTake};
@@ -6049,18 +6040,16 @@ void CAtlaParser::AdjustSkillsAfterGivingMen(CUnit * pUnitGive, CUnit * pUnitTak
             S = propname_days;
             if (S.FindSubStrR(PRP_SKILL_DAYS_POSTFIX) == S.GetLength()-postlen)
             {
-                p = strdup(propname_days);
-                if (!SkillNames.Insert(p))
-                    free(p);
+                SkillNames.insert(propname_days);
             }
             propname_days = tmpunits[i]->GetPropertyName(++idx);
         }
     }
 
     // now handle each skill
-    for (i=0; i<SkillNames.Count(); i++)
+    for (const auto& skillNameStr : SkillNames)
     {
-        propname_days = (const char*)SkillNames.At(i);
+        propname_days = skillNameStr.c_str();
         BasePropName = propname_days;
         BasePropName.DelSubStr(BasePropName.GetLength()-postlen, postlen);
 
@@ -6123,7 +6112,7 @@ void CAtlaParser::AdjustSkillsAfterGivingMen(CUnit * pUnitGive, CUnit * pUnitTak
     }
 
 
-    SkillNames.FreeAll();
+    SkillNames.clear();
 }
 
 //-------------------------------------------------------------
@@ -6428,8 +6417,8 @@ void CAtlaParser::RunOrder_Move(CStr & Line, CStr & ErrorLine, BOOL skiperror, C
 
                     ID = LandCoordToId(X,Y, pLand->pPlane->Id);
                     if (!pUnit->pMovement)
-                        pUnit->pMovement = new CLongColl;
-                    pUnit->pMovement->Insert((void*)ID);
+                        pUnit->pMovement = new std::vector<long>;
+                    pUnit->pMovement->push_back(ID);
 
                     break;
                 }
@@ -6580,12 +6569,12 @@ void CAtlaParser::RunOrder_SailAIII(CStr & Line, CStr & ErrorLine, BOOL skiperro
                     LocA3 = Center;
 
                 if (!pUnit->pMovement)
-                    pUnit->pMovement = new CLongColl;
-                pUnit->pMovement->Insert((void*)ID);
+                    pUnit->pMovement = new std::vector<long>;
+                pUnit->pMovement->push_back(ID);
 
                 if (!pUnit->pMoveA3Points)
-                    pUnit->pMoveA3Points = new CLongColl;
-                pUnit->pMoveA3Points->Insert((void*)LocA3);
+                    pUnit->pMoveA3Points = new std::vector<long>;
+                pUnit->pMoveA3Points->push_back(LocA3);
 
                 break;
             }
@@ -6896,15 +6885,10 @@ BOOL CAtlaParser::ApplyDefaultOrders(BOOL EmptyOnly)
 
 int  CAtlaParser::SetUnitProperty(CUnit * pUnit, const char * name, EValueType type, const void * value, EPropertyType proptype)
 {
-    int       i;
-    CStrInt * pSI;
-
-    if (!m_UnitPropertyNames.Search((void*)name, i))
+    if (m_UnitPropertyNames.find(name) == m_UnitPropertyNames.end())
     {
-        m_UnitPropertyNames.Insert(strdup(name));
-        pSI = new CStrInt(name, (int)type);
-        if (!m_UnitPropertyTypes.Insert(pSI))
-            delete pSI;
+        m_UnitPropertyNames.insert(name);
+        m_UnitPropertyTypes.emplace(name, (int)type);
     }
     return pUnit->SetProperty(name, type, value, proptype);
 }
@@ -6913,16 +6897,7 @@ int  CAtlaParser::SetUnitProperty(CUnit * pUnit, const char * name, EValueType t
 
 int  CAtlaParser::SetLandProperty(CLand * pLand, const char * name, EValueType type, const void * value, EPropertyType proptype)
 {
-    int       i;
-//    CStrInt * pSI;
-
-    if (!m_LandPropertyNames.Search((void*)name, i))
-    {
-        m_LandPropertyNames.Insert(strdup(name));
-//        pSI = new CStrInt(name, (int)type);
-//        if (!m_LandPropertyTypes.Insert(pSI))
-//            delete pSI;
-    }
+    m_LandPropertyNames.insert(name);
     return pLand->SetProperty(name, type, value, proptype);
 }
 
@@ -6987,7 +6962,7 @@ void CAtlaParser::WriteMagesCSV(const char * FName, BOOL vertical, const char * 
 //    const char        * Foundations[3] = {"FORC_", "PATT_", "SPIR_"};
     EValueType          type;
     const void        * value;
-    CStringSortColl     Skills;
+    std::set<std::string, CaseInsensitiveLess> Skills;
     const char        * propname;
     int                 i, n, postlen;
     CStr                S, Line(64);
@@ -7026,8 +7001,7 @@ void CAtlaParser::WriteMagesCSV(const char * FName, BOOL vertical, const char * 
                     if (S.FindSubStrR(PRP_SKILL_POSTFIX) == S.GetLength()-postlen)
                     {
                         S.DelSubStr(S.GetLength()-postlen, postlen);
-                        if (!Skills.Search((void*)S.GetData(), n))
-                            Skills.Insert(strdup(S.GetData()));
+                        Skills.insert(S.GetData());
                     }
                 }
 
@@ -7052,14 +7026,14 @@ void CAtlaParser::WriteMagesCSV(const char * FName, BOOL vertical, const char * 
             Line << EOL_FILE;
             Dest.WriteBuf(Line.GetData(), Line.GetLength());
 
-            for (i=0; i<Skills.Count(); i++)
+            for (const auto& skillName : Skills)
             {
                 Line.Empty();
-                Line << (const char *)Skills.At(i);
+                Line << skillName.c_str();
                 for (idx=0; idx<Mages.Count(); idx++)
                 {
                     pUnit = (CUnit*)Mages.At(idx);
-                    WriteOneMageSkill(Line, (const char *)Skills.At(i), pUnit, separator, format);
+                    WriteOneMageSkill(Line, skillName.c_str(), pUnit, separator, format);
                 }
                 Line << EOL_FILE;
                 Dest.WriteBuf(Line.GetData(), Line.GetLength());
@@ -7068,8 +7042,8 @@ void CAtlaParser::WriteMagesCSV(const char * FName, BOOL vertical, const char * 
         else
         {
             Line << "Id" << separator << "Name";
-            for (i=0; i<Skills.Count(); i++)
-                Line << separator << (const char *)Skills.At(i);
+            for (const auto& skillName : Skills)
+                Line << separator << skillName.c_str();
             Line << EOL_FILE;
             Dest.WriteBuf(Line.GetData(), Line.GetLength());
 
@@ -7079,8 +7053,8 @@ void CAtlaParser::WriteMagesCSV(const char * FName, BOOL vertical, const char * 
                 pUnit = (CUnit*)Mages.At(idx);
                 Line.Empty();
                 Line << pUnit->Id << separator << pUnit->Name;
-                for (i=0; i<Skills.Count(); i++)
-                    WriteOneMageSkill(Line, (const char *)Skills.At(i), pUnit, separator, format);
+                for (const auto& skillName : Skills)
+                    WriteOneMageSkill(Line, skillName.c_str(), pUnit, separator, format);
 
                 Line << EOL_FILE;
                 Dest.WriteBuf(Line.GetData(), Line.GetLength());
@@ -7093,7 +7067,7 @@ void CAtlaParser::WriteMagesCSV(const char * FName, BOOL vertical, const char * 
 
 
     Mages.DeleteAll();
-    Skills.FreeAll();
+    Skills.clear();
 }
 
 //-------------------------------------------------------------
@@ -7105,8 +7079,8 @@ void CAtlaParser::LookupAdvancedResourceVisibility(CUnit * pUnit, CLand * pLand)
     const void        * value;
     CStr                S;
     int                 propidx, postlen;
-    CLongColl           Levels;
-    CBufColl            Resources;
+    std::vector<long>        Levels;
+    std::vector<std::string> Resources;
     long                level;
     int                 i, idx;
     CProduct            Dummy;
@@ -7126,10 +7100,10 @@ void CAtlaParser::LookupAdvancedResourceVisibility(CUnit * pUnit, CLand * pLand)
                 if (gpDataHelper->CanSeeAdvResources(S.GetData(), pLand->TerrainType.GetData(), Levels, Resources))
                 {
                     level = (long)value;
-                    for (i=0; i<Levels.Count(); i++)
-                        if (level >= (long)Levels.At(i))
+                    for (i=0; i<(int)Levels.size(); i++)
+                        if (level >= Levels[i])
                         {
-                            Dummy.ShortName = (const char *)Resources.At(i);
+                            Dummy.ShortName = Resources[i].c_str();
                             if (!pLand->Products.Search(&Dummy, idx))
                             {
                                 pProd = new CProduct;
@@ -7146,8 +7120,8 @@ void CAtlaParser::LookupAdvancedResourceVisibility(CUnit * pUnit, CLand * pLand)
         propname = pUnit->GetPropertyName(++propidx);
     }
 
-    Levels.FreeAll();
-    Resources.FreeAll();
+    Levels.clear();
+    Resources.clear();
 }
 
 //-------------------------------------------------------------

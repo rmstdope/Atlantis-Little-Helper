@@ -20,10 +20,11 @@
 #ifndef __AH_MAP_PANE_INCL__
 #define __AH_MAP_PANE_INCL__
 
+#include <vector>
+#include <string>
 
 class CLand;
 class CPlane;
-class CCollection;
 
 #define SHOW_COORD   0x0001
 #define SHOW_NAMES   0x0002
@@ -38,19 +39,6 @@ enum {
     CENTER
 };
 
-
-//---------------------------------------------------------------------
-
-class CBrushColl : public CCollection
-{
-public:
-    CBrushColl() : CCollection() {};
-    CBrushColl(int nDelta) : CCollection(nDelta) {};
-protected:
-    virtual void FreeItem(void * pItem) { delete (wxBrush*)pItem; };
-};
-
-//---------------------------------------------------------------------
 
 class CEdgeStructProperties
 {
@@ -70,19 +58,7 @@ public:
 };
 
 
-class CEdgePropColl : public CSortedCollection
-{
-public:
-    CEdgePropColl()           : CSortedCollection() {};
-    CEdgePropColl(int nDelta) : CSortedCollection(nDelta) {};
-protected:
-    virtual void FreeItem(void * pItem) { delete (CEdgeStructProperties*)pItem; };
-    virtual int  Compare(void * pItem1, void * pItem2)
-    {
-        return stricmp( ((CEdgeStructProperties*)pItem1)->name.GetData(),
-                        ((CEdgeStructProperties*)pItem2)->name.GetData() );
-    }
-};
+using CEdgePropColl = std::vector<CEdgeStructProperties*>;
 
 //---------------------------------------------------------------------
 
@@ -136,7 +112,7 @@ public:
 
     BOOL        m_bAdvancedIcons;
 
-    CLongColl   m_HexSizes;
+    std::vector<long>   m_HexSizes;
 
 
 protected:
@@ -227,14 +203,14 @@ protected:
     int            m_HexIcons[7];
     int            SymLeft, SymBottom;
 
-    CBrushColl     m_TerrainBrushes;
-    CBufColl       m_TerrainNames;
+    std::vector<wxBrush*>  m_TerrainBrushes;
+    std::vector<std::string> m_TerrainNames;
     int            m_UnknownColorIdx;
 
     CEdgePropColl  m_EdgeProps;
 
-    CCollection  * m_pCities;
-    CCollection  * m_pTrackHexes;
+    CBaseCollById  * m_pCities;
+    std::vector<long> * m_pTrackHexes;
 
     CAhFrame     * m_pFrame;
 

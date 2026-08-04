@@ -20,6 +20,8 @@
 #ifndef __LIST_PANE_H__
 #define __LIST_PANE_H__
 
+#include <vector>
+
 
 #define LIST_FLAG_ALIGN_RIGHT   0x0001
 
@@ -54,13 +56,17 @@ public:
 
 //--------------------------------------------------------------------
 
-class CListLayout : public CCollection
+class CListLayout
 {
 public:
-    CListLayout() : CCollection(16) {};
-    ~CListLayout()  {FreeAll();};
-protected:
-    virtual void FreeItem(void * pItem) { if (pItem) delete (CListLayoutItem*)pItem; };
+    CListLayout() {};
+    ~CListLayout() { for (auto* p : m_items) if (p) delete p; };
+    void Insert(CListLayoutItem* p) { m_items.push_back(p); }
+    void FreeAll() { for (auto* p : m_items) if (p) delete p; m_items.clear(); }
+    int Count() const { return (int)m_items.size(); }
+    CListLayoutItem* At(int i) { return m_items[i]; }
+private:
+    std::vector<CListLayoutItem*> m_items;
 };
 
 //--------------------------------------------------------------------

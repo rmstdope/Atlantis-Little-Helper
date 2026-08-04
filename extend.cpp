@@ -20,14 +20,12 @@
 #include "stdhdr.h"
 
 #include "cstr.h"
-#include "collection.h"
 #include "cfgfile.h"
 #include "files.h"
 #include "atlaparser.h"
 #include "consts.h"
 #include "consts_ah.h"
 #include "objs.h"
-#include "hash.h"
 
 #include "ahapp.h"
 
@@ -149,25 +147,22 @@ extern "C" PyObject * unitfltr_getproperty(PyObject *self, PyObject* args)
     const void    * value;
 
     if (!PyArg_ParseTuple(args, "s", &propname) || !gpUnit)
-        return Py_BuildValue("s", NULL);
+        Py_RETURN_NONE;
 
     if (!gpUnit->GetProperty(propname, type, value, eNormal) )
     {
         // make default empty value
-        CStrInt * pSI, SI(propname, 0);
-        int       idx;
-
-        if (gpApp->m_pAtlantis->m_UnitPropertyTypes.Search(&SI, idx))
         {
-            pSI = (CStrInt*)gpApp->m_pAtlantis->m_UnitPropertyTypes.At(idx);
-            type = (EValueType)pSI->m_value;
-            if (eLong == type)
-                value = 0;
+            auto it__ = gpApp->m_pAtlantis->m_UnitPropertyTypes.find(propname);
+            if (it__ != gpApp->m_pAtlantis->m_UnitPropertyTypes.end())
+            {
+                type = (EValueType)it__->second;
+                if (eLong == type) value = 0;
+                else               value = "";
+            }
             else
-                value = "";
+                Py_RETURN_NONE;
         }
-        else
-            return Py_BuildValue("s", NULL);
     }
 
     if (eLong==type)

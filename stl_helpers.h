@@ -17,35 +17,25 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef __AH_SPLIT_UNIT_DIALOG_INCL__
-#define __AH_SPLIT_UNIT_DIALOG_INCL__
+#ifndef __AH_STL_HELPERS_H__
+#define __AH_STL_HELPERS_H__
 
-#include <vector>
+#include <string>
+#ifdef _WIN32
+#  include <string.h>   // _stricmp
+#else
+#  include <strings.h>  // strcasecmp
+#endif
 
-
-
-class CUnitSplitDlg : public CResizableDlg
-{
-public:
-    CUnitSplitDlg(wxWindow *parent, CUnit * pUnit);
-    ~CUnitSplitDlg();
-
-private:
-    void ScanProperties();
-
-    void OnCancel       (wxCommandEvent& event);
-    void OnOk           (wxCommandEvent& event);
-
-    CUnit         * m_pUnit         ;
-    std::vector<wxSpinCtrl*> m_SplitControls   ;
-
-    wxButton      * m_btnOk         ;
-    wxButton      * m_btnCancel     ;
-    wxSpinCtrl    * m_spinUnitCount ;
-    wxTextCtrl    * m_textNewCommand;
-
-    DECLARE_EVENT_TABLE()
+// Comparator for case-insensitive std::set<std::string>
+struct CaseInsensitiveLess {
+    bool operator()(const std::string& a, const std::string& b) const {
+#ifdef _WIN32
+        return _stricmp(a.c_str(), b.c_str()) < 0;
+#else
+        return strcasecmp(a.c_str(), b.c_str()) < 0;
+#endif
+    }
 };
 
-
-#endif
+#endif // __AH_STL_HELPERS_H__

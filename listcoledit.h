@@ -20,6 +20,9 @@
 #ifndef __AH_LIST_COL_EDIT_INCL__
 #define __AH_LIST_COL_EDIT_INCL__
 
+#include <vector>
+#include <algorithm>
+
 //--------------------------------------------------------------------------
 
 class TUnitColData
@@ -33,18 +36,37 @@ public:
 
 //--------------------------------------------------------------------------
 
-class CUnitColDataColl : public CSortedCollection
+class CUnitColDataColl
 {
 public:
-    CUnitColDataColl()           : CSortedCollection() {};
-    CUnitColDataColl(int nDelta) : CSortedCollection(nDelta) {};
-protected:
-    virtual void FreeItem(void * pItem) { if (pItem) delete (TUnitColData*)pItem; };
-    virtual int Compare(void * pItem1, void * pItem2) 
-    {
-        return stricmp(((TUnitColData*)pItem1)->PropName.GetData(), 
-                       ((TUnitColData*)pItem2)->PropName.GetData()); 
-    };
+    CUnitColDataColl() {};
+    ~CUnitColDataColl() { FreeAll(); };
+    void FreeAll() { for (auto* p : m_items) delete p; m_items.clear(); }
+    // sorted insert by PropName; returns false if already present
+    bool Insert(TUnitColData* p) {
+        auto it = std::lower_bound(m_items.begin(), m_items.end(), p,
+            [](TUnitColData* a, TUnitColData* b) {
+                return stricmp(a->PropName.GetData(), b->PropName.GetData()) < 0;
+            });
+        if (it != m_items.end() && stricmp((*it)->PropName.GetData(), p->PropName.GetData()) == 0)
+            return false;
+        m_items.insert(it, p);
+        return true;
+    }
+    bool Search(TUnitColData* key, int& idx) {
+        auto it = std::lower_bound(m_items.begin(), m_items.end(), key,
+            [](TUnitColData* a, TUnitColData* b) {
+                return stricmp(a->PropName.GetData(), b->PropName.GetData()) < 0;
+            });
+        if (it != m_items.end() && stricmp((*it)->PropName.GetData(), key->PropName.GetData()) == 0) {
+            idx = (int)(it - m_items.begin());
+            return true;
+        }
+        return false;
+    }
+    TUnitColData* At(int i) { return m_items[i]; }
+private:
+    std::vector<TUnitColData*> m_items;
 };
 
 //--------------------------------------------------------------------------

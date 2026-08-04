@@ -25,13 +25,11 @@
 
 
 #include "cstr.h"
-#include "collection.h"
 #include "cfgfile.h"
 #include "files.h"
 #include "atlaparser.h"
 #include "consts.h"
 #include "consts_ah.h"
-#include "hash.h"
 #include "ahapp.h"
 #include "ahframe.h"
 #include "utildlgs.h"
@@ -232,9 +230,9 @@ void CUnitFilterDlg::Init()
         m_cbProperty[count]->Append(wxT(""));
         m_cbCompare [count]->Append(wxT(""));
 
-        for (i=0; i<gpApp->m_pAtlantis->m_UnitPropertyNames.Count(); i++)
+        for (const auto& propname : gpApp->m_pAtlantis->m_UnitPropertyNames)
         {
-            item = (const char *) gpApp->m_pAtlantis->m_UnitPropertyNames.At(i);
+            item = propname.c_str();
 
             // do not show 'skill days' property
             S = item;
@@ -491,19 +489,16 @@ void CUnitFilterDlg::OnBoxesChange  (wxCommandEvent& event)
                 s1.TrimLeft();
                 s1.TrimRight();
 
-                CStrInt  * pSI, SI(s1.GetData(), 0);
-                int        idx;
-                EValueType type;
-
-                if (gpApp->m_pAtlantis->m_UnitPropertyTypes.Search(&SI, idx))
+                EValueType type = eLong;
                 {
-                    pSI = (CStrInt*)gpApp->m_pAtlantis->m_UnitPropertyTypes.At(idx);
-                    type = (EValueType)pSI->m_value;
-                    if (eCharPtr == type)
-                    {
-                        s3.InsStr("\"", 0, 1);
-                        s3 << '\"';
-                    }
+                    auto it__ = gpApp->m_pAtlantis->m_UnitPropertyTypes.find(s1.GetData());
+                    if (it__ != gpApp->m_pAtlantis->m_UnitPropertyTypes.end())
+                        type = (EValueType)it__->second;
+                }
+                if (eCharPtr == type)
+                {
+                    s3.InsStr("\"", 0, 1);
+                    s3 << '\"';
                 }
 
                 if (!s.IsEmpty())

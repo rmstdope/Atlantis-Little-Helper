@@ -22,13 +22,11 @@
 #include "wx/listctrl.h"
 
 #include "cstr.h"
-#include "collection.h"
 #include "cfgfile.h"
 #include "files.h"
 #include "atlaparser.h"
 #include "consts.h"
 #include "consts_ah.h"
-#include "hash.h"
 
 #include "ahapp.h"
 #include "ahframe.h"

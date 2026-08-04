@@ -25,13 +25,11 @@
 
 
 #include "cstr.h"
-#include "collection.h"
 #include "cfgfile.h"
 #include "files.h"
 #include "atlaparser.h"
 #include "consts.h"
 #include "consts_ah.h"
-#include "hash.h"
 #include "ahapp.h"
 #include "ahframe.h"
 #include "utildlgs.h"
@@ -145,7 +143,7 @@ END_EVENT_TABLE()
 
 
 
-CShowDescriptionListDlg::CShowDescriptionListDlg(wxWindow * parent, const char * title, CCollection * items)
+CShowDescriptionListDlg::CShowDescriptionListDlg(wxWindow * parent, const char * title, CBaseColl * items)
                         :CResizableDlg( parent, title, SZ_SECT_WND_DESCR_LIST)
 {
     long i;

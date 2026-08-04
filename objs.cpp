@@ -20,8 +20,8 @@
 
 #include "stdlib.h"
 #include "string.h"
-#include "collection.h"
 #include <stdarg.h>
+#include <cstdint>
 #include "cstr.h"
 #include "objs.h"
 #include "compat.h"
@@ -109,9 +109,45 @@ int TProperty::SetValue(EValueType     type,
 
 //===================================================================
 
-int TPropertyColl::Compare(void * pItem1, void * pItem2) 
+//===================================================================
+// TPropertyColl
+
+TProperty * TPropertyColl::find(const char * name) const
 {
-    return stricmp( ((TProperty*)pItem1)->m_name,  ((TProperty*)pItem2)->m_name );
+    if (!name) return nullptr;
+    auto it = m_map.find(name);
+    return (it != m_map.end()) ? it->second : nullptr;
+}
+
+void TPropertyColl::insert(TProperty * p)
+{
+    if (!p || !p->m_name) return;
+    m_map[p->m_name] = p;
+}
+
+void TPropertyColl::erase(const char * name)
+{
+    if (!name) return;
+    auto it = m_map.find(name);
+    if (it != m_map.end()) {
+        delete it->second;
+        m_map.erase(it);
+    }
+}
+
+void TPropertyColl::freeAll()
+{
+    for (auto & kv : m_map)
+        delete kv.second;
+    m_map.clear();
+}
+
+TProperty * TPropertyColl::at(int no) const
+{
+    if (no < 0 || (size_t)no >= m_map.size()) return nullptr;
+    auto it = m_map.begin();
+    std::advance(it, no);
+    return it->second;
 }
 
 //===================================================================
@@ -125,102 +161,79 @@ TPropertyHolder::TPropertyHolder()
 
 TPropertyHolder::~TPropertyHolder()
 {
-    m_Properties.FreeAll();
+    m_Properties.freeAll();
 }
 
 //-------------------------------------------------------------------
 
 BOOL TPropertyHolder::GetJustProperty(const char    *  name,
                                       EValueType     & valuetype,
-                                      const void    *& value, // returns pointer to inner location
+                                      const void    *& value,
                                       EPropertyType    proptype 
                                      )       
 {
-    TProperty   Dummy;
-    TProperty * pProp;
-    int         idx;
-    BOOL        Ok = FALSE;
+    TProperty * pProp = m_Properties.find(name);
+    if (!pProp) return FALSE;
 
-    Dummy.m_name = name; //ResolveAlias(name);
-    if (m_Properties.Search(&Dummy, idx))
+    valuetype = pProp->m_type;
+    switch (proptype)
     {
-        pProp     = (TProperty*)m_Properties.At(idx);
-        Ok        = TRUE;
-        valuetype = pProp->m_type;
-        switch (proptype)
-        {
-        case eNormal:
-            value = pProp->m_value;
-            break;
-        case eOriginal:
-            value = pProp->m_valueorg;
-            break;
-        default:
-            value = NULL;
-            Ok    = FALSE;
-        }
+    case eNormal:   value = pProp->m_value;    break;
+    case eOriginal: value = pProp->m_valueorg; break;
+    default:        value = NULL; return FALSE;
     }
-    Dummy.m_name = NULL;
-    return Ok;
+    return TRUE;
 }
 
 //-------------------------------------------------------------------
 
 const char * TPropertyHolder::GetPropertyName(int no)
 {
-    TProperty * pProp;
-
-    pProp = (TProperty*)m_Properties.At(no);
-
-    return pProp?pProp->m_name:NULL;
+    TProperty * pProp = m_Properties.at(no);
+    return pProp ? pProp->m_name : NULL;
 }
 
 //-------------------------------------------------------------------
 
 BOOL TPropertyHolder::GetProperty(const char    *  name,
                                   EValueType     & valuetype,
-                                  const void    *& value, // returns pointer to inner location
+                                  const void    *& value,
                                   EPropertyType    proptype 
                                   )       
 {
-    BOOL        Ok = FALSE;
+    BOOL Ok = FALSE;
 
     name = ResolveAlias(name);
 
     if (GetJustProperty(name, valuetype, value, proptype))
-        Ok = TRUE;
-    else  // check groups. value type must be long!
     {
-        CStrStrColl * pSSC;
-        CStrStr     * pSS;
-        CStrStr       SSDummy;
-        int           i;
-        const void  * x;
-        long          sum = 0;
-        EValueType    vt;
-
-        SSDummy.m_key = name;
-        pSSC          = GetPropertyGroups();
-        if (pSSC && pSSC->Search(&SSDummy, i))
+        Ok = TRUE;
+    }
+    else
+    {
+        auto * pSSC = GetPropertyGroups();
+        if (pSSC)
         {
-            pSS = (CStrStr*)pSSC->At(i);
-            while (pSS && (0==stricmp(SSDummy.m_key, pSS->m_key)))
+            auto range = pSSC->equal_range(name);
+            long sum = 0;
+            for (auto it = range.first; it != range.second; ++it)
             {
-                // do not use recursy so circular list will not destroy stack!
-                if (GetJustProperty(pSS->m_value, vt, x, proptype) && (eLong==vt) )
+                const void * x;
+                EValueType   vt;
+                if (GetJustProperty(it->second.c_str(), vt, x, proptype) && (eLong == vt))
                 {
-                    sum       += (long)x;
-                    valuetype  = eLong;
-                    Ok         = TRUE;
+                    // TProperty encodes eLong values directly in the pointer (pre-existing convention).
+                    // Use intptr_t as the safe intermediary for pointer<->integer round-trips.
+                    sum      += static_cast<long>(reinterpret_cast<intptr_t>(x));
+                    valuetype = eLong;
+                    Ok        = TRUE;
                 }
-                pSS = (CStrStr*)pSSC->At(++i);
             }
             if (Ok)
-                value = (const void *)sum;
+                value = reinterpret_cast<const void*>(static_cast<intptr_t>(sum));
         }
-        SSDummy.m_key = NULL;
     }
-    
+
     return Ok;
 }
 
@@ -232,21 +245,17 @@ int  TPropertyHolder::SetProperty(const char  *  name,
                                   EPropertyType  proptype 
                                  )
 {
-    TProperty   Dummy;
-    TProperty * pProp;
-    int         idx;
-    int         err = PE_OK;
+    int err = PE_OK;
 
     name = ResolveAlias(name);
 
-    Dummy.m_name = name;
-    if (m_Properties.Search(&Dummy, idx))
+    TProperty * pProp = m_Properties.find(name);
+    if (pProp)
     {
-        pProp = (TProperty*)m_Properties.At(idx);
         if (eBoth == proptype)
         {
             err = pProp->SetValue(type, value, eNormal);
-            if (PE_OK==err)
+            if (PE_OK == err)
                 err = pProp->SetValue(type, value, eOriginal);
         }
         else
@@ -255,10 +264,9 @@ int  TPropertyHolder::SetProperty(const char  *  name,
     else
     {
         pProp = new TProperty(name, type, value);
-        m_Properties.Insert(pProp);
+        m_Properties.insert(pProp);
     }
-    
-    Dummy.m_name = NULL;
+
     return err;
 }
 
@@ -266,69 +274,31 @@ int  TPropertyHolder::SetProperty(const char  *  name,
 
 void TPropertyHolder::DelProperty(const char  *  name)
 {
-    TProperty   Dummy;
-    int         idx;
-
     name = ResolveAlias(name);
-
-    Dummy.m_name = name;
-    if (m_Properties.Search(&Dummy, idx))
-        m_Properties.AtFree(idx);
-    Dummy.m_name = NULL;
+    m_Properties.erase(name);
 }
 
 //-------------------------------------------------------------------
 
 void TPropertyHolder::ResetNormalProperties()
 {
-    int         i;
-    TProperty * pProp;
-
-    for (i=0; i<m_Properties.Count(); i++)
+    // Iterate all properties and reset normal values from originals
+    for (int i = 0; i < (int)m_Properties.count(); i++)
     {
-        pProp = (TProperty *)m_Properties.At(i);
-        pProp->SetValue(pProp->m_type, pProp->m_valueorg, eNormal);
+        TProperty * pProp = m_Properties.at(i);
+        if (pProp)
+            pProp->SetValue(pProp->m_type, pProp->m_valueorg, eNormal);
     }
-
 }
 
 //===================================================================
 
-TPropertyHolderColl::TPropertyHolderColl() : CResortableCollection() 
-{
-    m_bDuplicates = TRUE;
-    m_KeyCount    = 0;
-    memset(m_Key, 0, sizeof(m_Key));
-}
-
-//-------------------------------------------------------------------
-
-TPropertyHolderColl::TPropertyHolderColl(int nDelta) : CResortableCollection(nDelta)
-{
-    m_bDuplicates = TRUE;
-    m_KeyCount    = 0;
-    memset(m_Key, 0, sizeof(m_Key));
-}
-                                   
-//-------------------------------------------------------------------
-
-TPropertyHolderColl::~TPropertyHolderColl()
-{
-    ClearKeys();
-}
-
-//-------------------------------------------------------------------
+//===================================================================
 
 void TPropertyHolderColl::ClearKeys()
 {
-    int i;
-
-    for (i=0; i<min(m_KeyCount,MAX_PROP_COLL_KEYS); i++)
-        if (m_Key[i])
-        {
-            free(m_Key[i]);
-            m_Key[i] = NULL;
-        }
+    for (int i = 0; i < min(m_KeyCount, MAX_PROP_COLL_KEYS); i++)
+        if (m_Key[i]) { free(m_Key[i]); m_Key[i] = NULL; }
     m_KeyCount = 0;
 }
 
@@ -336,88 +306,51 @@ void TPropertyHolderColl::ClearKeys()
 
 void TPropertyHolderColl::SetSortMode(const char ** keys, int keycount)
 {
-    int i;
-
     ClearKeys();
-    for (i=0; i<min(keycount,MAX_PROP_COLL_KEYS); i++)
+    for (int i = 0; i < min(keycount, MAX_PROP_COLL_KEYS); i++)
         if (keys[i] && *keys[i])
             m_Key[m_KeyCount++] = strdup(keys[i]);
 
-    CResortableCollection::SetSortMode(m_SortMode^1);
+    std::stable_sort(m_items.begin(), m_items.end(),
+        [this](TPropertyHolder * a, TPropertyHolder * b) { return Compare(a, b) < 0; });
 }
 
 //-------------------------------------------------------------------
 
-void TPropertyHolderColl::FreeItem(void * pItem)
-{
-    if (pItem)
-        delete (TPropertyHolder*) pItem;
-}
-
-//-------------------------------------------------------------------
-
-int TPropertyHolderColl::Compare(void * pItem1, void * pItem2)
+int TPropertyHolderColl::Compare(TPropertyHolder * pItem1, TPropertyHolder * pItem2) const
 {
     int               n, x;
     const void      * p1,  * p2;
     BOOL              Ok1,   Ok2;
     EValueType        t1,    t2; 
 
-    // are both pointers ok?
-    if (!pItem1)
-        if (!pItem2)
-            return 0;
-        else
-            return -1;
-    else
-        if (!pItem2)
-            return 1;
+    if (!pItem1) return !pItem2 ? 0 : -1;
+    if (!pItem2) return 1;
 
-    for (n=0; n<min(m_KeyCount, MAX_PROP_COLL_KEYS); n++)
+    for (n = 0; n < min(m_KeyCount, MAX_PROP_COLL_KEYS); n++)
     {
         Ok1 = ((TPropertyHolder*)pItem1)->GetProperty(m_Key[n], t1, p1);
         Ok2 = ((TPropertyHolder*)pItem2)->GetProperty(m_Key[n], t2, p2);
-    
-        // do we have both properties?
-        if (!Ok1)
-            if (!Ok2)
-                continue;
-            else
-                return -1;
-        else
-            if (!Ok2)
-                return 1;
-        
-        // are the properties of the same type?
-        if (t1!=t2)
-            continue;
+
+        if (!Ok1) { if (!Ok2) continue; else return -1; }
+        else       { if (!Ok2) return 1; }
+
+        if (t1 != t2) continue;
 
         switch (t1)
         {
-        case eLong:  
-            if ( (long)p1 > (long)p2 )
-                return 1;
-            else
-                if ( (long)p1 < (long)p2 )
-                    return -1;
+        case eLong:
+            if ((long)p1 > (long)p2) return  1;
+            if ((long)p1 < (long)p2) return -1;
             break;
         case eCharPtr:
-            if (!p1)
-                if (!p2)
-                    continue;
-                else
-                    return -1;
-            else
-                if (!p2)
-                    return 1;
+            if (!p1) { if (!p2) continue; else return -1; }
+            else       { if (!p2) return 1; }
             x = stricmp((const char*)p1, (const char*)p2);
-            if (0!=x)
-                return x;
-
+            if (x != 0) return x;
             break;
         default:
-            return 0; // can not compare...
-        
+            return 0;
         }
     }
     return 0;

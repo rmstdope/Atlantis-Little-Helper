@@ -19,7 +19,6 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include "collection.h"
 #include "cfgfile.h"
 #include "files.h"
 #include "compat.h"
@@ -75,7 +74,7 @@ void CConfigFile::FreeItem(void * pItem)
 
 //---------------------------------------------------------------------------------
 
-int  CConfigFile::Compare (void * pItem1, void * pItem2)
+int  CConfigFile::Compare (void * pItem1, void * pItem2) const
 {
     int x;
 
@@ -84,6 +83,37 @@ int  CConfigFile::Compare (void * pItem1, void * pItem2)
         return x;
     else
         return SafeCmp( ((CONFIG_PARAM*)pItem1)->szName, ((CONFIG_PARAM*)pItem2)->szName );
+}
+
+//---------------------------------------------------------------------------------
+
+BOOL CConfigFile::Insert(void * pItem)
+{
+    int lo = 0, hi = (int)m_items.size();
+    while (lo < hi)
+    {
+        int mid = (lo + hi) / 2;
+        int cmp = Compare(m_items[mid], pItem);
+        if      (cmp < 0) lo = mid + 1;
+        else if (cmp > 0) hi = mid;
+        else              return FALSE; // duplicate
+    }
+    m_items.insert(m_items.begin() + lo, (CONFIG_PARAM*)pItem);
+    return TRUE;
+}
+
+BOOL CConfigFile::Search(void * pItem, int & nIndex) const
+{
+    int lo = 0, hi = (int)m_items.size();
+    while (lo < hi)
+    {
+        int mid = (lo + hi) / 2;
+        int cmp = Compare(m_items[mid], pItem);
+        if (cmp < 0) lo = mid + 1;
+        else         hi = mid;
+    }
+    nIndex = lo;
+    return (lo < (int)m_items.size() && Compare(m_items[lo], pItem) == 0);
 }
 
 //---------------------------------------------------------------------------------

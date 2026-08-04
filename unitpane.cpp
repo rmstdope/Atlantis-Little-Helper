@@ -23,13 +23,11 @@
 #include "wx/spinctrl.h"
 
 #include "cstr.h"
-#include "collection.h"
 #include "cfgfile.h"
 #include "files.h"
 #include "atlaparser.h"
 #include "consts.h"
 #include "consts_ah.h"
-#include "hash.h"
 
 #include "ahapp.h"
 #include "ahframe.h"
@@ -333,7 +331,7 @@ void CUnitPane::SaveUnitListHdr()
 
         for (i=0; i<m_pLayout->Count(); i++)
         {
-            pLI = (CListLayoutItem*)m_pLayout->At(i);
+            pLI = m_pLayout->At(i);
 
 
             Key.Format("%03d", i);
@@ -428,7 +426,7 @@ void CUnitPane::OnIdle(wxIdleEvent& event)
         int               col = m_ColClicked;
 
         m_ColClicked = -1;
-        p = (CListLayoutItem*)m_pLayout->At(col);
+        p = m_pLayout->At(col);
         if (p)
         {
             wxString choice, message=wxString::FromAscii(p->m_Caption), caption=wxT("Set sort order");
