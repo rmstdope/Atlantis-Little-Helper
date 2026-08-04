@@ -279,6 +279,13 @@ void CMapPane::SavePlaneConfig()
     gpApp->SetConfig(sSection.GetData(), SZ_KEY_HEX_SEL_X      , m_SelHexX                  );
     gpApp->SetConfig(sSection.GetData(), SZ_KEY_HEX_SEL_Y      , m_SelHexY                  );
 
+    if (gpApp->m_pAtlantis)
+    {
+        CLand * pLand = gpApp->m_pAtlantis->GetLand(m_SelHexX, m_SelHexY, m_SelPlane, TRUE);
+        if (pLand)
+            gpApp->SetConfig(sSection.GetData(), SZ_KEY_UNIT_SEL, pLand->guiUnit);
+    }
+
 }
 
 //-------------------------------------------------------------------------
