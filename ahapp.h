@@ -20,6 +20,11 @@
 #ifndef __AH_APP_INCL__
 #define __AH_APP_INCL__
 
+#include <vector>
+#include <set>
+#include <unordered_map>
+#include <string>
+#include "stl_helpers.h"
 
 enum
 {
@@ -200,7 +205,7 @@ public:
     const char *         GetWeatherLine (BOOL IsCurrent, BOOL IsGood, int Zone);
     void                 GetProdDetails (const char * item, TProdDetails & details);
     long                 GetMaxRaceSkillLevel(const char * race, const char * skill, const char * leadership, BOOL IsArcadiaSkillSystem);
-    BOOL                 CanSeeAdvResources(const char * skillname, const char * terrain, CLongColl & Levels, CBufColl & Resources);
+    BOOL                 CanSeeAdvResources(const char * skillname, const char * terrain, std::vector<long> & Levels, std::vector<std::string> & Resources);
     int                  GetAttitudeForFaction(int id);
     void                 SetAttitudeForFaction(int id, int attitude);
 
@@ -233,7 +238,8 @@ public:
     void                 OpenEditsFrame();
     void                 OpenUnitFrameFltr(BOOL PopUpSettings);
     void                 WriteMagesCSV();
-    void                 ShowDescriptionList(CCollection & Items, const char * title); // Collection of CBaseObject
+    void                 ShowDescriptionList(CBaseColl & Items, const char * title); // Collection of CBaseObject
+    void                 ShowDescriptionList(CBaseCollById & Items, const char * title);
 //    void                 ViewSkills(BOOL ViewAll);
     void                 ViewShortNamedObjects(BOOL ViewAll, const char * szSection, const char * szHeader, CBaseColl & ListNew);
     void                 ViewBattlesAll();
@@ -330,7 +336,7 @@ private:
 
 
     CAtlaSortColl        m_Reports;
-    CLongSortColl        m_ReportDates;
+    std::vector<long>    m_ReportDates;
     BOOL                 m_FirstLoad;
     CStr                 m_HexDescrSrc;
     CStr                 m_UnitDescrSrc;
@@ -341,18 +347,18 @@ private:
     CBufColl             m_MoveModes;
     CWeightsColl         m_ItemWeights;
     CConfigFile          m_Config[CONFIG_FILE_COUNT];
-    CStringSortColl      m_ConfigSectionsState;
+    std::set<std::string, CaseInsensitiveLess> m_ConfigSectionsState;
     BOOL                 m_OrdersAreChanged;
     CStr                 m_sTitle;
-    CHashStrToLong       m_OrderHash;
-    CHashStrToLong       m_TradeItemsHash;
-    CHashStrToLong       m_MenHash;
-    CHashStrToLong       m_MaxSkillHash;
-    CHashStrToLong       m_MagicSkillsHash;
+    std::unordered_map<std::string, long> m_OrderHash;
+    std::unordered_map<std::string, long> m_TradeItemsHash;
+    std::unordered_map<std::string, long> m_MenHash;
+    std::unordered_map<std::string, long> m_MaxSkillHash;
+    std::unordered_map<std::string, long> m_MagicSkillsHash;
     int                  m_nStdoutLastPos;
     int                  m_nStderrLastPos;
     CBaseColl            m_Attitudes;
-    CStringSortColl      m_WaterTerrainNames;
+    std::set<std::string, CaseInsensitiveLess> m_WaterTerrainNames;
 
 };
 

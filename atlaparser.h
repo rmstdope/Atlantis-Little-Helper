@@ -21,7 +21,11 @@
 #define __AH_REP_PARSER_H__
 
 #include "data.h"
-#include "hash.h"
+#include "stl_helpers.h"
+#include <vector>
+#include <set>
+#include <unordered_map>
+#include <string>
 
 extern const char * Monthes[];
 
@@ -157,7 +161,7 @@ public:
     CLand    * GetLand(int x, int y, int nPlane, BOOL AdjustForEdge=FALSE);
     CLand    * GetLand(long LandId);
     CLand    * GetLand(const char * landcoords); //  "48,52[,somewhere]"
-    void       GetUnitList(CCollection * pResultColl, int x, int y, int z);
+    void       GetUnitList(std::vector<CBaseObject*>* pResultColl, int x, int y, int z);
     void       CountMenForTheFaction(int FactionId);
     void       ComposeProductsLine(CLand * pLand, const char * eol, CStr & S);
     BOOL       LandStrCoordToId(const char * landcoords, long & id);
@@ -170,7 +174,7 @@ public:
 
     int               m_CrntFactionId;
     CStr              m_CrntFactionPwd;
-    CLongColl         m_OurFactions;
+    std::vector<long>     m_OurFactions;
     CBaseObject       m_Events;
     CBaseObject       m_SecurityEvents;
     CBaseObject       m_HexEvents;
@@ -181,9 +185,9 @@ public:
     CBaseCollById     m_Units;
     CBaseColl         m_Planes;
     long              m_YearMon;    // Current year/month accumulated for all loaded files
-    CStringSortColl   m_UnitPropertyNames;
+    std::set<std::string, CaseInsensitiveLess>   m_UnitPropertyNames;
     std::map<std::string, int> m_UnitPropertyTypes;
-    CStringSortColl   m_LandPropertyNames;
+    std::set<std::string, CaseInsensitiveLess>   m_LandPropertyNames;
     //CStringSortColl   m_LandPropertyTypes;
     CBaseColl         m_Skills;
     CBaseColl         m_Items;
@@ -280,13 +284,13 @@ protected:
 
     CFileReader    * m_pSource;
 
-    CStringSortColl  m_TaxLandStrs;
-    CStringSortColl  m_TradeLandStrs;
-    CStringSortColl  m_BattleLandStrs;
-    CLongSortColl    m_TradeUnitIds;
+    std::set<std::string, CaseInsensitiveLess>  m_TaxLandStrs;
+    std::set<std::string, CaseInsensitiveLess>  m_TradeLandStrs;
+    std::set<std::string, CaseInsensitiveLess>  m_BattleLandStrs;
+    std::set<long>                              m_TradeUnitIds;
     CBaseCollByName  m_PlanesNamed;
     CBaseColl        m_LandsToBeLinked;
-    CHashStrToLong   m_UnitFlagsHash;
+    std::unordered_map<std::string, long>       m_UnitFlagsHash;
     CBaseColl        m_TempSailingEvents;
 
     CLand          * m_pCurLand   ;

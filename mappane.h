@@ -233,7 +233,7 @@ protected:
 
     CEdgePropColl  m_EdgeProps;
 
-    CCollection  * m_pCities;
+    CBaseCollById  * m_pCities;
     CCollection  * m_pTrackHexes;
 
     CAhFrame     * m_pFrame;

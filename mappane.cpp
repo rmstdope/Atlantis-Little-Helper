@@ -2988,7 +2988,7 @@ void CMapPane::DrawSingleTrack(int X, int Y, int wx, int wy, wxDC * pDC, CUnit *
     long           n1;
     int            LocA3;
 
-    if (pUnit->pMovement && pUnit->pMoveA3Points && pUnit->pMoveA3Points->Count() == pUnit->pMovement->Count())
+    if (pUnit->pMovement && pUnit->pMoveA3Points && pUnit->pMoveA3Points->size() == pUnit->pMovement->size())
         Arcadia3Sail = TRUE;
 
     if (Arcadia3Sail && pUnit->GetProperty(PRP_STRUCT_ID, type, (const void *&)n1) && eLong==type)
@@ -3010,7 +3010,7 @@ void CMapPane::DrawSingleTrack(int X, int Y, int wx, int wy, wxDC * pDC, CUnit *
         // NULL, but it might be mutually exclusive with pMoveA3Points?
         return;
     }
-    for (i=0; i<pUnit->pMovement->Count(); i++)
+    for (i=0; i<pUnit->pMovement->size(); i++)
     {
         wx0 = wx;
         wy0 = wy;
@@ -3018,7 +3018,7 @@ void CMapPane::DrawSingleTrack(int X, int Y, int wx, int wy, wxDC * pDC, CUnit *
         wx0_a = wx_a;
         wy0_a = wy_a;
 
-        HexId = (long)pUnit->pMovement->At(i);
+        HexId = (*pUnit->pMovement)[i];
         if (0==copyno)
             m_pTrackHexes->Insert((void*)HexId);
 
@@ -3034,7 +3034,7 @@ void CMapPane::DrawSingleTrack(int X, int Y, int wx, int wy, wxDC * pDC, CUnit *
 
         if (Arcadia3Sail)
         {
-            LocA3 = (long)pUnit->pMoveA3Points->At(i);
+            LocA3 = (*pUnit->pMoveA3Points)[i];
             wx_a = wx; wy_a = wy;
             AdjustForA3Location(wx_a, wy_a, LocA3);
         }
@@ -3052,13 +3052,13 @@ void CMapPane::DrawSingleTrack(int X, int Y, int wx, int wy, wxDC * pDC, CUnit *
         if (Arcadia3Sail)
         {
             pDC->DrawLine(wx0_a, wy0_a, wx_a, wy_a);
-            if (i == pUnit->pMovement->Count()-1)
+            if (i == pUnit->pMovement->size()-1)
                 DrawTrackArrow(pDC, wx0_a, wy0_a, wx_a, wy_a);
         }
         else
         {
             pDC->DrawLine(wx0, wy0, wx, wy);
-            if (i == pUnit->pMovement->Count()-1)
+            if (i == pUnit->pMovement->size()-1)
                 DrawTrackArrow(pDC, wx0, wy0, wx, wy);
         }
     }

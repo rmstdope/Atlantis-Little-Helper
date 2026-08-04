@@ -145,7 +145,7 @@ END_EVENT_TABLE()
 
 
 
-CShowDescriptionListDlg::CShowDescriptionListDlg(wxWindow * parent, const char * title, CCollection * items)
+CShowDescriptionListDlg::CShowDescriptionListDlg(wxWindow * parent, const char * title, CBaseColl * items)
                         :CResizableDlg( parent, title, SZ_SECT_WND_DESCR_LIST)
 {
     long i;

@@ -26,6 +26,7 @@
 #include "objs.h"
 #include <string.h>
 #include <algorithm>
+#include <vector>
 #include "compat.h"
 
 typedef enum {GT=0,GE,   EQ,   LE,   LT,  NE, NOP} eCompareOp;
@@ -402,8 +403,8 @@ public:
     CStr            Events;
     CStr            StudyingSkill;
     CStr            ProducingItem;
-    CLongColl     * pMovement; // Collection of ids of hexes to move through
-    CLongColl     * pMoveA3Points; // Collection of Arcadia III locations for movement
+    std::vector<long> * pMovement; // Collection of ids of hexes to move through
+    std::vector<long> * pMoveA3Points; // Collection of Arcadia III locations for movement
     CBaseCollById * pStudents;
     unsigned long   Flags;
     unsigned long   FlagsOrg;
@@ -633,7 +634,7 @@ public:
     void         GetProdDetails    (const char * item, TProdDetails & details);
     long         MaxSkillLevel     (const char * race, const char * skill, const char * leadership, BOOL IsArcadiaSkillSystem);
     BOOL         ImmediateProdCheck();
-    BOOL         CanSeeAdvResources(const char * skillname, const char * terrain, CLongColl & Levels, CBufColl & Resources);
+    BOOL         CanSeeAdvResources(const char * skillname, const char * terrain, std::vector<long> & Levels, std::vector<std::string> & Resources);
     BOOL         ShowMoveWarnings  ();
     BOOL         IsRawMagicSkill   (const char * skillname);
     int          GetAttitudeForFaction(int id);

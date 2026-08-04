@@ -20,6 +20,8 @@
 #ifndef __AH_UTIL_DIALOGS_INCL__
 #define __AH_UTIL_DIALOGS_INCL__
 
+#include "data.h"
+
 
 
 //--------------------------------------------------------------------------
@@ -41,15 +43,15 @@ private:
 class CShowDescriptionListDlg : public CResizableDlg
 {
 public:
-    CShowDescriptionListDlg(wxWindow * parent, const char * title, CCollection * items);
+    CShowDescriptionListDlg(wxWindow * parent, const char * title, CBaseColl * items);
 
 private:
     void OnButton(wxCommandEvent& event);
     void OnLBDClick(wxCommandEvent & event);
     void OnLBSelect(wxCommandEvent & event);
     void SaveAs();
-    wxListBox   * m_pList;
-    CCollection * m_pItems;
+    wxListBox * m_pList;
+    CBaseColl * m_pItems;
 
     DECLARE_EVENT_TABLE()
 };
