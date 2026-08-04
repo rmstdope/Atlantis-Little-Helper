@@ -42,7 +42,7 @@ public:
     wxCheckBox    * m_chUseSelectedHexes;
     wxCheckBox    * m_chDisplayOnMap;
 
-    CStr            m_TrackingGroup;
+    std::string            m_TrackingGroup;
     BOOL            m_bFindGoneUnits;
 
 private:
@@ -64,9 +64,9 @@ private:
 //    void OnSetNameSelect(wxCommandEvent& event);
     void OnBoxesChange  (wxCommandEvent& event);
 
-    CStr         m_sControllingConfig;
-    CStr         m_sCurrentSection;
-    CStr         m_sSavedConfigSelected;
+    std::string         m_sControllingConfig;
+    std::string         m_sCurrentSection;
+    std::string         m_sSavedConfigSelected;
     BOOL         m_IsSaving;
     time_t       m_lastselect;
     wxButton   * m_btnSet   ;

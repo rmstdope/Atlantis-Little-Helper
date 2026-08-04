@@ -24,7 +24,7 @@
 #include "wx/dialog.h"
 
 
-#include "cstr.h"
+#include "string_utils.h"
 #include "cfgfile.h"
 #include "files.h"
 #include "atlaparser.h"
@@ -63,7 +63,7 @@ CUnitFlagsDlg::CUnitFlagsDlg(wxWindow *parent, E_FLAG_EDIT_MODE Mode, unsigned i
     wxBoxSizer      * sizer   ;
     wxStaticText    * st;
     int               i, x;
-    CStr              sKey;
+    std::string              sKey;
     const char      * p;
 
     // Zero all pointers first
@@ -94,9 +94,9 @@ CUnitFlagsDlg::CUnitFlagsDlg(wxWindow *parent, E_FLAG_EDIT_MODE Mode, unsigned i
     x = 1;
     for (i=0; i<UNIT_CUSTOM_FLAG_COUNT; i++)
     {
-        sKey.Empty();
+        sKey.clear();
         sKey << (long)i;
-        p = gpApp->GetConfig(SZ_SECT_UNIT_FLAG_NAMES, sKey.GetData());
+        p = gpApp->GetConfig(SZ_SECT_UNIT_FLAG_NAMES, sKey.c_str());
 
         sizer    = new wxBoxSizer( wxHORIZONTAL );
         if (eThisUnit == m_EditMode || eAll == m_EditMode || eManyUnits == m_EditMode)
@@ -106,9 +106,9 @@ CUnitFlagsDlg::CUnitFlagsDlg(wxWindow *parent, E_FLAG_EDIT_MODE Mode, unsigned i
                 m_chbUnitFlags[i]->SetValue(TRUE);
             sizer->Add(m_chbUnitFlags[i] , 0, wxALIGN_CENTER | wxLEFT | wxRIGHT , SPACER_GENERIC);
         }
-        sKey.Empty();
+        sKey.clear();
         sKey << (long)(i+1) << ". ";
-        st = new wxStaticText(this, -1, wxString::FromAscii(sKey.GetData()));
+        st = new wxStaticText(this, -1, wxString::FromAscii(sKey.c_str()));
         m_txtUnitFlagText[i]  = new wxTextCtrl(this, -1, wxString::FromAscii(p) ); //, wxDefaultPosition, wxDefaultSize); //wxSize(100,30));
         m_txtUnitFlagText[i]->SetEditable(eNames == m_EditMode);
 
@@ -190,15 +190,15 @@ CUnitFlagsDlg::~CUnitFlagsDlg()
 void CUnitFlagsDlg::OnOk(wxCommandEvent& event)
 {
     int i, x;
-    CStr sKey;
+    std::string sKey;
 
     if (eNames == m_EditMode)
     {
         for (i=0; i<UNIT_CUSTOM_FLAG_COUNT; i++)
         {
-            sKey.Empty();
+            sKey.clear();
             sKey << (long)i;
-            gpApp->SetConfig(SZ_SECT_UNIT_FLAG_NAMES, sKey.GetData(), m_txtUnitFlagText[i]->GetValue().mb_str());
+            gpApp->SetConfig(SZ_SECT_UNIT_FLAG_NAMES, sKey.c_str(), m_txtUnitFlagText[i]->GetValue().mb_str());
         }
         CUnit::ResetCustomFlagNames();
     }
@@ -282,7 +282,7 @@ CMapFlagDlg::CMapFlagDlg(wxWindow *parent, CLand * pLand, wxPoint & position)
 
     for (i=0; i<LAND_FLAG_COUNT; i++)
     {
-        m_FlagText[i]  = new wxTextCtrl(this, -1, wxString::FromAscii(pLand->FlagText[i].GetData()), wxDefaultPosition, wxDefaultSize); //wxSize(100,30));
+        m_FlagText[i]  = new wxTextCtrl(this, -1, wxString::FromAscii(pLand->FlagText[i].c_str()), wxDefaultPosition, wxDefaultSize); //wxSize(100,30));
         sizer          = new wxBoxSizer( wxHORIZONTAL );
         st             = new wxStaticText(this, -1, wxString::FromAscii(LandFlagLabel[i]));
 

@@ -19,7 +19,7 @@
 
 #include <stdio.h>
 #include "files.h"
-#include "cstr.h"
+#include "string_utils.h"
 
 #include "stdhdr.h"
 //#include "wx/msgdlg.h"
@@ -28,8 +28,9 @@
 
 
 
-CFileReader::CFileReader() : m_Queue(256)
+CFileReader::CFileReader()
 {
+    m_Queue.reserve(256);
     m_f     = NULL;
     m_nPos  = 0;
     m_nSize = 0;
@@ -74,10 +75,10 @@ void CFileReader::Close()
 BOOL CFileReader::GetNextChar(char & ch)
 {
     // return first queued char
-    if (m_Queue.GetLength()>0)
+    if (m_Queue.size()>0)
     {
-        ch = m_Queue.GetData()[0];
-        m_Queue.DelCh(0);
+        ch = m_Queue.c_str()[0];
+        DelCh(m_Queue, 0);
         return TRUE;
     }
 
@@ -99,32 +100,32 @@ BOOL CFileReader::GetNextChar(char & ch)
 
 void CFileReader::QueueChar(char ch)
 {
-    m_Queue.AddCh(ch);
+    AddCh(m_Queue, ch);
 }
 
 //---------------------------------------------------------------------
 
 void CFileReader::QueueString(const char * p, int n)
 {
-    m_Queue.AddStr(p, n);
+    AddStr(m_Queue, p, n);
 }
 
 //---------------------------------------------------------------------
 
-int CFileReader::GetNextLine(CStr & s)
+int CFileReader::GetNextLine(std::string & s)
 {
     char ch;
 
-    s.Empty();
+    s.clear();
 
     while (GetNextChar(ch))
     {
-        s.AddCh(ch);
+        AddCh(s, ch);
         if ('\n'==ch)
             break;
     }
 
-    return (!s.IsEmpty());
+    return (!s.empty());
 }
 
 //---------------------------------------------------------------------
@@ -145,24 +146,24 @@ BOOL CFileReader::ReadMore()
     {
         if (ferror(m_f))
         {
-            CStr S;
-            S.Format("Error reading file %s", m_FileName.GetData());
-            wxMessageBox(S.GetData());
+            std::string S;
+            Format(S, "Error reading file %s", m_FileName.c_str());
+            wxMessageBox(S.c_str());
         }
         else
         {
-            CStr S;
-            S.Format("No error reading file %s, but still read 0 bytes", m_FileName.GetData());
-            wxMessageBox(S.GetData());
+            std::string S;
+            Format(S, "No error reading file %s, but still read 0 bytes", m_FileName.c_str());
+            wxMessageBox(S.c_str());
         }
     }
     else
     {
         FILE * f;
-        CStr   name;
+        std::string   name;
 
-        name.Format("%s_read_", m_FileName.GetData());
-        if (f=fopen(name.GetData(), "ab"))
+        Format(name, "%s_read_", m_FileName.c_str());
+        if (f=fopen(name.c_str(), "ab"))
         {
             size_t n;
             n = fwrite(m_Buf, 1, m_nSize, f);
@@ -170,9 +171,9 @@ BOOL CFileReader::ReadMore()
         }
         else
         {
-            CStr S;
-            S.Format("can not open log file %s for writing", name.GetData());
-            wxMessageBox(S.GetData());
+            std::string S;
+            Format(S, "can not open log file %s for writing", name.c_str());
+            wxMessageBox(S.c_str());
         }
 
     }
@@ -205,7 +206,7 @@ BOOL CFileReader::ReadMore()
             {
                 //wxString S;
                 // The stupid wxString does not compile on some configurations
-                //S = wxString::Format(wxString("Error reading file %s"), m_FileName.GetData());
+                //S = wxString::Format(wxString("Error reading file %s"), m_FileName.c_str());
                 //wxMessageBox(S);
                 break;
             }
@@ -222,8 +223,9 @@ BOOL CFileReader::ReadMore()
 //=====================================================================
 
 
-CFileWriter::CFileWriter() : m_s(1024)
+CFileWriter::CFileWriter()
 {
+    m_s.reserve(1024);
     m_f     = NULL;
 }
 
@@ -266,8 +268,8 @@ BOOL CFileWriter::WriteBuf(const char * szData, long nDataSize)
     if (!m_f)
         return FALSE;
 
-    m_s.AddBuf(szData, nDataSize);
-    if (m_s.GetLength() > RW_BUF_SIZE)
+    AddBuf(m_s, szData, nDataSize);
+    if (m_s.size() > RW_BUF_SIZE)
         return Flush();
 
     return TRUE;
@@ -279,15 +281,14 @@ BOOL CFileWriter::Flush()
 {
     size_t n;
 
-    n = fwrite(m_s.GetData(), 1, m_s.GetLength(), m_f);
+    n = fwrite(m_s.c_str(), 1, m_s.size(), m_f);
 
-    if (n < (size_t)m_s.GetLength())
+    if (n < (size_t)m_s.size())
         return FALSE;
 
-    m_s.Empty();
+    m_s.clear();
     return TRUE;
 
 }
 
 //---------------------------------------------------------------------
-

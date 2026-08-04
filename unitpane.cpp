@@ -22,7 +22,7 @@
 #include "wx/listctrl.h"
 #include "wx/spinctrl.h"
 
-#include "cstr.h"
+#include "string_utils.h"
 #include "cfgfile.h"
 #include "files.h"
 #include "atlaparser.h"
@@ -261,31 +261,31 @@ void CUnitPane::LoadUnitListHdr()
     int               i;
     const char      * szName;
     const char      * szValue;
-    CStr              S(32);
+    std::string S;
     int               width;
     unsigned long     flags;
 
     m_pLayout->FreeAll();
-    i = gpApp->GetSectionFirst(m_sConfigSectionHdr.GetData(), szName, szValue);
+    i = gpApp->GetSectionFirst(m_sConfigSectionHdr.c_str(), szName, szValue);
     while (i >= 0)
     {
-        szValue = S.GetToken(szValue, ',');  width = atol(S.GetData());
-        szValue = S.GetToken(szValue, ',');  flags = atol(S.GetData());
-        szValue = S.GetToken(szValue, ',');
+        szValue = GetToken(S, szValue, ',');  width = atol(S.c_str());
+        szValue = GetToken(S, szValue, ',');  flags = atol(S.c_str());
+        szValue = GetToken(S, szValue, ',');
         while (szValue && (*szValue<=' '))
             szValue++;
         if ( width>0 && szValue && strlen(szValue)>0 )
         {
-            pLI = new CListLayoutItem(S.GetData(), szValue, width, flags);
+            pLI = new CListLayoutItem(S.c_str(), szValue, width, flags);
             m_pLayout->Insert(pLI);
         }
-        i = gpApp->GetSectionNext(i, m_sConfigSectionHdr.GetData(), szName, szValue);
+        i = gpApp->GetSectionNext(i, m_sConfigSectionHdr.c_str(), szName, szValue);
     }
 
     SetLayout();
-    SetSortName(0,  gpApp->GetConfig(m_sConfigSection.GetData(), SZ_KEY_SORT1));
-    SetSortName(1,  gpApp->GetConfig(m_sConfigSection.GetData(), SZ_KEY_SORT2));
-    SetSortName(2,  gpApp->GetConfig(m_sConfigSection.GetData(), SZ_KEY_SORT3));
+    SetSortName(0,  gpApp->GetConfig(m_sConfigSection.c_str(), SZ_KEY_SORT1));
+    SetSortName(1,  gpApp->GetConfig(m_sConfigSection.c_str(), SZ_KEY_SORT2));
+    SetSortName(2,  gpApp->GetConfig(m_sConfigSection.c_str(), SZ_KEY_SORT3));
     Sort();
 }
 
@@ -321,27 +321,27 @@ void CUnitPane::SaveUnitListHdr()
 {
     CListLayoutItem * pLI;
     int               i;
-    CStr              Key;
-    CStr              Val;
+    std::string              Key;
+    std::string              Val;
 
     if (m_pLayout)
     {
         // we are naming items dynamically, so remove them first!
-        gpApp->RemoveSection(m_sConfigSectionHdr.GetData());
+        gpApp->RemoveSection(m_sConfigSectionHdr.c_str());
 
         for (i=0; i<m_pLayout->Count(); i++)
         {
             pLI = m_pLayout->At(i);
 
 
-            Key.Format("%03d", i);
-            Val.Format("%d, %lu, %s, %s", GetColumnWidth(i), pLI->m_Flags, pLI->m_Name, pLI->m_Caption);
-            gpApp->SetConfig(m_sConfigSectionHdr.GetData(), Key.GetData(), Val.GetData());
+            Format(Key, "%03d", i);
+            Format(Val, "%d, %lu, %s, %s", GetColumnWidth(i), pLI->m_Flags, pLI->m_Name, pLI->m_Caption);
+            gpApp->SetConfig(m_sConfigSectionHdr.c_str(), Key.c_str(), Val.c_str());
         }
 
-        gpApp->SetConfig(m_sConfigSection.GetData(), SZ_KEY_SORT1, GetSortName(0 ) );
-        gpApp->SetConfig(m_sConfigSection.GetData(), SZ_KEY_SORT2, GetSortName(1 ) );
-        gpApp->SetConfig(m_sConfigSection.GetData(), SZ_KEY_SORT3, GetSortName(2 ) );
+        gpApp->SetConfig(m_sConfigSection.c_str(), SZ_KEY_SORT1, GetSortName(0));
+        gpApp->SetConfig(m_sConfigSection.c_str(), SZ_KEY_SORT2, GetSortName(1));
+        gpApp->SetConfig(m_sConfigSection.c_str(), SZ_KEY_SORT3, GetSortName(2));
     }
 }
 
@@ -438,7 +438,7 @@ void CUnitPane::OnIdle(wxIdleEvent& event)
 
             choice = wxGetSingleChoice(message, caption, NUM_SORTS-1, choices, m_pParent);
 
-            if (!choice.IsEmpty())
+            if (!choice.empty())
             {
                 int key;
                 if (0==stricmp(choice.mb_str(), "primary"))
@@ -672,7 +672,7 @@ void CUnitPane::OnPopupMenuAddUnitToTracking (wxCommandEvent& WXUNUSED(event))
     long         idx   = GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
     CUnit      * pUnit = GetUnit(idx);
     int          sectidx;
-    CStr         S;
+    std::string         S;
     const char * szName;
     const char * szValue;
     BOOL         found = FALSE;
@@ -681,18 +681,18 @@ void CUnitPane::OnPopupMenuAddUnitToTracking (wxCommandEvent& WXUNUSED(event))
     sectidx = gpApp->GetSectionFirst(SZ_SECT_UNIT_TRACKING, szName, szValue);
     while (sectidx >= 0)
     {
-        if (!S.IsEmpty())
+        if (!S.empty())
             S << ",";
         S << szName;
         sectidx = gpApp->GetSectionNext(sectidx, SZ_SECT_UNIT_TRACKING, szName, szValue);
     }
-    if (S.IsEmpty())
+    if (S.empty())
         S = "Default";
 
 
     if (pUnit || ManyUnits)
     {
-        CComboboxDlg dlg(this, "Add unit to a tracking group", "Select a group to add unit to.\nTo create a new group, just type in it's name.", S.GetData());
+        CComboboxDlg dlg(this, "Add unit to a tracking group", "Select a group to add unit to.\nTo create a new group, just type in it's name.", S.c_str());
         if (wxID_OK == dlg.ShowModal())
         {
 
@@ -702,11 +702,11 @@ void CUnitPane::OnPopupMenuAddUnitToTracking (wxCommandEvent& WXUNUSED(event))
                 pUnit = GetUnit(idx);
                 found = FALSE;
 
-                szValue = gpApp->GetConfig(SZ_SECT_UNIT_TRACKING, dlg.m_Choice.GetData());
+                szValue = gpApp->GetConfig(SZ_SECT_UNIT_TRACKING, dlg.m_Choice.c_str());
                 while (szValue && *szValue)
                 {
-                    szValue = S.GetToken(szValue, ',');
-                    if (atol(S.GetData()) == pUnit->Id)
+                    szValue = GetToken(S, szValue, ',');
+                    if (atol(S.c_str()) == pUnit->Id)
                     {
                         found = TRUE;
                         break;
@@ -716,12 +716,12 @@ void CUnitPane::OnPopupMenuAddUnitToTracking (wxCommandEvent& WXUNUSED(event))
                     wxMessageBox(wxT("The unit is already in the group."));
                 else
                 {
-                    S = gpApp->GetConfig(SZ_SECT_UNIT_TRACKING, dlg.m_Choice.GetData());
-                    S.TrimRight(TRIM_ALL);
-                    if (!S.IsEmpty())
+                    S = gpApp->GetConfig(SZ_SECT_UNIT_TRACKING, dlg.m_Choice.c_str());
+                    TrimRight(S, TRIM_ALL);
+                    if (!S.empty())
                         S << ",";
                     S << pUnit->Id;
-                    gpApp->SetConfig(SZ_SECT_UNIT_TRACKING, dlg.m_Choice.GetData(), S.GetData());
+                    gpApp->SetConfig(SZ_SECT_UNIT_TRACKING, dlg.m_Choice.c_str(), S.c_str());
                 }
 
                 idx   = GetNextItem(idx, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
@@ -793,8 +793,8 @@ void CUnitPane::OnPopupMenuIssueOrders(wxCommandEvent& event)
 
     if (wxID_OK != dlg.ShowModal())
         return;
-    dlg.m_Text.TrimRight(TRIM_ALL);
-    if (dlg.m_Text.IsEmpty())
+    TrimRight(dlg.m_Text, TRIM_ALL);
+    if (dlg.m_Text.empty())
         return;
 
 
@@ -809,8 +809,8 @@ void CUnitPane::OnPopupMenuIssueOrders(wxCommandEvent& event)
         if (pUnit->IsOurs)
         {
             Changed = TRUE;
-            pUnit->Orders.TrimRight(TRIM_ALL);
-            if (!pUnit->Orders.IsEmpty())
+            TrimRight(pUnit->Orders, TRIM_ALL);
+            if (!pUnit->Orders.empty())
                 pUnit->Orders << EOL_SCR;
             pUnit->Orders << dlg.m_Text;
         }

@@ -94,15 +94,15 @@ enum eHexIncl {HexNew,
                HexAll,
                };
 
-void FontToStr(const wxFont * font, CStr & s);
+void FontToStr(const wxFont * font, std::string & s);
 wxFont * NewFontFromStr(const char * p);
 
 void StrToColor(wxColour * cr, const char * p);
 void ColorToStr(char * p, wxColour * cr);
-void MakePathRelative(const char * cur_dir, CStr & path);
-void MakePathFull(const char * cur_dir, CStr & path);
-void GetDirFromPath(const char * path, CStr & dir);
-void GetFileFromPath(const char * path, CStr & file);
+void MakePathRelative(const char * cur_dir, std::string & path);
+void MakePathFull(const char * cur_dir, std::string & path);
+void GetDirFromPath(const char * path, std::string & dir);
+void GetFileFromPath(const char * path, std::string & file);
 
 #define APPLY_COLOR_DELTA(x) ((unsigned char )(max(min((int)x-gpApp->m_Brightness_Delta,255),0)))
 
@@ -223,7 +223,7 @@ public:
 
     BOOL                 GetOrdersChanged(){return m_OrdersAreChanged;};
     void                 SetOrdersChanged(BOOL Changed);
-    void                 StdRedirectReadMore(BOOL FromStdout, CStr & sData);
+    void                 StdRedirectReadMore(BOOL FromStdout, std::string & sData);
     void                 CheckRedirectedOutputFiles();
     void                 RerunOrders();
     void                 SetAllLandUnitFlags();
@@ -264,7 +264,7 @@ private:
     void                 PreLoadReport();
     void                 RedrawTracks();
     void                 OpenMapFrame();
-    void                 GetShortFactName(CStr & S, int FactionId);
+    void                 GetShortFactName(std::string & S, int FactionId);
     void                 SaveLandFlags();
     void                 LoadLandFlags();
     void                 UpdateEdgeStructs();
@@ -278,8 +278,8 @@ private:
     int                  GetConfigFileNo(const char * szSection);
     void                 UpgradeConfigFiles();
     void                 UpgradeConfigByFactionId();
-    void                 ComposeConfigOrdersSection(CStr & Sect, int FactionId);
-    BOOL                 GetExportHexOptions(CStr & FName, CStr & FMode, SAVE_HEX_OPTIONS & options, eHexIncl & HexIncl,
+    void                 ComposeConfigOrdersSection(std::string & Sect, int FactionId);
+    BOOL                 GetExportHexOptions(std::string & FName, std::string & FMode, SAVE_HEX_OPTIONS & options, eHexIncl & HexIncl,
                                              bool & InclTurnNoAcl);
     void                 ExportOneHex(CFileWriter & Dest, CPlane * pPlane, CLand * pLand, SAVE_HEX_OPTIONS & options, bool InclTurnNoAcl, bool OnlyNew);
     void                 SetMapFrameTitle();
@@ -292,9 +292,9 @@ private:
     std::vector<std::unique_ptr<CAtlaParser>> m_Reports;
     std::vector<long>    m_ReportDates;
     BOOL                 m_FirstLoad;
-    CStr                 m_HexDescrSrc;
-    CStr                 m_UnitDescrSrc;
-    CStr                 m_MsgSrc;
+    std::string                 m_HexDescrSrc;
+    std::string                 m_UnitDescrSrc;
+    std::string                 m_MsgSrc;
     long                 m_SelUnitIdx;
     int                  m_layout;
     BOOL                 m_DisableErrs;
@@ -304,7 +304,7 @@ private:
     CConfigFile          m_Config[CONFIG_FILE_COUNT];
     std::set<std::string, CaseInsensitiveLess> m_ConfigSectionsState;
     BOOL                 m_OrdersAreChanged;
-    CStr                 m_sTitle;
+    std::string                 m_sTitle;
     std::unordered_map<std::string, long> m_OrderHash;
     std::unordered_map<std::string, long> m_TradeItemsHash;
     std::unordered_map<std::string, long> m_MenHash;

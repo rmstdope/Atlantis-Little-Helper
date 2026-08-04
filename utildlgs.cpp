@@ -24,7 +24,7 @@
 #include "wx/dialog.h"
 
 
-#include "cstr.h"
+#include "string_utils.h"
 #include "cfgfile.h"
 #include "files.h"
 #include "atlaparser.h"
@@ -53,7 +53,7 @@ CShowOneDescriptionDlg::CShowOneDescriptionDlg(wxWindow * parent, const char * t
                                            wxTE_MULTILINE | wxTE_READONLY | wxHSCROLL );
     const char * p;
     int          count = 0;
-    CStr         S;
+    std::string         S;
 
     topsizer->Add(  pText  ,
                     1,            // make vertically  stretchable
@@ -84,9 +84,9 @@ CShowOneDescriptionDlg::CShowOneDescriptionDlg(wxWindow * parent, const char * t
     p = description;
     while (p && *p && count++ < 3)
     {
-        p = S.GetToken(p, '(', TRIM_ALL);
-        p = S.GetToken(p, ')', TRIM_ALL);
-        if (gpApp->SelectLand(S.GetData()))
+        p = GetToken(S, p, '(', TRIM_ALL);
+        p = GetToken(S, p, ')', TRIM_ALL);
+        if (gpApp->SelectLand(S.c_str()))
             break;
     }
 }
@@ -160,7 +160,7 @@ CShowDescriptionListDlg::CShowDescriptionListDlg(wxWindow * parent, const char *
     for (i=0; i<items->Count(); i++)
     {
         pObj = (CBaseObject * )items->At(i);
-        m_pList->Append(wxString::FromAscii(pObj->Name.GetData()), (void *)i);
+        m_pList->Append(wxString::FromAscii(pObj->Name.c_str()), (void *)i);
     }
 
 
@@ -227,7 +227,7 @@ void CShowDescriptionListDlg::SaveAs()
 {
     int            err, i;
     CBaseObject  * pObj;
-    CStr           S(128);
+    std::string S;
 
     wxString CurrentDir = wxGetCwd();
     wxFileDialog dialog(GetParent(),
@@ -248,9 +248,9 @@ void CShowDescriptionListDlg::SaveAs()
             {
                 pObj = (CBaseObject*)m_pItems->At(i);
                 S    = pObj->Description;
-                S.TrimRight(TRIM_ALL);
+                TrimRight(S, TRIM_ALL);
                 S << EOL_FILE;
-                F.WriteBuf(S.GetData(), S.GetLength());
+                F.WriteBuf(S.c_str(), S.size());
             }
             F.Close();
         }
@@ -270,7 +270,7 @@ void CShowDescriptionListDlg::OnLBDClick(wxCommandEvent & event)
     pObj = (CBaseObject*)m_pItems->At((long)m_pList->GetClientData(m_pList->GetSelection()));
     if (pObj)
     {
-        CShowOneDescriptionDlg dlg(GetParent(), pObj->Name.GetData(), pObj->Description.GetData());
+        CShowOneDescriptionDlg dlg(GetParent(), pObj->Name.c_str(), pObj->Description.c_str());
         dlg.ShowModal();
         m_pList->SetFocus();
     }
@@ -281,18 +281,18 @@ void CShowDescriptionListDlg::OnLBDClick(wxCommandEvent & event)
 void CShowDescriptionListDlg::OnLBSelect(wxCommandEvent & event)
 {
     CBaseObject  * pObj;
-    CStr           S;
+    std::string           S;
     const char   * p;
 
     pObj = (CBaseObject*)m_pItems->At((long)m_pList->GetClientData(m_pList->GetSelection()));
     if (pObj)
     {
-        p = pObj->Name.GetData();
+        p = pObj->Name.c_str();
         while (p && *p)
         {
-            p = S.GetToken(p, '(', TRIM_ALL);
-            p = S.GetToken(p, ')', TRIM_ALL);
-            if (gpApp->SelectLand(S.GetData()))
+            p = GetToken(S, p, '(', TRIM_ALL);
+            p = GetToken(S, p, ')', TRIM_ALL);
+            if (gpApp->SelectLand(S.c_str()))
                 break;
         }
     }
@@ -329,7 +329,7 @@ CExportMagesCSVDlg::CExportMagesCSVDlg(wxWindow * parent, const char * fname)
     m_pSeparator = new wxComboBox(this, -1, wxT(""), wxDefaultPosition, wxDefaultSize, 0, NULL, wxCB_DROPDOWN);
     m_pSeparator->Append(wxT(","));
     m_pSeparator->Append(wxT(";"));
-    p = SkipSpaces(gpApp->GetConfig(m_sConfigSection.GetData(), SZ_KEY_SEPARATOR));
+    p = SkipSpaces(gpApp->GetConfig(m_sConfigSection.c_str(), SZ_KEY_SEPARATOR));
     if (p && *p)
         m_pSeparator->SetValue(wxString::FromAscii(p));
     else
@@ -338,7 +338,7 @@ CExportMagesCSVDlg::CExportMagesCSVDlg(wxWindow * parent, const char * fname)
     m_pOrientation = new wxComboBox(this, -1, wxT(""), wxDefaultPosition, wxDefaultSize, 0, NULL, wxCB_DROPDOWN );
     m_pOrientation->Append(wxT(SZ_VERTICAL));
     m_pOrientation->Append(wxT(SZ_HORIZONTAL));
-    p = SkipSpaces(gpApp->GetConfig(m_sConfigSection.GetData(), SZ_KEY_ORIENTATION));
+    p = SkipSpaces(gpApp->GetConfig(m_sConfigSection.c_str(), SZ_KEY_ORIENTATION));
     if (p && *p)
         m_pOrientation->SetValue(wxString::FromAscii(p));
     else
@@ -348,7 +348,7 @@ CExportMagesCSVDlg::CExportMagesCSVDlg(wxWindow * parent, const char * fname)
     m_pRadio2 = new wxRadioButton(this, MCSV_RADIO_2, wxT("days"));
     m_pRadio3 = new wxRadioButton(this, MCSV_RADIO_3, wxT("level(days)"));
 
-    m_nFormat = atol(gpApp->GetConfig(m_sConfigSection.GetData(), SZ_KEY_FORMAT));
+    m_nFormat = atol(gpApp->GetConfig(m_sConfigSection.c_str(), SZ_KEY_FORMAT));
     switch (m_nFormat)
     {
         case 0:   m_pRadio1->SetValue(TRUE); break;
@@ -436,9 +436,9 @@ void CExportMagesCSVDlg::OnButton(wxCommandEvent& event)
     {
     case wxID_OK:
         S = m_pSeparator->GetValue();
-        gpApp->SetConfig(m_sConfigSection.GetData(), SZ_KEY_SEPARATOR, S.mb_str());
+        gpApp->SetConfig(m_sConfigSection.c_str(), SZ_KEY_SEPARATOR, S.mb_str());
         S = m_pOrientation->GetValue();
-        gpApp->SetConfig(m_sConfigSection.GetData(), SZ_KEY_ORIENTATION, S.mb_str());
+        gpApp->SetConfig(m_sConfigSection.c_str(), SZ_KEY_ORIENTATION, S.mb_str());
         m_nFormat = 0;
         if (m_pRadio1->GetValue())
             m_nFormat = 0;
@@ -446,9 +446,9 @@ void CExportMagesCSVDlg::OnButton(wxCommandEvent& event)
             m_nFormat = 1;
         else if (m_pRadio3->GetValue())
             m_nFormat = 2;
-        S.Empty();
+        S.clear();
         S << m_nFormat;
-        gpApp->SetConfig(m_sConfigSection.GetData(), SZ_KEY_FORMAT, S.mb_str());
+        gpApp->SetConfig(m_sConfigSection.c_str(), SZ_KEY_FORMAT, S.mb_str());
 
         StoreSize();
         EndModal(wxID_OK);
@@ -497,8 +497,8 @@ CHexExportDlg::CHexExportDlg(wxWindow *parent)
     wxBoxSizer * sizer   ;
     wxBoxSizer * colsizer;
     wxStaticBox* box;
-    CStr         ConfigKey;
-    CStr         S;
+    std::string         ConfigKey;
+    std::string         S;
 
     m_btnOk           = new wxButton     (this, wxID_OK    , wxT("Ok")    );
     m_btnCancel       = new wxButton     (this, wxID_CANCEL, wxT("Cancel") );
@@ -629,7 +629,7 @@ CComboboxDlg::CComboboxDlg(wxWindow *parent, const char * szTitle, const char * 
 {
     wxBoxSizer * topsizer;
     wxBoxSizer * sizer   ;
-    CStr         S;
+    std::string         S;
     wxButton   * btnOk;
     wxButton   * btnCancel;
 
@@ -650,8 +650,8 @@ CComboboxDlg::CComboboxDlg(wxWindow *parent, const char * szTitle, const char * 
 
     while (szChoices && *szChoices)
     {
-        szChoices = S.GetToken(szChoices, ',');
-        m_cbChoices->Append(wxString::FromAscii(S.GetData()));
+        szChoices = GetToken(S, szChoices, ',');
+        m_cbChoices->Append(wxString::FromAscii(S.c_str()));
     }
 
     SetAutoLayout( TRUE );     // tell dialog to use sizer
@@ -688,7 +688,7 @@ CGetTextDlg::CGetTextDlg(wxWindow *parent, const char * szTitle, const char * sz
 {
     wxBoxSizer * topsizer;
     wxBoxSizer * sizer   ;
-    CStr         S;
+    std::string         S;
     wxButton   * btnOk;
     wxButton   * btnCancel;
 
@@ -745,7 +745,7 @@ CMessageBoxSwitchableDlg::CMessageBoxSwitchableDlg(wxWindow *parent, const char 
                          :wxDialog(parent, -1, wxString::FromAscii(szTitle), wxDefaultPosition, wxDefaultSize, wxDEFAULT_DIALOG_STYLE)
 {
     wxBoxSizer * topsizer;
-    CStr         S;
+    std::string         S;
     wxButton   * btnOk;
 
     btnOk          = new wxButton     (this, wxID_OK    , wxT("Ok")    );
@@ -771,9 +771,9 @@ CMessageBoxSwitchableDlg::CMessageBoxSwitchableDlg(wxWindow *parent, const char 
 
 void ShowMessageBoxSwitchable(const char * szTitle, const char * szMessage, const char * szConfigKey)
 {
-    CStr S;
+    std::string S;
     S = gpApp->GetConfig(SZ_SECT_DO_NOT_SHOW_THESE, szConfigKey);
-    if (atol(S.GetData()) > 0)
+    if (atol(S.c_str()) > 0)
         return;
 
     CMessageBoxSwitchableDlg dlg(NULL, szTitle, szMessage);

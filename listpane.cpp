@@ -67,7 +67,7 @@ void CListPane::SetSortName(unsigned short key, const char * sortname)
     int               i;
     CListLayoutItem * p;
     wxListItem        item;
-    CStr              S;
+    std::string              S;
     int               width;
 
     if (!sortname)
@@ -110,11 +110,11 @@ void CListPane::SetSortName(unsigned short key, const char * sortname)
                 p = m_pLayout->At(i);
                 if (m_SortKey[key] && (0==stricmp(p->m_Name, m_SortKey[key])))
                 {
-                    S.Format("%d ", key+1);
+                    Format(S, "%d ", key+1);
                     S << p->m_Caption;
                     width  = GetColumnWidth(i);
                     item.m_mask   = wxLIST_MASK_TEXT;
-                    item.SetText(wxString::FromAscii(S.GetData()));
+                    item.SetText(wxString::FromAscii(S.c_str()));
                     SetColumn(i, item);
                     SetColumnWidth(i, width);
                 }
@@ -183,7 +183,7 @@ void CListPane::SetData(eSelMode selmode, long seldata, BOOL FullUpdate)
             {
                 layoutitem = m_pLayout->At(col);
 
-                info.m_text.Empty();
+                info.m_text.clear();
                 info.m_col= col;
 
                 if (dataitem->GetProperty(layoutitem->m_Name, valuetype, value ))

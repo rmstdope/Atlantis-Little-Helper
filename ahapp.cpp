@@ -23,7 +23,7 @@
 #include "wx/listctrl.h"
 //#include "wx/resource.h"
 
-#include "cstr.h"
+#include "string_utils.h"
 #include "cfgfile.h"
 #include "files.h"
 #include "atlaparser.h"
@@ -68,14 +68,16 @@ static CGameDataHelper ThisGameDataHelper;
 
 //=========================================================================
 
-CAhApp::CAhApp() : m_HexDescrSrc    (128),
-                   m_UnitDescrSrc   (128),
+CAhApp::CAhApp() : m_HexDescrSrc    (),
+                   m_UnitDescrSrc   (),
                    m_OrderHash      (  3),
                    m_TradeItemsHash (  2),
                    m_MenHash        (  2),
                    m_MaxSkillHash   (  6),
                    m_MagicSkillsHash(  6)
 {
+    m_HexDescrSrc.reserve(128);
+    m_UnitDescrSrc.reserve(128);
     m_FirstLoad         = TRUE;
     m_OrdersAreChanged  = FALSE;
     m_CommentsChanged   = FALSE;
@@ -118,7 +120,7 @@ bool CAhApp::OnInit()
     const char      * p;
     const char      * szName;
     const char      * szValue;
-    CStr              S(32), S2;
+    std::string S, S2;
     int               sectidx;
     std::set<std::pair<std::string,std::string>> CollDedup;
 
@@ -157,9 +159,9 @@ bool CAhApp::OnInit()
 
     for (i=0; i<FONT_COUNT; i++)
     {
-        S.Empty();
+        S.clear();
         S << (long)i;
-        szValue = GetConfig(SZ_SECT_FONTS_2, S.GetData());
+        szValue = GetConfig(SZ_SECT_FONTS_2, S.c_str());
         m_Fonts[i] = NewFontFromStr(szValue);
     }
 
@@ -175,8 +177,8 @@ bool CAhApp::OnInit()
     {
         while (szValue && *szValue)
         {
-            szValue = S.GetToken(szValue, ',');
-            std::string key(szName), val(S.GetData());
+            szValue = GetToken(S, szValue, ',');
+            std::string key(szName), val(S.c_str());
             if (CollDedup.insert({key, val}).second)
                 m_UnitPropertyGroups.emplace(key, val);
         }
@@ -198,7 +200,7 @@ bool CAhApp::OnInit()
                 {
                     S = "Group name \"";
                     S << lastKey.c_str() << "\" can be resolved as alias for \"" << p << "\"!\r\n";
-                    ShowError(S.GetData(), S.GetLength(), TRUE);
+                    ShowError(S.c_str(), S.size(), TRUE);
                 }
             }
         }
@@ -216,9 +218,9 @@ bool CAhApp::OnInit()
     int idx;
     while (p && *p)
     {
-        p = SkipSpaces(S.GetToken(p, ','));
-        if (!S.IsEmpty())
-            m_WaterTerrainNames.insert(S.ToLower());
+        p = SkipSpaces(GetToken(S, p, ','));
+        if (!S.empty())
+            m_WaterTerrainNames.insert(ToLower(S));
     }
 
 
@@ -283,9 +285,9 @@ bool CAhApp::OnInit()
     p = SkipSpaces(GetConfig(SZ_SECT_COMMON, SZ_KEY_VALID_ORDERS));
     while (p && *p)
     {
-        p = SkipSpaces(S.GetToken(p, ','));
-        if (!S.IsEmpty())
-            m_OrderHash.emplace(S.GetData(), -1L);
+        p = SkipSpaces(GetToken(S, p, ','));
+        if (!S.empty())
+            m_OrderHash.emplace(S.c_str(), -1L);
     }
 //    m_OrderHash.Dbg_Print();
 
@@ -293,18 +295,18 @@ bool CAhApp::OnInit()
     p = SkipSpaces(GetConfig(SZ_SECT_UNITPROP_GROUPS,  PRP_TRADE_ITEMS));
     while (p && *p)
     {
-        p = SkipSpaces(S.GetToken(p, ','));
-        if (!S.IsEmpty())
-            m_TradeItemsHash.emplace(S.GetData(), -1L);
+        p = SkipSpaces(GetToken(S, p, ','));
+        if (!S.empty())
+            m_TradeItemsHash.emplace(S.c_str(), -1L);
     }
 
     // All the men hash
     p = SkipSpaces(GetConfig(SZ_SECT_UNITPROP_GROUPS,  PRP_MEN));
     while (p && *p)
     {
-        p = SkipSpaces(S.GetToken(p, ','));
-        if (!S.IsEmpty())
-            m_MenHash.emplace(S.GetData(), -1L);
+        p = SkipSpaces(GetToken(S, p, ','));
+        if (!S.empty())
+            m_MenHash.emplace(S.c_str(), -1L);
     }
 
     // Magic skills hash
@@ -312,13 +314,13 @@ bool CAhApp::OnInit()
     while (p && *p)
     {
         int x;
-        p = SkipSpaces(S.GetToken(p, ','));
-        x = S.FindSubStrR(PRP_SKILL_POSTFIX);
+        p = SkipSpaces(GetToken(S, p, ','));
+        x = FindSubStrR(S, PRP_SKILL_POSTFIX);
         if (x>=0)
-            S.DelSubStr(x, S.GetLength()-x+1);
+            DelSubStr(S, x, S.size()-x+1);
 
-        if (!S.IsEmpty())
-            m_MagicSkillsHash.emplace(S.GetData(), -1L);
+        if (!S.empty())
+            m_MagicSkillsHash.emplace(S.c_str(), -1L);
     }
 
     // Read list of year/month for report
@@ -362,15 +364,15 @@ bool CAhApp::OnInit()
     else
         if (atol(GetConfig(SZ_SECT_COMMON, SZ_KEY_LOAD_REP)) && (((int)m_ReportDates.size()) > 0) )
         {
-            S.Empty();
+            S.clear();
             S << m_ReportDates[(int)m_ReportDates.size()-1];
-            S2 = GetConfig(SZ_SECT_REPORTS, S.GetData());
-            const char * p = S2.GetData();
+            S2 = GetConfig(SZ_SECT_REPORTS, S.c_str());
+            const char * p = S2.c_str();
             BOOL         join = FALSE;
             while (p && *p)
             {
-                p = S.GetToken(p, ',');
-                LoadReport(S.GetData(), join);
+                p = GetToken(S, p, ',');
+                LoadReport(S.c_str(), join);
                 join = TRUE;
             }
         }
@@ -386,17 +388,17 @@ bool CAhApp::OnInit()
 int CAhApp::OnExit()
 {
     int  i;
-    CStr S;
-    CStr Name;
+    std::string S;
+    std::string Name;
 
     CUnit::ResetCustomFlagNames();
 
     for (i=0; i<FONT_COUNT; i++)
     {
         FontToStr(m_Fonts[i], S);
-        Name.Empty();
+        Name.clear();
         Name << (long)i;
-        SetConfig(SZ_SECT_FONTS_2, Name.GetData(), S.GetData());
+        SetConfig(SZ_SECT_FONTS_2, Name.c_str(), S.c_str());
     }
 
     if (!m_DiscardChanges)
@@ -570,7 +572,7 @@ void CAhApp::OpenMsgFrame()
     {
         m_Frames[AH_FRAME_MSG] = new CMsgFrame(m_Frames[AH_FRAME_MAP]);
         m_Frames[AH_FRAME_MSG]->Init(m_layout, NULL);
-        m_MsgSrc.Empty();
+        m_MsgSrc.clear();
         m_Frames[AH_FRAME_MSG]->Show(TRUE);
     }
     else
@@ -595,37 +597,37 @@ void CAhApp::OpenEditsFrame()
 
 void CAhApp::UpgradeConfigFiles()
 {
-    CStr         Section;
+    std::string         Section;
     const char * szNextSection;
     const char * szName;
     const char * szValue;
     BOOL         Ok = TRUE;
     int          fileno, idx, i;
-    CStr         ConfigKey;
+    std::string         ConfigKey;
 
     // move the sections
     Ok = m_Config[CONFIG_FILE_CONFIG].GetNextSection("", szNextSection);
     while (Ok)
     {
         Section = szNextSection;
-        fileno    = GetConfigFileNo(Section.GetData());
+        fileno    = GetConfigFileNo(Section.c_str());
 
         if (CONFIG_FILE_CONFIG != fileno)
         {
             // move to the appropriate file
-            idx = m_Config[CONFIG_FILE_CONFIG].GetFirstInSection(Section.GetData(), szName, szValue);
+            idx = m_Config[CONFIG_FILE_CONFIG].GetFirstInSection(Section.c_str(), szName, szValue);
             while (idx>=0)
             {
-                m_Config[fileno].SetByName(Section.GetData(), szName, szValue);
-                idx = m_Config[CONFIG_FILE_CONFIG].GetNextInSection(idx, Section.GetData(), szName, szValue);
+                m_Config[fileno].SetByName(Section.c_str(), szName, szValue);
+                idx = m_Config[CONFIG_FILE_CONFIG].GetNextInSection(idx, Section.c_str(), szName, szValue);
             }
-            m_Config[CONFIG_FILE_CONFIG].RemoveSection(Section.GetData());
+            m_Config[CONFIG_FILE_CONFIG].RemoveSection(Section.c_str());
 
             // and it means land flags has to be moved, too
             m_UpgradeLandFlags = TRUE;
         }
 
-        Ok = m_Config[CONFIG_FILE_CONFIG].GetNextSection(Section.GetData(), szNextSection);
+        Ok = m_Config[CONFIG_FILE_CONFIG].GetNextSection(Section.c_str(), szNextSection);
     }
 
     // unit lists columns
@@ -640,40 +642,40 @@ void CAhApp::UpgradeConfigFiles()
     }
 
     // unit filter
-    Section.Empty();
+    Section.clear();
     Section  << SZ_SECT_UNIT_FILTER << "Default";
     Ok = FALSE;
     for (i=0; i<UNIT_SIMPLE_FLTR_COUNT; i++)
     {
-        ConfigKey.Format("%s%d", SZ_KEY_UNIT_FLTR_PROPERTY, i);
-        szValue = SkipSpaces(gpApp->GetConfig(SZ_SECT_WND_UNITS_FLTR, ConfigKey.GetData()));
+        Format(ConfigKey, "%s%d", SZ_KEY_UNIT_FLTR_PROPERTY, i);
+        szValue = SkipSpaces(gpApp->GetConfig(SZ_SECT_WND_UNITS_FLTR, ConfigKey.c_str()));
         if (szValue && *szValue)
         {
-            gpApp->SetConfig(Section.GetData(),      ConfigKey.GetData(), szValue);
-            gpApp->SetConfig(SZ_SECT_WND_UNITS_FLTR, ConfigKey.GetData(), "");
+            gpApp->SetConfig(Section.c_str(),      ConfigKey.c_str(), szValue);
+            gpApp->SetConfig(SZ_SECT_WND_UNITS_FLTR, ConfigKey.c_str(), "");
             Ok = TRUE;
         }
 
-        ConfigKey.Format("%s%d", SZ_KEY_UNIT_FLTR_COMPARE , i);
-        szValue = gpApp->GetConfig(SZ_SECT_WND_UNITS_FLTR, ConfigKey.GetData());
+        Format(ConfigKey, "%s%d", SZ_KEY_UNIT_FLTR_COMPARE , i);
+        szValue = gpApp->GetConfig(SZ_SECT_WND_UNITS_FLTR, ConfigKey.c_str());
         if (szValue && *szValue)
         {
-            gpApp->SetConfig(Section.GetData(),      ConfigKey.GetData(), szValue);
-            gpApp->SetConfig(SZ_SECT_WND_UNITS_FLTR, ConfigKey.GetData(), "");
+            gpApp->SetConfig(Section.c_str(),      ConfigKey.c_str(), szValue);
+            gpApp->SetConfig(SZ_SECT_WND_UNITS_FLTR, ConfigKey.c_str(), "");
             Ok = TRUE;
         }
 
-        ConfigKey.Format("%s%d", SZ_KEY_UNIT_FLTR_VALUE   , i);
-        szValue = gpApp->GetConfig(SZ_SECT_WND_UNITS_FLTR, ConfigKey.GetData());
+        Format(ConfigKey, "%s%d", SZ_KEY_UNIT_FLTR_VALUE   , i);
+        szValue = gpApp->GetConfig(SZ_SECT_WND_UNITS_FLTR, ConfigKey.c_str());
         if (szValue && *szValue)
         {
-            gpApp->SetConfig(Section.GetData(),      ConfigKey.GetData(), szValue);
-            gpApp->SetConfig(SZ_SECT_WND_UNITS_FLTR, ConfigKey.GetData(), "");
+            gpApp->SetConfig(Section.c_str(),      ConfigKey.c_str(), szValue);
+            gpApp->SetConfig(SZ_SECT_WND_UNITS_FLTR, ConfigKey.c_str(), "");
             Ok = TRUE;
         }
     }
     if (Ok)
-        gpApp->SetConfig(SZ_SECT_WND_UNITS_FLTR, SZ_KEY_FLTR_SET, Section.GetData());
+        gpApp->SetConfig(SZ_SECT_WND_UNITS_FLTR, SZ_KEY_FLTR_SET, Section.c_str());
 
     // Arcadia III roads
     szValue = m_Config[CONFIG_FILE_CONFIG].GetByName(SZ_SECT_COLORS,  SZ_KEY_MAP_ROAD_OLD);
@@ -719,7 +721,7 @@ void CAhApp::MoveSectionEntries(int fileno, const char * src, const char * dest)
 void CAhApp::UpgradeConfigByFactionId()
 {
     int          fileno, idx;
-    CStr         S, Section, Key;
+    std::string         S, Section, Key;
     const char * szName;
     const char * szValue;
 
@@ -731,19 +733,19 @@ void CAhApp::UpgradeConfigByFactionId()
         idx     = m_Config[fileno].GetFirstInSection(SZ_SECT_ORDERS, szName, szValue);
         while (idx>=0)
         {
-            m_Config[fileno].SetByName(Section.GetData(), szName, szValue);
+            m_Config[fileno].SetByName(Section.c_str(), szName, szValue);
             idx = m_Config[fileno].GetNextInSection(idx, SZ_SECT_ORDERS, szName, szValue);
         }
         m_Config[fileno].RemoveSection(SZ_SECT_ORDERS);
 
         // Upgrade passwords
         S = GetConfig(SZ_SECT_COMMON, SZ_KEY_PWD_OLD);
-        S.TrimRight(TRIM_ALL);
-        if (!S.IsEmpty())
+        TrimRight(S, TRIM_ALL);
+        if (!S.empty())
         {
-            Key.Empty();
+            Key.clear();
             Key << (long)m_pAtlantis->m_CrntFactionId;
-            SetConfig(SZ_SECT_PASSWORDS, Key.GetData() , S.GetData() );
+            SetConfig(SZ_SECT_PASSWORDS, Key.c_str() , S.c_str() );
             SetConfig(SZ_SECT_COMMON   , SZ_KEY_PWD_OLD, (const char *)NULL);
         }
     }
@@ -751,7 +753,7 @@ void CAhApp::UpgradeConfigByFactionId()
 
 //-------------------------------------------------------------------------
 
-void CAhApp::ComposeConfigOrdersSection(CStr & Sect, int FactionId)
+void CAhApp::ComposeConfigOrdersSection(std::string & Sect, int FactionId)
 {
     Sect = SZ_SECT_ORDERS;
     Sect << "_" << (long)FactionId;
@@ -915,7 +917,7 @@ void CAhApp::ShowError(const char * msg, int msglen, BOOL ignore_disabled)
        return;
 
     OpenMsgFrame();
-    m_MsgSrc.AddStr(msg, msglen);
+    AddStr(m_MsgSrc, msg, msglen);
 
     p = (CEditPane*)m_Panes[AH_PANE_MSG];
     if (p)
@@ -928,7 +930,7 @@ long CAhApp::GetStructAttr(const char * kind, long & MaxLoad, long & MinSailingP
 {
     const char * attrlist;
     const char * p;
-    CStr         S, Name;
+    std::string         S, Name;
     long         attr = 0;
 
     MaxLoad         = 0;
@@ -937,26 +939,26 @@ long CAhApp::GetStructAttr(const char * kind, long & MaxLoad, long & MinSailingP
     attrlist = GetConfig(SZ_SECT_STRUCTS, ResolveAlias(kind));
     while (attrlist && *attrlist)
     {
-        attrlist = S.GetToken(attrlist, ',', TRIM_ALL);
-        if (S.IsEmpty())
+        attrlist = GetToken(S, attrlist, ',', TRIM_ALL);
+        if (S.empty())
             break;
 
-        if      (0==stricmp(SZ_ATTR_STRUCT_MOBILE , S.GetData()))      attr |= SA_MOBILE ;
-        else if (0==stricmp(SZ_ATTR_STRUCT_HIDDEN , S.GetData()))      attr |= SA_HIDDEN ;
-        else if (0==stricmp(SZ_ATTR_STRUCT_SHAFT  , S.GetData()))      attr |= SA_SHAFT  ;
-        else if (0==stricmp(SZ_ATTR_STRUCT_GATE   , S.GetData()))      attr |= SA_GATE   ;
-        else if (0==stricmp(SZ_ATTR_STRUCT_ROAD_N , S.GetData()))      attr |= SA_ROAD_N ;
-        else if (0==stricmp(SZ_ATTR_STRUCT_ROAD_NE, S.GetData()))      attr |= SA_ROAD_NE;
-        else if (0==stricmp(SZ_ATTR_STRUCT_ROAD_SE, S.GetData()))      attr |= SA_ROAD_SE;
-        else if (0==stricmp(SZ_ATTR_STRUCT_ROAD_S , S.GetData()))      attr |= SA_ROAD_S ;
-        else if (0==stricmp(SZ_ATTR_STRUCT_ROAD_SW, S.GetData()))      attr |= SA_ROAD_SW;
-        else if (0==stricmp(SZ_ATTR_STRUCT_ROAD_NW, S.GetData()))      attr |= SA_ROAD_NW;
+        if      (0==stricmp(SZ_ATTR_STRUCT_MOBILE , S.c_str()))      attr |= SA_MOBILE ;
+        else if (0==stricmp(SZ_ATTR_STRUCT_HIDDEN , S.c_str()))      attr |= SA_HIDDEN ;
+        else if (0==stricmp(SZ_ATTR_STRUCT_SHAFT  , S.c_str()))      attr |= SA_SHAFT  ;
+        else if (0==stricmp(SZ_ATTR_STRUCT_GATE   , S.c_str()))      attr |= SA_GATE   ;
+        else if (0==stricmp(SZ_ATTR_STRUCT_ROAD_N , S.c_str()))      attr |= SA_ROAD_N ;
+        else if (0==stricmp(SZ_ATTR_STRUCT_ROAD_NE, S.c_str()))      attr |= SA_ROAD_NE;
+        else if (0==stricmp(SZ_ATTR_STRUCT_ROAD_SE, S.c_str()))      attr |= SA_ROAD_SE;
+        else if (0==stricmp(SZ_ATTR_STRUCT_ROAD_S , S.c_str()))      attr |= SA_ROAD_S ;
+        else if (0==stricmp(SZ_ATTR_STRUCT_ROAD_SW, S.c_str()))      attr |= SA_ROAD_SW;
+        else if (0==stricmp(SZ_ATTR_STRUCT_ROAD_NW, S.c_str()))      attr |= SA_ROAD_NW;
         else
         {
             // Two-token attributes, MaxLoad & MinSailingPower.
-            p = SkipSpaces(Name.GetToken(S.GetData(), ' ', TRIM_ALL));
-            if      (0==stricmp(SZ_ATTR_STRUCT_MAX_LOAD, Name.GetData()))   MaxLoad         = atol(p);
-            else if (0==stricmp(SZ_ATTR_STRUCT_MIN_SAIL, Name.GetData()))   MinSailingPower = atol(p);
+            p = SkipSpaces(GetToken(Name, S.c_str(), ' ', TRIM_ALL));
+            if      (0==stricmp(SZ_ATTR_STRUCT_MAX_LOAD, Name.c_str()))   MaxLoad         = atol(p);
+            else if (0==stricmp(SZ_ATTR_STRUCT_MIN_SAIL, Name.c_str()))   MinSailingPower = atol(p);
         }
 
     }
@@ -1029,7 +1031,7 @@ BOOL CAhApp::GetItemWeights(const char * item, int *& weights, const char **& mo
         ; // found above
     else
     {
-        CStr S;
+        std::string S;
 
         p = SkipSpaces(GetConfig(SZ_SECT_WEIGHT_MOVE, item));
 
@@ -1042,8 +1044,8 @@ BOOL CAhApp::GetItemWeights(const char * item, int *& weights, const char **& mo
 
         for (i=0; i<(int)m_MoveModes.size(); i++)
         {
-            p = SkipSpaces(S.GetToken(p, ','));
-            if (i==4 && S.IsEmpty())
+            p = SkipSpaces(GetToken(S, p, ','));
+            if (i==4 && S.empty())
             {
                 // Update swimming for 2.3.2
                 int x;
@@ -1054,24 +1056,24 @@ BOOL CAhApp::GetItemWeights(const char * item, int *& weights, const char **& mo
                         const char * q = DefaultConfig[x].szValue;
                         int          m;
                         for (m=0; m<=i; m++)
-                            q = SkipSpaces(S.GetToken(q, ','));
+                            q = SkipSpaces(GetToken(S, q, ','));
                         Update = TRUE;
                         break;
                     }
             }
-            pWeights->weights[i] = atoi(S.GetData());
+            pWeights->weights[i] = atoi(S.c_str());
         }
         if (Update && !IsASkillRelatedProperty(item))
         {
             // Update swimming for 2.3.2
-            S.Empty();
+            S.clear();
             for (i=0; i<(int)m_MoveModes.size(); i++)
             {
                 if (i>0)
                     S << ',';
                 S << (long)pWeights->weights[i];
             }
-            SetConfig(SZ_SECT_WEIGHT_MOVE, item, S.GetData());
+            SetConfig(SZ_SECT_WEIGHT_MOVE, item, S.c_str());
         }
         {
             auto _it = std::lower_bound(m_ItemWeights.begin(), m_ItemWeights.end(), pWeights,
@@ -1088,15 +1090,15 @@ BOOL CAhApp::GetItemWeights(const char * item, int *& weights, const char **& mo
 
     if (!Ok)
     {
-        CStr S;
+        std::string S;
 
         if (!IsASkillRelatedProperty(item))
         {
-            S.Empty();
+            S.clear();
             S << "Warning! Weight and capacities for " << item <<
                  " are unknown and assumed to be zero. Movement modes can not be calculated correct. Update your " <<
                  SZ_CONFIG_FILE << " file!" <<EOL_SCR;
-            ShowError(S.GetData(), S.GetLength(), TRUE);
+            ShowError(S.c_str(), S.size(), TRUE);
         }
     }
 
@@ -1185,8 +1187,8 @@ long CAhApp::GetMaxRaceSkillLevel(const char * race, const char * skill, const c
     // we will cache it a bit...
     long  level    = 0;
     long  maxlevel = 0;
-    CStr  sKey;
-    CStr  sVal, S;
+    std::string  sKey;
+    std::string  sVal, S;
     const char * p;
 
     if (!leadership)
@@ -1194,7 +1196,7 @@ long CAhApp::GetMaxRaceSkillLevel(const char * race, const char * skill, const c
     sKey << race << ":" << leadership << ":" << skill;
 
     {
-        auto maxIt = m_MaxSkillHash.find(sKey.GetData());
+        auto maxIt = m_MaxSkillHash.find(sKey.c_str());
         if (maxIt != m_MaxSkillHash.end())
         {
             level = maxIt->second;
@@ -1202,18 +1204,18 @@ long CAhApp::GetMaxRaceSkillLevel(const char * race, const char * skill, const c
         else
         {
         sVal = GetConfig(SZ_SECT_MAX_SKILL_LVL, race);
-        p = sVal.GetData();
+        p = sVal.c_str();
 
-        p = S.GetToken(p, ',', TRIM_ALL);
-        maxlevel = atol(S.GetData());
+        p = GetToken(S, p, ',', TRIM_ALL);
+        maxlevel = atol(S.c_str());
 
-        p = S.GetToken(p, ',', TRIM_ALL);
-        level = atol(S.GetData());
+        p = GetToken(S, p, ',', TRIM_ALL);
+        level = atol(S.c_str());
 
         while (p && *p)
         {
-            p = S.GetToken(p, ',', TRIM_ALL);
-            if (0==stricmp(skill, S.GetData()))
+            p = GetToken(S, p, ',', TRIM_ALL);
+            if (0==stricmp(skill, S.c_str()))
             {
                 level = maxlevel;
                 break;
@@ -1228,18 +1230,18 @@ long CAhApp::GetMaxRaceSkillLevel(const char * race, const char * skill, const c
                 {
                     // reread magic skill
                     sVal = GetConfig(SZ_SECT_MAX_MAG_SKILL_LVL, race);
-                    p = sVal.GetData();
+                    p = sVal.c_str();
 
-                    p = S.GetToken(p, ',', TRIM_ALL);
-                    maxlevel = atol(S.GetData());
+                    p = GetToken(S, p, ',', TRIM_ALL);
+                    maxlevel = atol(S.c_str());
 
-                    p = S.GetToken(p, ',', TRIM_ALL);
-                    level = atol(S.GetData());
+                    p = GetToken(S, p, ',', TRIM_ALL);
+                    level = atol(S.c_str());
 
                     while (p && *p)
                     {
-                        p = S.GetToken(p, ',', TRIM_ALL);
-                        if (0==stricmp(skill, S.GetData()))
+                        p = GetToken(S, p, ',', TRIM_ALL);
+                        if (0==stricmp(skill, S.c_str()))
                         {
                             level = maxlevel;
                             break;
@@ -1255,13 +1257,13 @@ long CAhApp::GetMaxRaceSkillLevel(const char * race, const char * skill, const c
                 int leader_bonus, hero_bonus, bonus=0;
 
                 sVal = GetConfig(SZ_SECT_COMMON, SZ_KEY_LEAD_SKILL_BONUS);
-                p = sVal.GetData();
+                p = sVal.c_str();
 
-                p = S.GetToken(p, ',', TRIM_ALL);
-                leader_bonus = atol(S.GetData());
+                p = GetToken(S, p, ',', TRIM_ALL);
+                leader_bonus = atol(S.c_str());
 
-                p = S.GetToken(p, ',', TRIM_ALL);
-                hero_bonus = atol(S.GetData());
+                p = GetToken(S, p, ',', TRIM_ALL);
+                hero_bonus = atol(S.c_str());
 
                 if (0==stricmp(leadership, SZ_LEADER))
                     bonus = leader_bonus;
@@ -1272,7 +1274,7 @@ long CAhApp::GetMaxRaceSkillLevel(const char * race, const char * skill, const c
             }
         }
 
-        m_MaxSkillHash[sKey.GetData()] = level;
+        m_MaxSkillHash[sKey.c_str()] = level;
         } // else (not found in cache)
     }
 
@@ -1283,38 +1285,38 @@ long CAhApp::GetMaxRaceSkillLevel(const char * race, const char * skill, const c
 
 void CAhApp::GetProdDetails (const char * item, TProdDetails & details)
 {
-    CStr sVal, S;
+    std::string sVal, S;
     const char * p;
     int x;
 
     details.Empty();
     sVal = GetConfig(SZ_SECT_PROD_SKILL, item);
-    if (!sVal.IsEmpty())
+    if (!sVal.empty())
     {
-        S = details.skillname.GetToken(sVal.GetData(), ' ', TRIM_ALL);
-        details.skilllevel = atol(S.GetData());
+        S = GetToken(details.skillname, sVal.c_str(), ' ', TRIM_ALL);
+        details.skilllevel = atol(S.c_str());
     }
 
     sVal = GetConfig(SZ_SECT_PROD_RESOURCE, item);
     x = 0;
-    p = sVal.GetData();
+    p = sVal.c_str();
     while (p && *p && x<MAX_RES_NUM)
     {
-        p = details.resname[x].GetToken(SkipSpaces(p), ' ', TRIM_ALL);
-        p = S.GetToken(p, ',', TRIM_ALL);
-        details.resamt[x] = atol(S.GetData());
+        p = GetToken(details.resname[x], SkipSpaces(p), ' ', TRIM_ALL);
+        p = GetToken(S, p, ',', TRIM_ALL);
+        details.resamt[x] = atol(S.c_str());
         x++;
     }
 
     sVal = GetConfig(SZ_SECT_PROD_MONTHS, item);
-    if (!sVal.IsEmpty())
-        details.months = atol(sVal.GetData());
+    if (!sVal.empty())
+        details.months = atol(sVal.c_str());
 
     sVal = GetConfig(SZ_SECT_PROD_TOOL, item);
-    if (!sVal.IsEmpty())
+    if (!sVal.empty())
     {
-        S = details.toolname.GetToken(sVal.GetData(), ' ', TRIM_ALL);
-        details.toolhelp = atol(S.GetData());
+        S = GetToken(details.toolname, sVal.c_str(), ' ', TRIM_ALL);
+        details.toolhelp = atol(S.c_str());
     }
 
 }
@@ -1323,44 +1325,44 @@ void CAhApp::GetProdDetails (const char * item, TProdDetails & details)
 
 BOOL CAhApp::CanSeeAdvResources(const char * skillname, const char * terrain, std::vector<long> & Levels, std::vector<std::string> & Resources)
 {
-    CStr         ProdSkillLine;
-    CStr         ProdLandLine;
+    std::string         ProdSkillLine;
+    std::string         ProdLandLine;
     BOOL         Ok = FALSE;
     const char * p1, * p2, *p;
-    CStr         Prod1, Prod2, S1;
+    std::string         Prod1, Prod2, S1;
     long         level;
 
     Levels.clear();
     Resources.clear();
 
     ProdSkillLine = GetConfig(SZ_SECT_RESOURCE_SKILL,  skillname);
-    ProdSkillLine.TrimRight(TRIM_ALL);
+    TrimRight(ProdSkillLine, TRIM_ALL);
 
     ProdLandLine = GetConfig(SZ_SECT_RESOURCE_LAND,  terrain);
-    ProdLandLine.TrimRight(TRIM_ALL);
+    TrimRight(ProdLandLine, TRIM_ALL);
 
-    if (!ProdSkillLine.IsEmpty() && !ProdLandLine.IsEmpty())
+    if (!ProdSkillLine.empty() && !ProdLandLine.empty())
     {
-        p1 = SkipSpaces(S1.GetToken(ProdSkillLine.GetData(), ',', TRIM_ALL));
-        while (!S1.IsEmpty())
+        p1 = SkipSpaces(GetToken(S1, ProdSkillLine.c_str(), ',', TRIM_ALL));
+        while (!S1.empty())
         {
-            p  = SkipSpaces(Prod1.GetToken(S1.GetData(), ' ', TRIM_ALL));
+            p  = SkipSpaces(GetToken(Prod1, S1.c_str(), ' ', TRIM_ALL));
             level = p ? atol(p) : 0;
 
-            p2 = SkipSpaces(Prod2.GetToken(ProdLandLine.GetData(), ',', TRIM_ALL));
-            while (!Prod2.IsEmpty())
+            p2 = SkipSpaces(GetToken(Prod2, ProdLandLine.c_str(), ',', TRIM_ALL));
+            while (!Prod2.empty())
             {
-                if (0==stricmp(Prod1.GetData(), Prod2.GetData()))
+                if (0==stricmp(Prod1.c_str(), Prod2.c_str()))
                 {
                     Ok = TRUE;
                     Levels.push_back(level);
-                    Resources.push_back(Prod1.GetData());
+                    Resources.push_back(Prod1.c_str());
                     break;
                 }
-                p2 = SkipSpaces(Prod2.GetToken(p2, ',', TRIM_ALL));
+                p2 = SkipSpaces(GetToken(Prod2, p2, ',', TRIM_ALL));
             }
 
-            p1 = SkipSpaces(S1.GetToken(p1, ',', TRIM_ALL));
+            p1 = SkipSpaces(GetToken(S1, p1, ',', TRIM_ALL));
         }
     }
 
@@ -1420,7 +1422,7 @@ void CAhApp::SetAttitudeForFaction(int id, int attitude)
 
 //-------------------------------------------------------------------------
 
-void CAhApp::GetShortFactName(CStr & S, int FactionId)
+void CAhApp::GetShortFactName(std::string & S, int FactionId)
 {
 #define MAX_F_NAME 8
     int           i;
@@ -1429,7 +1431,7 @@ void CAhApp::GetShortFactName(CStr & S, int FactionId)
 //    CBaseObject   Dummy;
 //    int           idx;
 
-    S.Empty();
+    S.clear();
 //    Dummy.Id = FactionId;
 //    if (m_pAtlantis->m_Factions.Search(&Dummy, idx))
 //    {
@@ -1444,22 +1446,22 @@ void CAhApp::GetShortFactName(CStr & S, int FactionId)
     else
         S << (long)FactionId;
 
-    if (0==stricmp(S.GetData(), "faction"))
+    if (0==stricmp(S.c_str(), "faction"))
     {
-        S.Empty();
+        S.clear();
         S << "F_" << (long)FactionId << "_";
     }
 
-    S.ToLower();
-    for (i=S.GetLength()-1; i>=0; i--)
+    ToLower(S);
+    for (i=S.size()-1; i>=0; i--)
     {
-        ch = S.GetData()[i];
+        ch = S.c_str()[i];
         if ( (ch < 'a' || ch > 'z') && (ch < '0' || ch > '9') )
-            S.DelCh(i);
+            DelCh(S, i);
     }
-    if (S.GetLength() > MAX_F_NAME)
-        S.DelSubStr(MAX_F_NAME, S.GetLength()-MAX_F_NAME);
-    S.TrimRight(TRIM_ALL);
+    if (S.size() > MAX_F_NAME)
+        DelSubStr(S, MAX_F_NAME, S.size()-MAX_F_NAME);
+    TrimRight(S, TRIM_ALL);
 
 }
 
@@ -1471,7 +1473,7 @@ void CAhApp::SetMapFrameTitle()
     CMapPane    * pMapPane   = (CMapPane  * )m_Panes[AH_PANE_MAP];
     CPlane      * pPlane     = NULL;
 
-    CStr          S;
+    std::string          S;
 
     S = m_sTitle;
 
@@ -1480,7 +1482,7 @@ void CAhApp::SetMapFrameTitle()
         pPlane = (CPlane*)m_pAtlantis->m_Planes.At(pMapPane->m_SelPlane);
 
         S << " (" << pMapPane->m_SelHexX << "," << pMapPane->m_SelHexY;
-        if (pPlane && 0!=stricmp(DEFAULT_PLANE, pPlane->Name.GetData()))
+        if (pPlane && 0!=stricmp(DEFAULT_PLANE, pPlane->Name.c_str()))
         {
             S << "," << pPlane->Name;
         }
@@ -1490,7 +1492,7 @@ void CAhApp::SetMapFrameTitle()
     if (m_OrdersAreChanged)
         S << " [modified]";
     if (pMapFrame)
-        pMapFrame->SetTitle(wxString::FromAscii(S.GetData()));
+        pMapFrame->SetTitle(wxString::FromAscii(S.c_str()));
 }
 
 //-------------------------------------------------------------------------
@@ -1507,7 +1509,7 @@ void CAhApp::SetOrdersChanged(BOOL Changed)
 
 int CAhApp::SaveOrders(BOOL UsingExistingName)
 {
-    CStr S, FName, Section;
+    std::string S, FName, Section;
     int  i, id, err=ERR_OK;
 
     for (i=0; i<((int)m_pAtlantis->m_OurFactions.size()); i++)
@@ -1516,12 +1518,12 @@ int CAhApp::SaveOrders(BOOL UsingExistingName)
         if (UsingExistingName)
         {
             ComposeConfigOrdersSection(Section, id);
-            S.Empty();
+            S.clear();
             S << (long)m_pAtlantis->m_YearMon;
-            FName = GetConfig(Section.GetData(), S.GetData());
-            FName.TrimRight(TRIM_ALL);
+            FName = GetConfig(Section.c_str(), S.c_str());
+            TrimRight(FName, TRIM_ALL);
         }
-        err = SaveOrders(FName.GetData(), id);
+        err = SaveOrders(FName.c_str(), id);
         if (ERR_OK!=err)
             break;
     }
@@ -1539,52 +1541,52 @@ int  CAhApp::SaveOrders(const char * FNameOut, int FactionId)
 
     int         err;
     char        buf[64];
-    CStr        FName;
-    CStr        Dir;
-    CStr        S, Section, Prompt, Key;
+    std::string        FName;
+    std::string        Dir;
+    std::string        S, Section, Prompt, Key;
     CFaction  * pFaction;
 
     FName = FNameOut;
-    FName.TrimRight(TRIM_ALL);
+    TrimRight(FName, TRIM_ALL);
 
     ComposeConfigOrdersSection(Section, FactionId);
-    if (FName.IsEmpty())
+    if (FName.empty())
     {
-        S.Format("%d", m_pAtlantis->m_YearMon);
-        FName = GetConfig(Section.GetData(), S.GetData());
-        FName.TrimRight(TRIM_ALL);
+        Format(S, "%d", m_pAtlantis->m_YearMon);
+        FName = GetConfig(Section.c_str(), S.c_str());
+        TrimRight(FName, TRIM_ALL);
 
-        if (FName.IsEmpty())
+        if (FName.empty())
         {
             GetShortFactName(S, FactionId);
-            if (S.IsEmpty())
+            if (S.empty())
                 S << (long)FactionId;
-            FName.Format("%s%04d.ord", S.GetData(), m_pAtlantis->m_YearMon);
+            Format(FName, "%s%04d.ord", S.c_str(), m_pAtlantis->m_YearMon);
         }
         pFaction = m_pAtlantis->GetFaction(FactionId);
 
         Prompt = "Save orders for ";
         if (pFaction)
-            Prompt << pFaction->Name.GetData() << " ";
+            Prompt << pFaction->Name.c_str() << " ";
         else
             Prompt << "Faction ";
         Prompt << (long)FactionId;
 
         Dir = GetConfig(SZ_SECT_FOLDERS, SZ_KEY_FOLDER_ORDERS);
-        Dir.TrimRight(TRIM_ALL);
-        if (Dir.IsEmpty())
+        TrimRight(Dir, TRIM_ALL);
+        if (Dir.empty())
             Dir = ".";
 
-        CStr File;
+        std::string File;
         wxString CurrentDir = wxGetCwd();
         //MakePathFull(CurrentDir.mb_str(), FName);
-        GetFileFromPath(FName.GetData(), File);
+        GetFileFromPath(FName.c_str(), File);
 
         MakePathFull(CurrentDir.mb_str(), Dir);
         wxFileDialog dialog((CMapFrame*)m_Frames[AH_FRAME_MAP],
-                            wxString::FromAscii(Prompt.GetData()),
-                            wxString::FromAscii(Dir.GetData()),
-                            wxString::FromAscii(File.GetData()),
+                            wxString::FromAscii(Prompt.c_str()),
+                            wxString::FromAscii(Dir.c_str()),
+                            wxString::FromAscii(File.c_str()),
                             wxT(SZ_ORD_FILES),
                             wxFD_SAVE | wxFD_OVERWRITE_PROMPT );
         err = dialog.ShowModal();
@@ -1594,29 +1596,29 @@ int  CAhApp::SaveOrders(const char * FNameOut, int FactionId)
         {
             FName = dialog.GetPath().mb_str();
             MakePathRelative(CurrentDir.mb_str(), FName);
-            GetDirFromPath(FName.GetData(), Dir);
-            SetConfig(SZ_SECT_FOLDERS, SZ_KEY_FOLDER_ORDERS, Dir.GetData() );
+            GetDirFromPath(FName.c_str(), Dir);
+            SetConfig(SZ_SECT_FOLDERS, SZ_KEY_FOLDER_ORDERS, Dir.c_str() );
         }
         else
             return ERR_CANCEL;
 
-        FName.TrimRight(TRIM_ALL);
+        TrimRight(FName, TRIM_ALL);
     }
-    if (FName.IsEmpty())
+    if (FName.empty())
         return ERR_FNAME;
 
-    Key.Empty();
+    Key.clear();
     Key << (long)FactionId;
 
-    err = m_pAtlantis->SaveOrders(FName.GetData(),
-                                  GetConfig(SZ_SECT_PASSWORDS, Key.GetData()),
+    err = m_pAtlantis->SaveOrders(FName.c_str(),
+                                  GetConfig(SZ_SECT_PASSWORDS, Key.c_str()),
                                   (BOOL)atol(GetConfig(SZ_SECT_COMMON, SZ_KEY_DECORATE_ORDERS)),
                                   FactionId
                                  );
     if (ERR_OK==err)
     {
         sprintf(buf, "%ld", m_pAtlantis->m_YearMon);
-        SetConfig(Section.GetData(), buf, FName.GetData());
+        SetConfig(Section.c_str(), buf, FName.c_str());
     }
 
     // Save config, too
@@ -1662,19 +1664,19 @@ CUnit * CAhApp::GetSelectedUnit()
 int  CAhApp::LoadOrders  (const char * FNameIn)
 {
     int           err;
-    CStr          S(32), FName, Sect;
+    std::string S, FName, Sect;
     int           factid;
 //    CMapPane    * pMapPane = (CMapPane* )m_Panes[AH_PANE_MAP];
 
 
     FName = FNameIn;  // FNameIn can be coming from config, so do not use it directly!
-    err = m_pAtlantis->LoadOrders(FName.GetData(), factid);
+    err = m_pAtlantis->LoadOrders(FName.c_str(), factid);
     if (ERR_OK==err)
     {
-        S.Empty();
+        S.clear();
         S << (long)m_pAtlantis->m_YearMon;
         ComposeConfigOrdersSection(Sect, factid);
-        SetConfig(Sect.GetData(), S.GetData(), FName.GetData());
+        SetConfig(Sect.c_str(), S.c_str(), FName.c_str());
 
 //        if (pMapPane)
 //            pMapPane->Refresh(FALSE, NULL);
@@ -1692,17 +1694,17 @@ int  CAhApp::LoadOrders  (const char * FNameIn)
 
 //-------------------------------------------------------------------------
 
-void EncodeConfigLine(CStr & dest, const char * src)
+void EncodeConfigLine(std::string & dest, const char * src)
 {
-    dest.Empty();
+    dest.clear();
     while (src && *src)
     {
         switch (*src)
         {
         case '\r':  break;
-        case '\n':  dest.AddStr("\\n", 2);
+        case '\n':  AddStr(dest, "\\n", 2);
                     break;
-        default  :  dest.AddCh(*src);
+        default  :  AddCh(dest, *src);
         }
         src++;
     }
@@ -1710,11 +1712,11 @@ void EncodeConfigLine(CStr & dest, const char * src)
 
 //-------------------------------------------------------------------------
 
-void DecodeConfigLine(CStr & dest, const char * src)
+void DecodeConfigLine(std::string & dest, const char * src)
 {
     BOOL          Esc;
 
-    dest.Empty();
+    dest.clear();
     Esc = FALSE;
     while (src && *src)
     {
@@ -1732,12 +1734,12 @@ void DecodeConfigLine(CStr & dest, const char * src)
                     dest << EOL_SCR;
                     break;
                 default:
-                    dest.AddCh('\\');
-                    dest.AddCh(*src);
+                    AddCh(dest, '\\');
+                    AddCh(dest, *src);
                 }
             }
             else
-                dest.AddCh(*src);
+                AddCh(dest, *src);
             Esc = FALSE;
         }
 
@@ -1752,7 +1754,7 @@ void CAhApp::LoadComments()
     int           i;
     CUnit       * pUnit;
     char          buf[32];
-    CStr          S;
+    std::string          S;
 
     for (i=0; i<m_pAtlantis->m_Units.Count(); i++)
     {
@@ -1761,7 +1763,7 @@ void CAhApp::LoadComments()
 
         DecodeConfigLine(pUnit->DefOrders, GetConfig(SZ_SECT_DEF_ORDERS, buf));
 
-        pUnit->DefOrders.TrimRight(TRIM_ALL);
+        TrimRight(pUnit->DefOrders, TRIM_ALL);
         pUnit->ExtractCommentsFromDefOrders();
     }
     m_CommentsChanged = FALSE;
@@ -1774,18 +1776,18 @@ void CAhApp::SaveComments()
     int           i;
     CUnit       * pUnit;
     char          buf[32];
-    CStr          S;
+    std::string          S;
     const char  * p;
 
     for (i=0; i<m_pAtlantis->m_Units.Count(); i++)
     {
-        S.Empty();
+        S.clear();
         pUnit = (CUnit*)m_pAtlantis->m_Units.At(i);
-        pUnit->DefOrders.TrimRight(TRIM_ALL);
-        if (pUnit->DefOrders.GetLength() > 0)
+        TrimRight(pUnit->DefOrders, TRIM_ALL);
+        if (pUnit->DefOrders.size() > 0)
         {
-            EncodeConfigLine(S, pUnit->DefOrders.GetData());
-            p = S.GetData();
+            EncodeConfigLine(S, pUnit->DefOrders.c_str());
+            p = S.c_str();
         }
         else
             p = NULL;
@@ -1803,7 +1805,7 @@ void CAhApp::LoadUnitFlags()
     int           i, x;
     CUnit       * pUnit;
     char          buf[32];
-    CStr          S;
+    std::string          S;
 
     for (i=0; i<m_pAtlantis->m_Units.Count(); i++)
     {
@@ -1827,17 +1829,17 @@ void CAhApp::SaveUnitFlags()
     int           i;
     CUnit       * pUnit;
     char          buf[32];
-    CStr          S;
+    std::string          S;
 
     for (i=0; i<m_pAtlantis->m_Units.Count(); i++)
     {
         pUnit = (CUnit*)m_pAtlantis->m_Units.At(i);
         sprintf(buf, "%ld", pUnit->Id);
 
-        S.Empty();
+        S.clear();
         if (pUnit->Flags & UNIT_CUSTOM_FLAG_MASK)
             S << (long)(pUnit->Flags & UNIT_CUSTOM_FLAG_MASK);
-        SetConfig(SZ_SECT_UNIT_FLAGS, buf, S.GetData());
+        SetConfig(SZ_SECT_UNIT_FLAGS, buf, S.c_str());
     }
 }
 
@@ -1872,12 +1874,12 @@ void CAhApp::SetAllLandUnitFlags()
                         if (ID_BTN_RMV_ALL_LAND==rc)
                         {
                             // clear flag
-                            pLand->FlagText[f].Empty();
+                            pLand->FlagText[f].clear();
                         }
                         else
                         {
                             // set flag
-                            if (pLand->FlagText[f].IsEmpty())
+                            if (pLand->FlagText[f].empty())
                                 pLand->FlagText[f] = LandFlagLabel[f];
                         }
                         pLand->Flags |= LAND_HAS_FLAGS;
@@ -1922,8 +1924,8 @@ void CAhApp::SaveLandFlags()
     int          i, n, f;
     CPlane     * pPlane;
     CLand      * pLand;
-    CStr         sName;
-    CStr         sData;
+    std::string         sName;
+    std::string         sData;
     long         ym_last;
     long         ym_first;
     const char * p;
@@ -1934,13 +1936,13 @@ void CAhApp::SaveLandFlags()
         for (i=0; i<pPlane->Lands.Count(); i++)
         {
             pLand = (CLand*)pPlane->Lands.At(i);
-            sData.Empty();
+            sData.clear();
             for (f=0; f<LAND_FLAG_COUNT; f++)
             {
-                pLand->FlagText[f].TrimRight(TRIM_ALL);
-                if (!pLand->FlagText[f].IsEmpty())
+                TrimRight(pLand->FlagText[f], TRIM_ALL);
+                if (!pLand->FlagText[f].empty())
                 {
-                    if (!sData.IsEmpty())
+                    if (!sData.empty())
                         sData << "\\n";
                     sData << (long)f << ":" << pLand->FlagText[f];
                 }
@@ -1948,26 +1950,26 @@ void CAhApp::SaveLandFlags()
             m_pAtlantis->ComposeLandStrCoord(pLand, sName);
 
 
-            if (!sData.IsEmpty() || (pLand->Flags & LAND_HAS_FLAGS)) // allow to remove flags
-                SetConfig(SZ_SECT_LAND_FLAGS, sName.GetData(), sData.GetData());
+            if (!sData.empty() || (pLand->Flags & LAND_HAS_FLAGS)) // allow to remove flags
+                SetConfig(SZ_SECT_LAND_FLAGS, sName.c_str(), sData.c_str());
 
             if (pLand->Flags&LAND_IS_CURRENT) //LAND_UNITS)
             {
-                //ym = atol(GetConfig(SZ_SECT_LAND_VISITED, sName.GetData()));
-                p        = sData.GetToken(GetConfig(SZ_SECT_LAND_VISITED, sName.GetData()), ',');
-                ym_last  = atol(sData.GetData());
-                if (sData.IsEmpty())
+                //ym = atol(GetConfig(SZ_SECT_LAND_VISITED, sName.c_str()));
+                p        = GetToken(sData, GetConfig(SZ_SECT_LAND_VISITED, sName.c_str()), ',');
+                ym_last  = atol(sData.c_str());
+                if (sData.empty())
                     ym_first = m_pAtlantis->m_YearMon;
                 else
                 {
-                    p        = sData.GetToken(SkipSpaces(p), ',');
-                    ym_first = atol(sData.GetData());
+                    p        = GetToken(sData, SkipSpaces(p), ',');
+                    ym_first = atol(sData.c_str());
                 }
                 if (ym_last < m_pAtlantis->m_YearMon)
                 {
-                    sData.Empty();
+                    sData.clear();
                     sData << m_pAtlantis->m_YearMon << "," << ym_first;
-                    SetConfig(SZ_SECT_LAND_VISITED, sName.GetData(), sData.GetData());
+                    SetConfig(SZ_SECT_LAND_VISITED, sName.c_str(), sData.c_str());
                 }
             }
         }
@@ -1985,7 +1987,7 @@ void CAhApp::LoadLandFlags()
     const char      * szValue;
     const char      * p;
     const char      * line;
-    CStr              sData, sLine, sN;
+    std::string              sData, sLine, sN;
     CLand           * pLand;
 
     sectidx = GetSectionFirst(SZ_SECT_LAND_FLAGS, szName, szValue);
@@ -1996,17 +1998,17 @@ void CAhApp::LoadLandFlags()
         {
             DecodeConfigLine(sData, szValue);
 
-            line = sData.GetData();
+            line = sData.c_str();
             while (line && *line)
             {
-                line = sLine.GetToken(line, '\n');
-                p    = sLine.GetData();
-                p    = sN.GetToken(p, ':');
+                line = GetToken(sLine, line, '\n');
+                p    = sLine.c_str();
+                p    = GetToken(sN, p, ':');
                 if (p)
-                    n = atoi(sN.GetData());
+                    n = atoi(sN.c_str());
                 else
                 {
-                    p = sN.GetData();
+                    p = sN.c_str();
                     n = 0;
                 }
                 if (n<0 || n>=LAND_FLAG_COUNT)
@@ -2043,7 +2045,7 @@ void CAhApp::UpdateEdgeStructs()
             pLand = (CLand*)pPlane->Lands.At(i);
             if(!pLand) continue;
             // set the Water-Type flag
-            if(m_WaterTerrainNames.find(pLand->TerrainType.ToLower()) != m_WaterTerrainNames.end())
+            if(m_WaterTerrainNames.find(ToLower(pLand->TerrainType)) != m_WaterTerrainNames.end())
             {
                 pLand->Flags |= LAND_IS_WATER;
             }
@@ -2074,11 +2076,11 @@ void CAhApp::UpdateEdgeStructs()
                             for(k=pLand->EdgeStructs.Count(); k>=0; k--)
                             {
                                 pEdge = (CStruct*) pLand->EdgeStructs.At(k);
-                                if((pEdge != NULL) && (pEdge->Location == d))                          adj_land->AddNewEdgeStruct(pEdge->Kind.GetData(), adj_dir);
+                                if((pEdge != NULL) && (pEdge->Location == d))                          adj_land->AddNewEdgeStruct(pEdge->Kind.c_str(), adj_dir);
                             }
                         }
                         // set CoastBits
-                        if(m_WaterTerrainNames.find(adj_land->TerrainType.ToLower()) != m_WaterTerrainNames.end())
+                        if(m_WaterTerrainNames.find(ToLower(adj_land->TerrainType)) != m_WaterTerrainNames.end())
                         {
                             if(!(pLand->Flags & LAND_IS_WATER))
                                 adj_land->CoastBits |= ExitFlags[adj_dir];
@@ -2099,15 +2101,15 @@ void CAhApp::UpdateEdgeStructs()
 
 void CAhApp::WriteMagesCSV()
 {
-    CStr FName;
-    CStr S;
+    std::string FName;
+    std::string S;
 
 
 //    GetShortFactName(S);
-//    FName.Format("%s_%s%04d.csv", S.GetData(), "mages", m_pAtlantis->m_YearMon);
-    FName.Format("%s%04d.csv", "mages", m_pAtlantis->m_YearMon);
+//    Format(FName, "%s_%s%04d.csv", S.c_str(), "mages", m_pAtlantis->m_YearMon);
+    Format(FName, "%s%04d.csv", "mages", m_pAtlantis->m_YearMon);
 
-    CExportMagesCSVDlg Dlg(m_Frames[AH_FRAME_MAP], FName.GetData());
+    CExportMagesCSVDlg Dlg(m_Frames[AH_FRAME_MAP], FName.c_str());
     if (wxID_OK == Dlg.ShowModal())
         m_pAtlantis->WriteMagesCSV(Dlg.m_pFileName->GetValue().mb_str(),
                                    0==SafeCmp(Dlg.m_pOrientation->GetValue().mb_str(), SZ_VERTICAL),
@@ -2125,12 +2127,12 @@ void CAhApp::CheckTaxDetails  (CLand  * pLand, CTaxProdDetailsCollByFaction & Ta
 //    long              tax = pLand->Taxable;
     EValueType        type;
     long              men;
-    CStr              sCoord;
+    std::string              sCoord;
     CTaxProdDetails * pDetail;
     CTaxProdDetails   Dummy;
     int               idx;
     CTaxProdDetailsCollByFaction Factions;
-    CStr              OneLine(32);
+    std::string OneLine;
 
     for (x=0; x<pLand->Units.Count(); x++)
     {
@@ -2161,12 +2163,12 @@ void CAhApp::CheckTaxDetails  (CLand  * pLand, CTaxProdDetailsCollByFaction & Ta
     for (x=0; x<Factions.Count(); x++)
     {
         pDetail = (CTaxProdDetails*)Factions.At(x);
-        OneLine.Empty();
+        OneLine.clear();
 
         m_pAtlantis->ComposeLandStrCoord(pLand, sCoord);
         OneLine << pLand->TerrainType << " (" << sCoord << ") ";
-        while (OneLine.GetLength() < 24)
-            OneLine.AddCh(' ');
+        while (OneLine.size() < 24)
+            AddCh(OneLine, ' ');
 
         if (pDetail->amount > 0)
             OneLine << "is undertaxed by " << pDetail->amount << " silv" << EOL_SCR;
@@ -2189,7 +2191,7 @@ void CAhApp::CheckTradeDetails(CLand  * pLand, CTaxProdDetailsCollByFaction & Tr
     CUnit         * pUnit;
     EValueType      type;
     long            men, lvl, tool, canproduce;
-    CStr            sCoord, Skill;
+    std::string            sCoord, Skill;
     CProduct      * pProd;
 //    long            amount;
     TProdDetails    details;
@@ -2199,7 +2201,7 @@ void CAhApp::CheckTradeDetails(CLand  * pLand, CTaxProdDetailsCollByFaction & Tr
     int               idx;
     CTaxProdDetailsCollByFaction Factions;
     CTaxProdDetailsCollByFaction AllFactions;
-    CStr              OneLine(32);
+    std::string OneLine;
 
 //    m_pAtlantis->ComposeLandStrCoord(pLand, sCoord);
 //    Details << pLand->TerrainType << " (" << sCoord << "). ";
@@ -2210,9 +2212,9 @@ void CAhApp::CheckTradeDetails(CLand  * pLand, CTaxProdDetailsCollByFaction & Tr
         if (0==pProd->Amount)
             continue;
   //      amount = pProd->Amount;
-        GetProdDetails(pProd->ShortName.GetData(), details);
+        GetProdDetails(pProd->ShortName.c_str(), details);
   //      working = FALSE;
-        Skill.Empty();
+        Skill.clear();
         Skill << details.skillname << PRP_SKILL_POSTFIX;
 
         for (x=0; x<pLand->Units.Count(); x++)
@@ -2234,17 +2236,17 @@ void CAhApp::CheckTradeDetails(CLand  * pLand, CTaxProdDetailsCollByFaction & Tr
                 if (AllFactions.Insert(pFactionInfo) )
                     pFactionInfo->HexCount++;
 
-                if ( 0==stricmp(pUnit->ProducingItem.GetData(), pProd->ShortName.GetData()))
+                if ( 0==stricmp(pUnit->ProducingItem.c_str(), pProd->ShortName.c_str()))
                 {
                     if (!pUnit->GetProperty(PRP_MEN, type, (const void *&)men, eNormal) || eLong!=type)
                         continue;
 
                     // check skill level
-                    if (!pUnit->GetProperty(Skill.GetData(), type, (const void *&)lvl, eNormal) || (eLong!=type) )
+                    if (!pUnit->GetProperty(Skill.c_str(), type, (const void *&)lvl, eNormal) || (eLong!=type) )
                         continue;
 
-                    if (!details.toolname.IsEmpty())
-                        if (!pUnit->GetProperty(details.toolname.GetData(), type, (const void *&)tool, eNormal) || eLong!=type )
+                    if (!details.toolname.empty())
+                        if (!pUnit->GetProperty(details.toolname.c_str(), type, (const void *&)tool, eNormal) || eLong!=type )
                             tool = 0;
                     if (tool > men)
                         tool = men;
@@ -2269,14 +2271,14 @@ void CAhApp::CheckTradeDetails(CLand  * pLand, CTaxProdDetailsCollByFaction & Tr
             pFactionInfo = (CTaxProdDetails*)Factions.At(x);
 
             m_pAtlantis->ComposeLandStrCoord(pLand, sCoord);
-            OneLine.Empty();
+            OneLine.clear();
             OneLine << pLand->TerrainType << " (" << sCoord << ") ";
-            while (OneLine.GetLength() < 24)
-                OneLine.AddCh(' ');
+            while (OneLine.size() < 24)
+                AddCh(OneLine, ' ');
             OneLine << pProd->ShortName;
 
-            while (OneLine.GetLength() < 28)
-                OneLine.AddCh(' ');
+            while (OneLine.size() < 28)
+                AddCh(OneLine, ' ');
             if (pFactionInfo->amount > 0)
                 OneLine << " is underproduced by " << pFactionInfo->amount << ". " << EOL_SCR;
             else if (pFactionInfo->amount<0)
@@ -2298,10 +2300,10 @@ void CAhApp::CheckTradeDetails(CLand  * pLand, CTaxProdDetailsCollByFaction & Tr
 
 void CAhApp::CheckTaxTrade()
 {
-    CStr                sTax(64);
-    CStr                sTrade(64);
-    CStr                Report(64), S(64);
-    CStr                Details(256);
+    std::string sTax;
+    std::string sTrade;
+    std::string Report, S;
+    std::string Details;
 //    long                tax = 0;
 //    long                trade = 0;
     int                 n, i;
@@ -2325,7 +2327,7 @@ void CAhApp::CheckTaxTrade()
                 CheckTradeDetails(pLand, Trades);
         }
     }
-    Report.Empty();
+    Report.clear();
     for (i=0; i<Taxes.Count(); i++)
     {
         pDetails = (CTaxProdDetails*)Taxes.At(i);
@@ -2342,7 +2344,7 @@ void CAhApp::CheckTaxTrade()
     Taxes.FreeAll();
     Trades.FreeAll();
 
-    ShowError(Report.GetData()      , Report.GetLength()      , TRUE);
+    ShowError(Report.c_str()      , Report.size()      , TRUE);
 }
 
 //-------------------------------------------------------------------------
@@ -2353,7 +2355,7 @@ void CAhApp::CheckProduction()
     CLand  * pLand;
     CPlane * pPlane;
     CUnit  * pUnit;
-    CStr     Error(64), S(32);
+    std::string Error, S;
 
     for (n=0; n<m_pAtlantis->m_Planes.Count(); n++)
     {
@@ -2370,13 +2372,13 @@ void CAhApp::CheckProduction()
         }
     }
 
-    S.Empty();
-    if (Error.IsEmpty())
+    S.clear();
+    if (Error.empty())
         wxMessageBox(wxT("No problem with resources for production detected"));
     else
     {
         S << "The following problems were detected:" << EOL_SCR << EOL_SCR << Error;
-        ShowError(S.GetData(), S.GetLength(), TRUE);
+        ShowError(S.c_str(), S.size(), TRUE);
     }
 }
 
@@ -2388,7 +2390,7 @@ void CAhApp::CheckSailing()
     CLand  * pLand;
     CPlane * pPlane;
     CStruct* pStruct;
-    CStr     Error(64), S(32), sCoord(32);
+    std::string Error, S, sCoord;
 
     for (n=0; n<m_pAtlantis->m_Planes.Count(); n++)
     {
@@ -2411,13 +2413,13 @@ void CAhApp::CheckSailing()
         }
     }
 
-    S.Empty();
-    if (Error.IsEmpty())
+    S.clear();
+    if (Error.empty())
         wxMessageBox(wxT("No problems with sailing detected"));
     else
     {
         S << "The following problems were detected:" << EOL_SCR << EOL_SCR << Error;
-        ShowError(S.GetData(), S.GetLength(), TRUE);
+        ShowError(S.c_str(), S.size(), TRUE);
     }
 }
 
@@ -2431,7 +2433,7 @@ void CAhApp::CheckSailing()
 
 void CAhApp::PreLoadReport()
 {
-    CStr S, FName;
+    std::string S, FName;
 
     SaveLandFlags();
     SaveUnitFlags();
@@ -2450,7 +2452,7 @@ void CAhApp::PreLoadReport()
 
 void CAhApp::PostLoadReport()
 {
-    CStr              S;
+    std::string              S;
     CMapFrame       * pMapFrame  = (CMapFrame    *)m_Frames[AH_FRAME_MAP];
     CMapPane        * pMapPane   = (CMapPane     *)m_Panes [AH_PANE_MAP];
     CUnitPaneFltr   * pUnitPaneF = (CUnitPaneFltr*)m_Panes [AH_PANE_UNITS_FILTER];
@@ -2477,14 +2479,14 @@ void CAhApp::PostLoadReport()
 
     if (pMapFrame)
     {
-        m_sTitle.Empty();
+        m_sTitle.clear();
 
         for (i=0; i<((int)m_pAtlantis->m_OurFactions.size()); i++)
         {
             pFaction = m_pAtlantis->GetFaction(m_pAtlantis->m_OurFactions[i]);
             if (pFaction)
             {
-                if (!m_sTitle.IsEmpty())
+                if (!m_sTitle.empty())
                     m_sTitle << ", ";
                 if (((int)m_pAtlantis->m_OurFactions.size())<3)
                     m_sTitle << pFaction->Name << " ";
@@ -2558,8 +2560,8 @@ void CAhApp::PostLoadReport()
         pItem = (CShortNamedObj*)m_pAtlantis->m_Skills.At(i);
 
 
-        EncodeConfigLine(S, pItem->Description.GetData());
-        SetConfig(SZ_SECT_SKILLS, pItem->Name.GetData(), S.GetData());
+        EncodeConfigLine(S, pItem->Description.c_str());
+        SetConfig(SZ_SECT_SKILLS, pItem->Name.c_str(), S.c_str());
     }
 
     // Items
@@ -2567,8 +2569,8 @@ void CAhApp::PostLoadReport()
     {
         pItem = (CShortNamedObj*)m_pAtlantis->m_Items.At(i);
 
-        EncodeConfigLine(S, pItem->Description.GetData());
-        SetConfig(SZ_SECT_ITEMS, pItem->Name.GetData(), S.GetData());
+        EncodeConfigLine(S, pItem->Description.c_str());
+        SetConfig(SZ_SECT_ITEMS, pItem->Name.c_str(), S.c_str());
     }
 
     // Objects
@@ -2576,8 +2578,8 @@ void CAhApp::PostLoadReport()
     {
         pItem = (CShortNamedObj*)m_pAtlantis->m_Objects.At(i);
 
-        EncodeConfigLine(S, pItem->Description.GetData());
-        SetConfig(SZ_SECT_OBJECTS, pItem->Name.GetData(), S.GetData());
+        EncodeConfigLine(S, pItem->Description.c_str());
+        SetConfig(SZ_SECT_OBJECTS, pItem->Name.c_str(), S.c_str());
     }
 
     if (pMapPane)
@@ -2590,9 +2592,9 @@ void CAhApp::PostLoadReport()
     // Restore the last selected unit in the selected hex
     if (pMapPane && m_pAtlantis)
     {
-        CStr   sSection;
+        std::string   sSection;
         sSection << "PLANE_" << pMapPane->m_SelPlane;
-        long savedUnitId = atol(GetConfig(sSection.GetData(), SZ_KEY_UNIT_SEL));
+        long savedUnitId = atol(GetConfig(sSection.c_str(), SZ_KEY_UNIT_SEL));
         if (savedUnitId)
         {
             CLand * pLand = m_pAtlantis->GetLand(pMapPane->m_SelHexX, pMapPane->m_SelHexY, pMapPane->m_SelPlane, TRUE);
@@ -2604,7 +2606,7 @@ void CAhApp::PostLoadReport()
     OnMapSelectionChange();
 
     // if there were Hex Events, show them
-    if (!m_pAtlantis->m_HexEvents.Description.IsEmpty())
+    if (!m_pAtlantis->m_HexEvents.Description.empty())
     {
         CBaseColl   Coll;
         Coll.Insert(&m_pAtlantis->m_HexEvents);
@@ -2620,7 +2622,7 @@ void CAhApp::PostLoadReport()
 
     CheckRedirectedOutputFiles();
     
-    if (!m_pAtlantis->m_SecurityEvents.Description.IsEmpty())
+    if (!m_pAtlantis->m_SecurityEvents.Description.empty())
         m_pAtlantis->m_SecurityEvents.Description << EOL_SCR << EOL_SCR;
 }
 
@@ -2628,8 +2630,8 @@ void CAhApp::PostLoadReport()
 
 int  CAhApp::LoadReport  (const char * FNameIn, BOOL Join)
 {
-    CStr S, Sect, S2;
-    CStr FName;
+    std::string S, Sect, S2;
+    std::string FName;
     int  LoadOrd;
     long n;
     int  err = ERR_FOPEN;
@@ -2641,7 +2643,7 @@ int  CAhApp::LoadReport  (const char * FNameIn, BOOL Join)
     if (FNameIn && *FNameIn)
     {
         FName = FNameIn;
-        FName.TrimRight(TRIM_ALL);
+        TrimRight(FName, TRIM_ALL);
 
         PreLoadReport();
 
@@ -2674,7 +2676,7 @@ int  CAhApp::LoadReport  (const char * FNameIn, BOOL Join)
             SET_UNIT_PROP_NAME(upg__.first.c_str(), eLong)
 
 
-        err = m_pAtlantis->ParseRep(FName.GetData(), Join, FALSE);
+        err = m_pAtlantis->ParseRep(FName.c_str(), Join, FALSE);
         switch (err)
         {
             case ERR_INV_TURN:
@@ -2693,20 +2695,20 @@ int  CAhApp::LoadReport  (const char * FNameIn, BOOL Join)
             }
             UpgradeConfigByFactionId();
 
-            if (atol(GetConfig(SZ_SECT_COMMON, SZ_KEY_PWD_READ)) && !m_pAtlantis->m_CrntFactionPwd.IsEmpty())
+            if (atol(GetConfig(SZ_SECT_COMMON, SZ_KEY_PWD_READ)) && !m_pAtlantis->m_CrntFactionPwd.empty())
             {
-                S.Empty();
+                S.clear();
                 S << (long)m_pAtlantis->m_CrntFactionId;
-                SetConfig(SZ_SECT_PASSWORDS, S.GetData(), m_pAtlantis->m_CrntFactionPwd.GetData() );
+                SetConfig(SZ_SECT_PASSWORDS, S.c_str(), m_pAtlantis->m_CrntFactionPwd.c_str() );
             }
 
             LoadOrd = atol(GetConfig(SZ_SECT_COMMON, SZ_KEY_LOAD_ORDER));
             if (LoadOrd)
             {
-                S.Empty();
+                S.clear();
                 S << (long)m_pAtlantis->m_YearMon;
                 ComposeConfigOrdersSection(Sect, m_pAtlantis->m_CrntFactionId);
-                LoadOrders(GetConfig(Sect.GetData(), S.GetData()));
+                LoadOrders(GetConfig(Sect.c_str(), S.c_str()));
             }
         }
 
@@ -2718,17 +2720,17 @@ int  CAhApp::LoadReport  (const char * FNameIn, BOOL Join)
         if ( (ERR_OK==err) && (m_pAtlantis->m_YearMon != 0) )
         {
             // doing it after PostLoadReport() since it will check the section
-            S.Empty();
+            S.clear();
             S << (long)m_pAtlantis->m_YearMon;
             if (!Join)
-                SetConfig(SZ_SECT_REPORTS, S.GetData(), FName.GetData());
+                SetConfig(SZ_SECT_REPORTS, S.c_str(), FName.c_str());
             else
             {
-                S2 = GetConfig(SZ_SECT_REPORTS, S.GetData());
-                if (!S2.IsEmpty())
+                S2 = GetConfig(SZ_SECT_REPORTS, S.c_str());
+                if (!S2.empty())
                     S2 << ", ";
                 S2 << FName;
-                SetConfig(SZ_SECT_REPORTS, S.GetData(), S2.GetData());
+                SetConfig(SZ_SECT_REPORTS, S.c_str(), S2.c_str());
             }
         }
 
@@ -2772,18 +2774,18 @@ int  CAhApp::LoadReport  (const char * FNameIn, BOOL Join)
 int  CAhApp::LoadReport(BOOL Join)
 {
     int rc;
-    CStr Dir;
+    std::string Dir;
     const char * key;
 
     key = Join ? SZ_KEY_FOLDER_REP_JOIN : SZ_KEY_FOLDER_REP_LOAD;
     Dir = GetConfig(SZ_SECT_FOLDERS, key);
-    if (Dir.IsEmpty())
+    if (Dir.empty())
         Dir = ".";
 
     wxString CurrentDir = wxGetCwd();
     wxFileDialog dialog(m_Frames[AH_FRAME_MAP],
                         wxT("Load Report"),
-                        wxString::FromAscii(Dir.GetData()),
+                        wxString::FromAscii(Dir.c_str()),
                         wxT(""),
                         wxT(SZ_REP_FILES),
                         wxFD_OPEN);
@@ -2792,14 +2794,14 @@ int  CAhApp::LoadReport(BOOL Join)
 
     if (wxID_OK == rc)
     {
-        CStr S;
+        std::string S;
         S = dialog.GetPath().mb_str();
         MakePathRelative(CurrentDir.mb_str(), S);
 
-        GetDirFromPath(S.GetData(), Dir);
-        SetConfig(SZ_SECT_FOLDERS, key, Dir.GetData() );
+        GetDirFromPath(S.c_str(), Dir);
+        SetConfig(SZ_SECT_FOLDERS, key, Dir.c_str() );
 
-        return LoadReport(S.GetData(), Join);
+        return LoadReport(S.c_str(), Join);
     }
     else
         return ERR_CANCEL;
@@ -2850,7 +2852,7 @@ void CAhApp::SelectTempUnit(CUnit * pUnit)
     CEditPane   * pComments    = (CEditPane*)m_Panes[AH_PANE_UNIT_COMMENTS];
 
     OnUnitHexSelectionChange(-1); // unselect   
-    m_UnitDescrSrc.Empty();
+    m_UnitDescrSrc.clear();
 
     if (pUnit)
         m_UnitDescrSrc = pUnit->Description;
@@ -2956,7 +2958,7 @@ BOOL CAhApp::SelectLand(const char * landcoords) //  "48,52[,somewhere]"
 void CAhApp::EditPaneDClicked(CEditPane * pPane)
 {
     const char  * p;
-    CStr          src, S;
+    std::string          src, S;
     char          ch;
     CUnit       * pUnit;
     CBaseObject   Dummy;
@@ -2973,7 +2975,7 @@ void CAhApp::EditPaneDClicked(CEditPane * pPane)
 // while actual returned string has "\n" end of lines
 #ifdef __WXMSW__
         long x = 0;
-        p = src.GetData();
+        p = src.c_str();
         while (x<position)
         {
             if ('\n' == p[x])
@@ -2981,10 +2983,10 @@ void CAhApp::EditPaneDClicked(CEditPane * pPane)
             x++;
         }
 #endif
-        if (position > src.GetLength())
-            position = src.GetLength();
+        if (position > src.size())
+            position = src.size();
 
-        p = src.GetData();
+        p = src.c_str();
         while (position > 0)
 
         {
@@ -2993,12 +2995,12 @@ void CAhApp::EditPaneDClicked(CEditPane * pPane)
             position--;
         }
 
-        p = &src.GetData()[position];
-        p = SkipSpaces(S.GetToken(p, " \t", ch, TRIM_ALL));
-        if (0==stricmp("UNIT", S.GetData()))  // that is an order problem report
+        p = &src.c_str()[position];
+        p = SkipSpaces(GetToken(S, p, " \t", ch, TRIM_ALL));
+        if (0==stricmp("UNIT", S.c_str()))  // that is an order problem report
         {
-            S.GetToken(p, " \t", ch, TRIM_ALL);
-            Dummy.Id = atol(S.GetData());
+            GetToken(S, p, " \t", ch, TRIM_ALL);
+            Dummy.Id = atol(S.c_str());
             if (m_pAtlantis->m_Units.Search(&Dummy, idx))
             {
                 pUnit = (CUnit*)m_pAtlantis->m_Units.At(idx);
@@ -3008,12 +3010,12 @@ void CAhApp::EditPaneDClicked(CEditPane * pPane)
         }
 
 
-        p = &src.GetData()[position];
-        p = SkipSpaces(S.GetToken(p, "(\n", ch, TRIM_ALL)); // must be an error from the report file
+        p = &src.c_str()[position];
+        p = SkipSpaces(GetToken(S, p, "(\n", ch, TRIM_ALL)); // must be an error from the report file
         if ('('==ch)
         {
-            S.GetToken(p, ",)\n", ch, TRIM_ALL);
-            Dummy.Id = atol(S.GetData());
+            GetToken(S, p, ")\n", ch, TRIM_ALL);
+            Dummy.Id = atol(S.c_str());
             if (')'==ch && m_pAtlantis->m_Units.Search(&Dummy, idx))
             {
                 pUnit = (CUnit*)m_pAtlantis->m_Units.At(idx);
@@ -3023,12 +3025,12 @@ void CAhApp::EditPaneDClicked(CEditPane * pPane)
         }
 
         // land
-        p = &src.GetData()[position];
-        p = SkipSpaces(S.GetToken(p, "(\n", ch, TRIM_ALL));
+        p = &src.c_str()[position];
+        p = SkipSpaces(GetToken(S, p, "(\n", ch, TRIM_ALL));
         if ('('==ch)
         {
-            p = SkipSpaces(S.GetToken(p, ")\n", ch, TRIM_ALL));
-            if (')' == ch && SelectLand(S.GetData()))
+            p = SkipSpaces(GetToken(S, p, ")\n", ch, TRIM_ALL));
+            if (')' == ch && SelectLand(S.c_str()))
                 return;
         }
     }
@@ -3038,7 +3040,7 @@ void CAhApp::EditPaneDClicked(CEditPane * pPane)
 
 void CAhApp::SwitchToYearMon(long YearMon)
 {
-    CStr          S, S2;
+    std::string          S, S2;
 
     PreLoadReport();
     if (GetOrdersChanged())
@@ -3076,16 +3078,16 @@ void CAhApp::SwitchToYearMon(long YearMon)
     }
     else
     {
-        S.Empty();
+        S.clear();
         S << YearMon;
 
-        S2 = GetConfig(SZ_SECT_REPORTS, S.GetData());
-        const char * p = S2.GetData();
+        S2 = GetConfig(SZ_SECT_REPORTS, S.c_str());
+        const char * p = S2.c_str();
         BOOL         join = FALSE;
         while (p && *p)
         {
-            p = S.GetToken(p, ',');
-            LoadReport(S.GetData(), join);
+            p = GetToken(S, p, ',');
+            LoadReport(S.c_str(), join);
             join = TRUE;
         }
     }
@@ -3110,7 +3112,7 @@ void CAhApp::SwitchToRep(eRepSeq whichrep)
 BOOL CAhApp::CanSwitchToRep(eRepSeq whichrep, int & RepIdx)
 {
     long       ym;
-    CStr       sName, sData;
+    std::string       sName, sData;
     CLand    * pLand;
     CMapPane * pMapPane;
 
@@ -3157,9 +3159,9 @@ BOOL CAhApp::CanSwitchToRep(eRepSeq whichrep, int & RepIdx)
         pMapPane = (CMapPane* )m_Panes[AH_PANE_MAP];
         pLand    = m_pAtlantis->GetLand(pMapPane->m_SelHexX, pMapPane->m_SelHexY, pMapPane->m_SelPlane, TRUE);
         m_pAtlantis->ComposeLandStrCoord(pLand, sName);
-//        ym       = atol(GetConfig(SZ_SECT_LAND_VISITED, sName.GetData()));
-        sData.GetToken(GetConfig(SZ_SECT_LAND_VISITED, sName.GetData()), ',');
-        ym = atol(sData.GetData());
+//        ym       = atol(GetConfig(SZ_SECT_LAND_VISITED, sName.c_str()));
+        GetToken(sData, GetConfig(SZ_SECT_LAND_VISITED, sName.c_str()), ',');
+        ym = atol(sData.c_str());
 
         {
             auto _it = std::lower_bound(m_ReportDates.begin(), m_ReportDates.end(), ym);
@@ -3184,7 +3186,7 @@ BOOL CAhApp::GetPrevTurnReport(CAtlaParser *& pPrevTurn)
         
     if (CanSwitchToRep(repPrev, idx))
     {
-        CStr          S, S2;
+        std::string          S, S2;
     
         long YearMon = m_ReportDates[idx];
     
@@ -3199,11 +3201,11 @@ BOOL CAhApp::GetPrevTurnReport(CAtlaParser *& pPrevTurn)
         }
         else
         {
-            S.Empty();
+            S.clear();
             S << YearMon;
     
-            S2 = GetConfig(SZ_SECT_REPORTS, S.GetData());
-            const char * p = S2.GetData();
+            S2 = GetConfig(SZ_SECT_REPORTS, S.c_str());
+            const char * p = S2.c_str();
             BOOL         join = FALSE;
             m_DisableErrs = TRUE;
             wxBeginBusyCursor();
@@ -3211,9 +3213,9 @@ BOOL CAhApp::GetPrevTurnReport(CAtlaParser *& pPrevTurn)
             prevTurn->ParseRep(SZ_HISTORY_FILE, FALSE, TRUE);
             while (p && *p)
             {
-                p = S.GetToken(p, ',');
-                //LoadReport(S.GetData(), join);
-                prevTurn->ParseRep(S.GetData(), join, FALSE);
+                p = GetToken(S, p, ',');
+                //LoadReport(S.c_str(), join);
+                prevTurn->ParseRep(S.c_str(), join, FALSE);
                 join = TRUE;
             }
             wxEndBusyCursor();
@@ -3239,8 +3241,8 @@ BOOL CAhApp::GetPrevTurnReport(CAtlaParser *& pPrevTurn)
 }
 
 /*
-    CStr S, Sect, S2;
-    CStr FName;
+    std::string S, Sect, S2;
+    std::string FName;
     int  LoadOrd;
     int  i;
     long n;
@@ -3253,7 +3255,7 @@ BOOL CAhApp::GetPrevTurnReport(CAtlaParser *& pPrevTurn)
     if (FNameIn && *FNameIn)
     {
         FName = FNameIn;
-        FName.TrimRight(TRIM_ALL);
+        TrimRight(FName, TRIM_ALL);
 
         PreLoadReport();
 
@@ -3271,7 +3273,7 @@ BOOL CAhApp::GetPrevTurnReport(CAtlaParser *& pPrevTurn)
             SET_UNIT_PROP_NAME(upg__.first.c_str(), eLong)
 
 
-        err = m_pAtlantis->ParseRep(FName.GetData(), Join, FALSE);
+        err = m_pAtlantis->ParseRep(FName.c_str(), Join, FALSE);
         switch (err)
         {
             case ERR_INV_TURN:
@@ -3290,20 +3292,20 @@ BOOL CAhApp::GetPrevTurnReport(CAtlaParser *& pPrevTurn)
             }
             UpgradeConfigByFactionId();
 
-            if (atol(GetConfig(SZ_SECT_COMMON, SZ_KEY_PWD_READ)) && !m_pAtlantis->m_CrntFactionPwd.IsEmpty())
+            if (atol(GetConfig(SZ_SECT_COMMON, SZ_KEY_PWD_READ)) && !m_pAtlantis->m_CrntFactionPwd.empty())
             {
-                S.Empty();
+                S.clear();
                 S << (long)m_pAtlantis->m_CrntFactionId;
-                SetConfig(SZ_SECT_PASSWORDS, S.GetData(), m_pAtlantis->m_CrntFactionPwd.GetData() );
+                SetConfig(SZ_SECT_PASSWORDS, S.c_str(), m_pAtlantis->m_CrntFactionPwd.c_str() );
             }
 
             LoadOrd = atol(GetConfig(SZ_SECT_COMMON, SZ_KEY_LOAD_ORDER));
             if (LoadOrd)
             {
-                S.Empty();
+                S.clear();
                 S << (long)m_pAtlantis->m_YearMon;
                 ComposeConfigOrdersSection(Sect, m_pAtlantis->m_CrntFactionId);
-                LoadOrders(GetConfig(Sect.GetData(), S.GetData()));
+                LoadOrders(GetConfig(Sect.c_str(), S.c_str()));
             }
         }
 
@@ -3315,17 +3317,17 @@ BOOL CAhApp::GetPrevTurnReport(CAtlaParser *& pPrevTurn)
         if ( (ERR_OK==err) && (m_pAtlantis->m_YearMon != 0) )
         {
             // doing it after PostLoadReport() since it will check the section
-            S.Empty();
+            S.clear();
             S << (long)m_pAtlantis->m_YearMon;
             if (!Join)
-                SetConfig(SZ_SECT_REPORTS, S.GetData(), FName.GetData());
+                SetConfig(SZ_SECT_REPORTS, S.c_str(), FName.c_str());
             else
             {
-                S2 = GetConfig(SZ_SECT_REPORTS, S.GetData());
-                if (!S2.IsEmpty())
+                S2 = GetConfig(SZ_SECT_REPORTS, S.c_str());
+                if (!S2.empty())
                     S2 << ", ";
                 S2 << FName;
-                SetConfig(SZ_SECT_REPORTS, S.GetData(), S2.GetData());
+                SetConfig(SZ_SECT_REPORTS, S.c_str(), S2.c_str());
             }
         }
 
@@ -3366,7 +3368,7 @@ void CAhApp::UpdateHexEditPane(CLand * pLand)
     int           i;
     BOOL          FlagsEmpty = TRUE;
 
-    m_HexDescrSrc.Empty();
+    m_HexDescrSrc.clear();
 
     pEditPane = (CEditPane*)m_Panes[AH_PANE_MAP_DESCR];
     if (pEditPane)
@@ -3380,13 +3382,13 @@ void CAhApp::UpdateHexEditPane(CLand * pLand)
 
             if (pLand->Structs.Count()>0)
             {
-                m_HexDescrSrc.TrimRight(TRIM_ALL);
+                TrimRight(m_HexDescrSrc, TRIM_ALL);
                 m_HexDescrSrc << EOL_SCR << "-----------" << EOL_SCR;
                 for (i=0; i<pLand->Structs.Count(); i++)
                 {
                     pStruct = (CStruct*)pLand->Structs.At(i);
                     m_HexDescrSrc << pStruct->Description;
-                    m_HexDescrSrc.TrimRight(TRIM_ALL);
+                    TrimRight(m_HexDescrSrc, TRIM_ALL);
                     if (pStruct->Attr & SA_MOBILE)
                         m_HexDescrSrc << " Load: " << pStruct->Load << ", Power: " << pStruct->SailingPower << ".";
                     m_HexDescrSrc << EOL_SCR;
@@ -3394,7 +3396,7 @@ void CAhApp::UpdateHexEditPane(CLand * pLand)
             }
 
             for (i=0; i<LAND_FLAG_COUNT; i++)
-                if (!pLand->FlagText[i].IsEmpty())
+                if (!pLand->FlagText[i].empty())
                 {
                     FlagsEmpty = FALSE;
                     break;
@@ -3403,16 +3405,16 @@ void CAhApp::UpdateHexEditPane(CLand * pLand)
 
             if (!FlagsEmpty)
             {
-                m_HexDescrSrc.TrimRight(TRIM_ALL);
+                TrimRight(m_HexDescrSrc, TRIM_ALL);
                 m_HexDescrSrc << EOL_SCR << "-----------";
 
                 for (i=0; i<LAND_FLAG_COUNT; i++)
-                    if (!pLand->FlagText[i].IsEmpty())
+                    if (!pLand->FlagText[i].empty())
                         m_HexDescrSrc << EOL_SCR << pLand->FlagText[i];
             }
 
-            if (!pLand->Events.IsEmpty() &&
-                 0 != stricmp(SkipSpaces(pLand->Events.GetData()), "none")
+            if (!pLand->Events.empty() &&
+                 0 != stricmp(SkipSpaces(pLand->Events.c_str()), "none")
                )
                 m_HexDescrSrc << EOL_SCR << "Events:" << EOL_SCR << pLand->Events << EOL_SCR;
             m_HexDescrSrc << EOL_SCR << "Exits:"  << EOL_SCR << pLand->Exits;
@@ -3471,14 +3473,14 @@ void CAhApp::OnUnitHexSelectionChange(long idx)
     pOrders      = (CEditPane*)m_Panes[AH_PANE_UNIT_COMMANDS];
     pComments    = (CEditPane*)m_Panes[AH_PANE_UNIT_COMMENTS];
 
-    m_UnitDescrSrc.Empty();
+    m_UnitDescrSrc.clear();
 
     if (pUnit)
     {
         m_UnitDescrSrc = pUnit->Description;
-        if (!pUnit->Errors.IsEmpty())
+        if (!pUnit->Errors.empty())
             m_UnitDescrSrc << " ***** Errors:\r\n" << pUnit->Errors;
-        if (!pUnit->Events.IsEmpty())
+        if (!pUnit->Events.empty())
             m_UnitDescrSrc << " ----- Events:\r\n" << pUnit->Events;
 
         ReadOnly = (!pUnit->IsOurs || pUnit->Id<=0) ;
@@ -3545,16 +3547,16 @@ void CAhApp::OnUnitHexSelectionChange(long idx)
 void CAhApp::LoadOrders()
 {
     int rc;
-    CStr Dir;
+    std::string Dir;
 
     Dir = GetConfig(SZ_SECT_FOLDERS, SZ_KEY_FOLDER_ORDERS);
-    if (Dir.IsEmpty())
+    if (Dir.empty())
         Dir = ".";
 
     wxString CurrentDir = wxGetCwd();
     wxFileDialog dialog(m_Frames[AH_FRAME_MAP],
                         wxT("Load orders"),
-                        wxString::FromAscii(Dir.GetData()),
+                        wxString::FromAscii(Dir.c_str()),
                         wxT(""),
                         wxT(SZ_ORD_FILES),
                         wxFD_OPEN );
@@ -3563,13 +3565,13 @@ void CAhApp::LoadOrders()
 
     if (wxID_OK==rc)
     {
-        CStr S;
+        std::string S;
         S = dialog.GetPath().mb_str();
         MakePathRelative(CurrentDir.mb_str(), S);
-        GetDirFromPath(S.GetData(), Dir);
-        SetConfig(SZ_SECT_FOLDERS, SZ_KEY_FOLDER_ORDERS, Dir.GetData() );
+        GetDirFromPath(S.c_str(), Dir);
+        SetConfig(SZ_SECT_FOLDERS, SZ_KEY_FOLDER_ORDERS, Dir.c_str() );
 
-        LoadOrders(S.GetData());
+        LoadOrders(S.c_str());
         SetOrdersChanged(FALSE);
     }
 }
@@ -3597,7 +3599,7 @@ void CAhApp::ShowDescriptionList(CBaseColl & Items, const char * title) // Colle
         if (1 == Items.Count())
         {
             pObj = (CBaseObject*)Items.At(0);
-            CShowOneDescriptionDlg dlg(gpApp->m_Frames[AH_FRAME_MAP], pObj->Name.GetData(), pObj->Description.GetData());
+            CShowOneDescriptionDlg dlg(gpApp->m_Frames[AH_FRAME_MAP], pObj->Name.c_str(), pObj->Description.c_str());
             dlg.ShowModal();
         }
         else
@@ -3694,8 +3696,8 @@ void CAhApp::ViewEvents(BOOL DoEvents)
     {
 //        Coll.Insert(&m_pAtlantis->m_Errors);
 //        ShowDescriptionList(Coll, "Errors");
-        m_MsgSrc.Empty();
-        ShowError(m_pAtlantis->m_Errors.Description.GetData(), m_pAtlantis->m_Errors.Description.GetLength(), TRUE);
+        m_MsgSrc.clear();
+        ShowError(m_pAtlantis->m_Errors.Description.c_str(), m_pAtlantis->m_Errors.Description.size(), TRUE);
 
     }
     Coll.DeleteAll();
@@ -3712,8 +3714,8 @@ void CAhApp::ViewSecurityEvents()
 
     Coll.DeleteAll();*/
     
-        m_MsgSrc.Empty();
-        ShowError(m_pAtlantis->m_SecurityEvents.Description.GetData(), m_pAtlantis->m_SecurityEvents.Description.GetLength(), TRUE);
+        m_MsgSrc.clear();
+        ShowError(m_pAtlantis->m_SecurityEvents.Description.c_str(), m_pAtlantis->m_SecurityEvents.Description.size(), TRUE);
 }
 
 //--------------------------------------------------------------------------
@@ -3746,7 +3748,7 @@ void CAhApp::ViewCities()
     CPlane           * pPlane;
     CLand            * pLand;
     //int                x,y,z;
-    CStr               sCoord;
+    std::string               sCoord;
 
     for (np=0; np<m_pAtlantis->m_Planes.Count(); np++)
     {
@@ -3754,7 +3756,7 @@ void CAhApp::ViewCities()
         for (nl=0; nl<pPlane->Lands.Count(); nl++)
         {
             pLand    = (CLand*)pPlane->Lands.At(nl);
-            if (!pLand->CityName.IsEmpty())
+            if (!pLand->CityName.empty())
             {
                 std::unique_ptr<CBaseObject> pObj(new CBaseObject);
                 pObj->Name = pLand->CityName;
@@ -3782,7 +3784,7 @@ void CAhApp::ViewProvinces()
     int                np,nl;
     CPlane           * pPlane;
     CLand            * pLand;
-    CStr               sCoord;
+    std::string               sCoord;
     int                loop;
 
     for (loop=0; loop<2; loop++)
@@ -3816,7 +3818,7 @@ void CAhApp::ViewProvinces()
 
 void CAhApp::ViewFactionInfo()
 {
-    CStr sMoreInfo(32), sInfo(32);
+    std::string sMoreInfo, sInfo;
     int                np,nl;
     CPlane           * pPlane;
     CLand            * pLand;
@@ -3841,7 +3843,7 @@ void CAhApp::ViewFactionInfo()
     sInfo << m_pAtlantis->m_FactionInfo << sMoreInfo;
     CShowOneDescriptionDlg dlg(gpApp->m_Frames[AH_FRAME_MAP],
                                "Faction Info",
-                               sInfo.GetData());
+                               sInfo.c_str());
     dlg.ShowModal();
 }
 
@@ -3885,11 +3887,11 @@ void CAhApp::ViewFactionOverview()
 
     int             unitidx, propidx, nl;
     CUnit         * pUnit;
-    CStr            propname;
-    CStr            Skill;
+    std::string            propname;
+    std::string            Skill;
     int             skilllen;
     int             maxproplen = 0;
-    CStr            Report(128);
+    std::string Report;
     CMapPane      * pMapPane  = (CMapPane* )m_Panes[AH_PANE_MAP];
     BOOL            Selected  = FALSE;
     EValueType      type;
@@ -3928,30 +3930,30 @@ void CAhApp::ViewFactionOverview()
                 propname = propnameStr.c_str();
 
                 // skip 'skill days' property
-                if (IsASkillRelatedProperty(propname.GetData()) &&
-                     propname.FindSubStrR(PRP_SKILL_POSTFIX) != propname.GetLength()-skilllen)
+                if (IsASkillRelatedProperty(propname.c_str()) &&
+                     FindSubStrR(propname, PRP_SKILL_POSTFIX) != propname.size()-skilllen)
                     continue;
 
                 // skip some properties which can not be aggegated
-                if (0==stricmp(propname.GetData(), PRP_ID        ) ||
-                    0==stricmp(propname.GetData(), PRP_FACTION_ID) ||
-                    0==stricmp(propname.GetData(), PRP_LAND_ID   ) ||
-                    0==stricmp(propname.GetData(), PRP_STRUCT_ID ) ||
-                    0==stricmp(propname.GetData(), PRP_TEACHING  ) ||
-                    0==stricmp(propname.GetData(), PRP_SKILLS    ) ||
-                    0==stricmp(propname.GetData(), PRP_MAG_SKILLS) ||
-                    0==stricmp(propname.GetData(), PRP_SEQUENCE  ) ||
-                    0==stricmp(propname.GetData(), PRP_FRIEND_OR_FOE  )
+                if (0==stricmp(propname.c_str(), PRP_ID        ) ||
+                    0==stricmp(propname.c_str(), PRP_FACTION_ID) ||
+                    0==stricmp(propname.c_str(), PRP_LAND_ID   ) ||
+                    0==stricmp(propname.c_str(), PRP_STRUCT_ID ) ||
+                    0==stricmp(propname.c_str(), PRP_TEACHING  ) ||
+                    0==stricmp(propname.c_str(), PRP_SKILLS    ) ||
+                    0==stricmp(propname.c_str(), PRP_MAG_SKILLS) ||
+                    0==stricmp(propname.c_str(), PRP_SEQUENCE  ) ||
+                    0==stricmp(propname.c_str(), PRP_FRIEND_OR_FOE  )
 
 
                    )
                     continue;
 
-                if (pUnit->GetProperty(propname.GetData(), type, value, eOriginal) &&
+                if (pUnit->GetProperty(propname.c_str(), type, value, eOriginal) &&
                     (eLong==type) )
                     do
                     {
-                        if (propname.FindSubStrR(PRP_SKILL_POSTFIX) == propname.GetLength()-skilllen)
+                        if (FindSubStrR(propname, PRP_SKILL_POSTFIX) == propname.size()-skilllen)
                         {
                                 // it is a skill
     
@@ -3959,39 +3961,39 @@ void CAhApp::ViewFactionOverview()
                             value    = (void*)men;
                         }
                         else 
-                            if (IsASkillRelatedProperty(propname.GetData()))
+                            if (IsASkillRelatedProperty(propname.c_str()))
                                 break;
     
-                        if (propname.GetLength() > maxproplen)
-                            maxproplen = propname.GetLength();
+                        if (propname.size() > maxproplen)
+                            maxproplen = propname.size();
     
-                        ViewFactionOverview_IncrementValue(pUnit->FactionId, pUnit->pFaction ? pUnit->pFaction->Name.GetData() : NULL, Factions, propname.GetData(), (long)value);
+                        ViewFactionOverview_IncrementValue(pUnit->FactionId, pUnit->pFaction ? pUnit->pFaction->Name.c_str() : NULL, Factions, propname.c_str(), (long)value);
                         
                     } while (FALSE);
 
             }
 
             if (pUnit->Flags & UNIT_FLAG_AVOIDING)
-                ViewFactionOverview_IncrementValue(pUnit->FactionId, pUnit->pFaction ? pUnit->pFaction->Name.GetData() : NULL, Factions, "Avoiding", men);
+                ViewFactionOverview_IncrementValue(pUnit->FactionId, pUnit->pFaction ? pUnit->pFaction->Name.c_str() : NULL, Factions, "Avoiding", men);
             else
             {
                 if (pUnit->Flags & UNIT_FLAG_BEHIND)
-                    ViewFactionOverview_IncrementValue(pUnit->FactionId, pUnit->pFaction ? pUnit->pFaction->Name.GetData() : NULL, Factions, "Back Line", men);
+                    ViewFactionOverview_IncrementValue(pUnit->FactionId, pUnit->pFaction ? pUnit->pFaction->Name.c_str() : NULL, Factions, "Back Line", men);
                 else
-                    ViewFactionOverview_IncrementValue(pUnit->FactionId, pUnit->pFaction ? pUnit->pFaction->Name.GetData() : NULL, Factions, "Front Line", men);
+                    ViewFactionOverview_IncrementValue(pUnit->FactionId, pUnit->pFaction ? pUnit->pFaction->Name.c_str() : NULL, Factions, "Front Line", men);
             }
             
 
             /*
             propidx  = 0;
             propname = pUnit->GetPropertyName(propidx);
-            while (!propname.IsEmpty())
+            while (!propname.empty())
             {
-                if (pUnit->GetProperty(propname.GetData(), type, value, eOriginal) &&
+                if (pUnit->GetProperty(propname.c_str(), type, value, eOriginal) &&
                     (eLong==type) )
                     do
                     {
-                        if (propname.FindSubStrR(PRP_SKILL_POSTFIX) == propname.GetLength()-skilllen)
+                        if (FindSubStrR(propname, PRP_SKILL_POSTFIX) == propname.size()-skilllen)
                         {
                             // it is a skill
 
@@ -4000,13 +4002,13 @@ void CAhApp::ViewFactionOverview()
                                 (eLong==type) )
                                 break;
                         }
-                        else if (IsASkillRelatedProperty(propname.GetData()) ||
-                                 0==stricmp(PRP_SEQUENCE, propname.GetData()) ||
-                                 0==stricmp(PRP_STRUCT_ID, propname.GetData()) )
+                        else if (IsASkillRelatedProperty(propname.c_str()) ||
+                                 0==stricmp(PRP_SEQUENCE, propname.c_str()) ||
+                                 0==stricmp(PRP_STRUCT_ID, propname.c_str()) )
                             break;
 
-                        if (propname.GetLength() > maxproplen)
-                            maxproplen = propname.GetLength();
+                        if (propname.size() > maxproplen)
+                            maxproplen = propname.size();
 
                         Dummy.Id = pUnit->FactionId;
                         if (Factions.Search(&Dummy, idx))
@@ -4020,11 +4022,11 @@ void CAhApp::ViewFactionOverview()
                             Factions.Insert(pFaction);
                         }
 
-                        if (!pFaction->GetProperty(propname.GetData(), type, valuetot, eNormal))
+                        if (!pFaction->GetProperty(propname.c_str(), type, valuetot, eNormal))
                             valuetot = (void*)0;
 
                         valuetot = (void*)((long)valuetot + (long)value);
-                        pFaction->SetProperty(propname.GetData(), eLong, valuetot, eNormal);
+                        pFaction->SetProperty(propname.c_str(), eLong, valuetot, eNormal);
                     } while (FALSE);
 
                 propname = pUnit->GetPropertyName(++propidx);
@@ -4044,13 +4046,13 @@ void CAhApp::ViewFactionOverview()
 
         propidx  = 0;
         propname = pFaction->GetPropertyName(propidx);
-        while (!propname.IsEmpty())
+        while (!propname.empty())
         {
-            if (pFaction->GetProperty(propname.GetData(), type, value, eNormal) &&
+            if (pFaction->GetProperty(propname.c_str(), type, value, eNormal) &&
                 (eLong==type) )
             {
-                while (propname.GetLength() < maxproplen)
-                    propname.AddCh(' ');
+                while (propname.size() < maxproplen)
+                    AddCh(propname, ' ');
                 Report << propname << "  " << (long)value << EOL_SCR;
             }
 
@@ -4063,7 +4065,7 @@ void CAhApp::ViewFactionOverview()
 
     CShowOneDescriptionDlg dlg(gpApp->m_Frames[AH_FRAME_MAP],
                                "Factions Overview",
-                               Report.GetData());
+                               Report.c_str());
     dlg.ShowModal();
     Factions.FreeAll();
 }
@@ -4080,14 +4082,14 @@ void CAhApp::CheckMonthLongOrders()
     const char         * dupord;
     const char         * p;
     char                 ch;
-    CStr                 Line;
-    CStr                 Ord;
+    std::string                 Line;
+    std::string                 Ord;
     const char         * order;
     BOOL                 IsNew;
     BOOL                 Found;
-    CStr                 Errors(128);
-    CStr                 S(64);
-    CStr                 FoundOrder;
+    std::string Errors;
+    std::string S;
+    std::string                 FoundOrder;
     std::set<std::string, CaseInsensitiveLess> MonthLongOrders;
     std::set<std::string, CaseInsensitiveLess> MonthLongDup;
     long                 men;
@@ -4104,17 +4106,17 @@ void CAhApp::CheckMonthLongOrders()
     p = SkipSpaces(GetConfig(SZ_SECT_COMMON, SZ_KEY_ORD_MONTH_LONG));
     while (p && *p)
     {
-        p = SkipSpaces(S.GetToken(p, ','));
-        if (!S.IsEmpty())
-            MonthLongOrders.insert(S.GetData());
+        p = SkipSpaces(GetToken(S, p, ','));
+        if (!S.empty())
+            MonthLongOrders.insert(S.c_str());
     }
 
     p = SkipSpaces(GetConfig(SZ_SECT_COMMON, SZ_KEY_ORD_DUPLICATABLE));
     while (p && *p)
     {
-        p = SkipSpaces(S.GetToken(p, ','));
-        if (!S.IsEmpty())
-            MonthLongDup.insert(S.GetData());
+        p = SkipSpaces(GetToken(S, p, ','));
+        if (!S.empty())
+            MonthLongDup.insert(S.c_str());
     }
 
     if (1==atol(SkipSpaces(GetConfig(SZ_SECT_COMMON, SZ_KEY_CHECK_OUTPUT_LIST))))
@@ -4137,16 +4139,16 @@ void CAhApp::CheckMonthLongOrders()
 
             if (!pUnit->IsOurs)
                 continue;
-            src   = pUnit->Orders.GetData();
+            src   = pUnit->Orders.c_str();
             IsNew = FALSE;
             Found = FALSE;
             turnlvl = 0;
             while (src && *src)
             {
                 dupord = src;
-                src    = Line.GetToken(src, '\n', TRIM_ALL);
-                Ord.GetToken(SkipSpaces(Line.GetData()), " \t", ch, TRIM_ALL);
-                order = Ord.GetData();
+                src    = GetToken(Line, src, '\n', TRIM_ALL);
+                GetToken(Ord, SkipSpaces(Line.c_str()), " \t", ch, TRIM_ALL);
+                order = Ord.c_str();
                 if ('@'==*order)
                     order++;
                 if (0==SafeCmp("FORM", order))
@@ -4161,7 +4163,7 @@ void CAhApp::CheckMonthLongOrders()
                 {
                     if (Found)
                     {
-                        if (0==stricmp(order, FoundOrder.GetData()) &&
+                        if (0==stricmp(order, FoundOrder.c_str()) &&
                             MonthLongDup.find(order) != MonthLongDup.end())
                             continue; // it is an order which can be duplicated
 
@@ -4173,13 +4175,13 @@ void CAhApp::CheckMonthLongOrders()
                             pUnitPaneF->InsertUnit(pUnit);
                             S = dup_ord_msg;
                             S << EOL_SCR;
-                            newpos = dupord - pUnit->Orders.GetData() + S.GetLength();
-                            pUnit->Orders.InsBuf(S.GetData(), dupord - pUnit->Orders.GetData(), S.GetLength());
-                            src = &pUnit->Orders.GetData()[newpos];
+                            newpos = dupord - pUnit->Orders.c_str() + S.size();
+                            InsBuf(pUnit->Orders, S.c_str(), dupord - pUnit->Orders.c_str(), S.size());
+                            src = &pUnit->Orders.c_str()[newpos];
                         }
                         else
                         {
-                            S.Format("Unit % 5d Error : Duplicate month long orders - %s", pUnit->Id, Line.GetData());
+                            Format(S, "Unit % 5d Error : Duplicate month long orders - %s", pUnit->Id, Line.c_str());
                             Errors << S << EOL_SCR;
                         }
                         break;
@@ -4198,17 +4200,17 @@ void CAhApp::CheckMonthLongOrders()
                 if (pUnitPaneF)
                 {
                     pUnitPaneF->InsertUnit(pUnit);
-                    Line.GetToken(pUnit->Orders.GetData(), '\n', TRIM_ALL);
-                    if (NULL==strstr(Line.GetData(), no_ord_msg))
+                    GetToken(Line, pUnit->Orders.c_str(), '\n', TRIM_ALL);
+                    if (NULL==strstr(Line.c_str(), no_ord_msg))
                     {
                         S = no_ord_msg;
                         S << EOL_SCR;
-                        pUnit->Orders.InsBuf(S.GetData(), 0, S.GetLength());
+                        InsBuf(pUnit->Orders, S.c_str(), 0, S.size());
                     }
                 }
                 else
                 {
-                    S.Format("Unit % 5d Warning : No month long orders", pUnit->Id);
+                    Format(S, "Unit % 5d Warning : No month long orders", pUnit->Id);
                     Errors << S << EOL_SCR;
                 }
             }
@@ -4222,7 +4224,7 @@ void CAhApp::CheckMonthLongOrders()
         pUnitPaneF->InsertUnitDone();
 
     if (!pUnitPaneF && errcount>0)
-        ShowError(Errors.GetData(), Errors.GetLength(), TRUE);
+        ShowError(Errors.c_str(), Errors.size(), TRUE);
 
     if (0==errcount)
         wxMessageBox(wxT("No problems found."), wxT("Order checking"), wxOK | wxCENTRE, m_Frames[AH_FRAME_MAP]);
@@ -4244,7 +4246,7 @@ void CAhApp::ShowUnitsMovingIntoHex(long CurHexId, CPlane * pCurPlane)
     int              nl, nu, i;
     long             HexId;
     CUnitPaneFltr  * pUnitPaneF = NULL;
-    CStr             UnitText(128), S(16);
+    std::string UnitText, S;
     CBaseColl        FoundUnits;
 
     for (nl=0; nl<pCurPlane->Lands.Count(); nl++)
@@ -4281,7 +4283,7 @@ void CAhApp::ShowUnitsMovingIntoHex(long CurHexId, CPlane * pCurPlane)
                 pUnitPaneF->InsertUnit(pUnit);
             else
             {
-                S.Format("Unit % 5d", pUnit->Id);
+                Format(S, "Unit % 5d", pUnit->Id);
                 UnitText << S << EOL_SCR;
             }
         }
@@ -4289,7 +4291,7 @@ void CAhApp::ShowUnitsMovingIntoHex(long CurHexId, CPlane * pCurPlane)
         if (pUnitPaneF)
             pUnitPaneF->InsertUnitDone();
         else
-            ShowError(UnitText.GetData(), UnitText.GetLength(), TRUE);
+            ShowError(UnitText.c_str(), UnitText.size(), TRUE);
     }
     else
         wxMessageBox(wxT("Found no units moving into the current hex."), wxT("Units moving"), wxOK | wxCENTRE, m_Frames[AH_FRAME_MAP]);
@@ -4319,7 +4321,7 @@ void CAhApp::ShowLandFinancial(CLand * pCurLand)
     const void       * value;
     CBaseObject        Report;
     CBaseCollByName    coll;
-    CStr               sCoord;
+    std::string               sCoord;
     std::set<long>     Factions;
     long               TaxPerTaxer;
     const char       * leadership;
@@ -4444,11 +4446,11 @@ void CAhApp::AddTempHex(int X, int Y, int Plane)
         
     assert(Plane == pPlane->Id);
     
-    CStr     sTerrain;
+    std::string     sTerrain;
     wxString strTerrain = wxGetTextFromUser(wxT("Terrain"), wxT("Please specify terrain type"));
     sTerrain = strTerrain.mb_str();
         
-    if (sTerrain.IsEmpty())
+    if (sTerrain.empty())
         return;    
         
     CLand * pLand       = new CLand;
@@ -4529,11 +4531,11 @@ int CAhApp::SaveHistory(const char * FNameOut)
 
 
 
-BOOL CAhApp::GetExportHexOptions(CStr & FName, CStr & FMode, SAVE_HEX_OPTIONS & options, eHexIncl & HexIncl,
+BOOL CAhApp::GetExportHexOptions(std::string & FName, std::string & FMode, SAVE_HEX_OPTIONS & options, eHexIncl & HexIncl,
                                  bool & InclTurnNoAcl )
 {
 
-    static CStr     stFName;
+    static std::string     stFName;
     static bool     stOverwrite     = FALSE;
     static eHexIncl stHexIncl       = HexNew;
     static bool     stInclStructs   = TRUE;
@@ -4546,10 +4548,10 @@ BOOL CAhApp::GetExportHexOptions(CStr & FName, CStr & FMode, SAVE_HEX_OPTIONS & 
     memset(&options, 0, sizeof(options));
     options.SaveUnits = TRUE;
 
-    if (stFName.IsEmpty())
-        stFName.Format("map.%04d", m_pAtlantis->m_YearMon);
+    if (stFName.empty())
+        Format(stFName, "map.%04d", m_pAtlantis->m_YearMon);
 
-    dlg.m_tcFName         ->SetValue(wxString::FromAscii(stFName.GetData()));
+    dlg.m_tcFName         ->SetValue(wxString::FromAscii(stFName.c_str()));
 
     dlg.m_rbHexNew        ->SetValue(HexNew      == stHexIncl);
     dlg.m_rbHexCurrent    ->SetValue(HexCurrent  == stHexIncl);
@@ -4568,7 +4570,7 @@ BOOL CAhApp::GetExportHexOptions(CStr & FName, CStr & FMode, SAVE_HEX_OPTIONS & 
 
     if (wxID_OK == dlg.ShowModal())
     {
-        stFName.SetStr(dlg.m_tcFName->GetValue().mb_str());
+        SetStr(stFName, dlg.m_tcFName->GetValue().mb_str());
 
         if (dlg.m_rbHexNew->GetValue())
             stHexIncl = HexNew;
@@ -4611,24 +4613,24 @@ BOOL CAhApp::GetExportHexOptions(CStr & FName, CStr & FMode, SAVE_HEX_OPTIONS & 
 
 void CAhApp::ExportOneHex(CFileWriter & Dest, CPlane * pPlane, CLand * pLand, SAVE_HEX_OPTIONS & options, bool InclTurnNoAcl, bool OnlyNew)
 {
-    CStr               sData, sName;
+    std::string               sData, sName;
     const char       * p;
     int                ym_first = 0;
     int                ym_last  = 0;
 
     m_pAtlantis->ComposeLandStrCoord(pLand, sName);
 
-    p  = sData.GetToken(GetConfig(SZ_SECT_LAND_VISITED, sName.GetData()), ',');
-    if (sData.IsEmpty())
+    p  = GetToken(sData, GetConfig(SZ_SECT_LAND_VISITED, sName.c_str()), ',');
+    if (sData.empty())
     {
 /*        ym_first = m_pAtlantis->m_YearMon;
         ym_last  = m_pAtlantis->m_YearMon;*/
     }
     else
     {
-        ym_last = atol(sData.GetData());
-        sData.GetToken(SkipSpaces(p), ',');
-        ym_first = atol(sData.GetData());
+        ym_last = atol(sData.c_str());
+        GetToken(sData, SkipSpaces(p), ',');
+        ym_first = atol(sData.c_str());
     }
 
     if (InclTurnNoAcl)
@@ -4646,7 +4648,7 @@ void CAhApp::ExportOneHex(CFileWriter & Dest, CPlane * pPlane, CLand * pLand, SA
 
 void CAhApp::ExportHexes()
 {
-    CStr               sData, sName;
+    std::string               sData, sName;
     CMapPane         * pMapPane  = (CMapPane* )m_Panes[AH_PANE_MAP];
 
     CLand            * pLand;
@@ -4658,7 +4660,7 @@ void CAhApp::ExportHexes()
     bool               InclTurnNoAcl ;
 
     if ( GetExportHexOptions(sName, sData, options, HexIncl, InclTurnNoAcl) &&
-         Dest.Open(sName.GetData(), sData.GetData()) )
+         Dest.Open(sName.c_str(), sData.c_str()) )
         if (HexCurrent==HexIncl)
         {
             pPlane   = (CPlane*)m_pAtlantis->m_Planes.At(pMapPane->m_SelPlane);
@@ -4688,12 +4690,12 @@ void CAhApp::FindTradeRoutes()
     CBaseColl     Hexes(64);
     CLand       * pSellLand, * pBuyLand;
     int           i, j;
-    CStr          Report(64);
+    std::string Report;
     int           idx;
     const char  * propnameprice;
     EValueType    type;
     const void  * value;
-    CStr          GoodsName(32), PropName(32), sCoord(32);
+    std::string GoodsName, PropName, sCoord;
     long          nSaleAmount, nSalePrice, nBuyAmount, nBuyPrice;
     
     if (!pMapPane)
@@ -4718,9 +4720,9 @@ void CAhApp::FindTradeRoutes()
                 nSalePrice = (long)value;
                 GoodsName = &(propnameprice[sizeof(PRP_SALE_PRICE_PREFIX)-1]);
                 
-                PropName.Empty(); 
+                PropName.clear(); 
                 PropName << PRP_SALE_AMOUNT_PREFIX << GoodsName;
-                if (!pSellLand->GetProperty(PropName.GetData(), type, value, eOriginal) || eLong!=type)
+                if (!pSellLand->GetProperty(PropName.c_str(), type, value, eOriginal) || eLong!=type)
                     continue;
                 nSaleAmount = (long)value;
                 
@@ -4728,15 +4730,15 @@ void CAhApp::FindTradeRoutes()
                 {
                     pBuyLand = (CLand*)Hexes.At(j);
                     
-                    PropName.Empty(); 
+                    PropName.clear(); 
                     PropName << PRP_WANTED_PRICE_PREFIX << GoodsName;
-                    if (!pBuyLand->GetProperty(PropName.GetData(), type, value, eOriginal) || eLong!=type)
+                    if (!pBuyLand->GetProperty(PropName.c_str(), type, value, eOriginal) || eLong!=type)
                         continue;
                     nBuyPrice = (long)value;
                     
-                    PropName.Empty(); 
+                    PropName.clear(); 
                     PropName << PRP_WANTED_AMOUNT_PREFIX << GoodsName;
-                    if (!pBuyLand->GetProperty(PropName.GetData(), type, value, eOriginal) || eLong!=type)
+                    if (!pBuyLand->GetProperty(PropName.c_str(), type, value, eOriginal) || eLong!=type)
                         continue;
                     nBuyAmount = (long)value;
                     
@@ -4756,10 +4758,10 @@ void CAhApp::FindTradeRoutes()
         }
     }
     
-    if (Report.IsEmpty())
+    if (Report.empty())
         wxMessageBox(wxT("No trade routes found."));
     else
-        ShowError(Report.GetData()      , Report.GetLength()      , TRUE);
+        ShowError(Report.c_str()      , Report.size()      , TRUE);
 
     Hexes.DeleteAll();
     wxEndBusyCursor();
@@ -4844,14 +4846,14 @@ void CAhApp::StdRedirectInit()
 
 //--------------------------------------------------------------------------
 
-void CAhApp::StdRedirectReadMore(BOOL FromStdout, CStr & sData)
+void CAhApp::StdRedirectReadMore(BOOL FromStdout, std::string & sData)
 {
     FILE       * f;
     int        * pCurPos;
     char         buf[1024];
     int          n;
 
-    sData.Empty();
+    sData.clear();
     if (FromStdout)
     {
         fflush(stdout);
@@ -4872,7 +4874,7 @@ void CAhApp::StdRedirectReadMore(BOOL FromStdout, CStr & sData)
         {
             n = fread(buf, 1, sizeof(buf), f);
             if (n>0)
-                sData.AddBuf(buf, n);
+                AddBuf(sData, buf, n);
         } while (n>0);
         *pCurPos = ftell(f);
         fclose(f);
@@ -4883,14 +4885,14 @@ void CAhApp::StdRedirectReadMore(BOOL FromStdout, CStr & sData)
 
 void CAhApp::CheckRedirectedOutputFiles()
 {
-    CStr S;
+    std::string S;
 
     gpApp->StdRedirectReadMore(FALSE, S);
-    if (!S.IsEmpty())
-        ShowError(S.GetData(), S.GetLength(), TRUE);
+    if (!S.empty())
+        ShowError(S.c_str(), S.size(), TRUE);
     gpApp->StdRedirectReadMore(TRUE, S);
-    if (!S.IsEmpty())
-        ShowError(S.GetData(), S.GetLength(), TRUE);
+    if (!S.empty())
+        ShowError(S.c_str(), S.size(), TRUE);
 }
 
 //--------------------------------------------------------------------------
@@ -4904,15 +4906,15 @@ void CAhApp::StdRedirectDone()
 void CAhApp::InitMoveModes()
 {
     const char * p;
-    CStr         S;
+    std::string         S;
     int          n;
     BOOL         Update = FALSE;
 
     p     = SkipSpaces(GetConfig(SZ_SECT_COMMON, SZ_KEY_MOVEMENTS));
     while (p && *p)
     {
-        p = SkipSpaces(S.GetToken(p, ','));
-        m_MoveModes.push_back(S.GetData());
+        p = SkipSpaces(GetToken(S, p, ','));
+        m_MoveModes.push_back(S.c_str());
     }
 
     // do update here for 2.3.2
@@ -4920,25 +4922,25 @@ void CAhApp::InitMoveModes()
     n = 0;
     while (p && *p)
     {
-        p = SkipSpaces(S.GetToken(p, ','));
+        p = SkipSpaces(GetToken(S, p, ','));
         n++;
 
         if (n > (int)m_MoveModes.size())
         {
-            m_MoveModes.push_back(S.GetData());
+            m_MoveModes.push_back(S.c_str());
             Update = TRUE;
         }
     }
     if (Update)
     {
-        S.Empty();
+        S.clear();
         for (n=0; n<(int)m_MoveModes.size(); n++)
         {
             if (n>0)
                 S << ',';
             S << m_MoveModes[n].c_str();
         }
-        SetConfig(SZ_SECT_COMMON, SZ_KEY_MOVEMENTS, S.GetData());
+        SetConfig(SZ_SECT_COMMON, SZ_KEY_MOVEMENTS, S.c_str());
     }
 }
 
@@ -5042,26 +5044,26 @@ const char * CGameDataHelper::GetWeatherLine(BOOL IsCurrent, BOOL IsGood, int Zo
 BOOL CGameDataHelper::GetTropicZone  (const char * plane, long & y_min, long & y_max)
 {
     const char * value;
-    CStr         S;
+    std::string         S;
 
     value = SkipSpaces(gpApp->GetConfig(SZ_SECT_TROPIC_ZONE, plane));
     if (!value || !*value)
         return FALSE;
 
-    value = S.GetToken(value, ',');
-    y_min = atol(S.GetData());
+    value = GetToken(S, value, ',');
+    y_min = atol(S.c_str());
 
-    value = S.GetToken(value, ',');
-    y_max = atol(S.GetData());
+    value = GetToken(S, value, ',');
+    y_max = atol(S.c_str());
 
     return TRUE;
 }
 
 void CGameDataHelper::SetTropicZone  (const char * plane, long y_min, long y_max)
 {
-    CStr S;
+    std::string S;
     S << y_min << ',' << y_max;
-    gpApp->SetConfig(SZ_SECT_TROPIC_ZONE, plane, S.GetData());
+    gpApp->SetConfig(SZ_SECT_TROPIC_ZONE, plane, S.c_str());
 }
 
 void CGameDataHelper::GetProdDetails (const char * item, TProdDetails & details)
@@ -5109,13 +5111,13 @@ BOOL CGameDataHelper::ShowMoveWarnings()
 BOOL CGameDataHelper::IsRawMagicSkill(const char * skillname)
 {
     static int     postlen = strlen(PRP_SKILL_POSTFIX);
-    CStr           S;
+    std::string           S;
 
     S = skillname;
-    if (S.FindSubStrR(PRP_SKILL_POSTFIX) == S.GetLength()-postlen)
+    if (FindSubStrR(S, PRP_SKILL_POSTFIX) == S.size()-postlen)
     {
-        S.DelSubStr(S.GetLength()-postlen, postlen);
-        return gpApp->IsMagicSkill(S.GetData());
+        DelSubStr(S, S.size()-postlen, postlen);
+        return gpApp->IsMagicSkill(S.c_str());
     }
 
     return FALSE;
@@ -5125,13 +5127,13 @@ BOOL CGameDataHelper::IsWagon(const char * item)
 {
     if (!item)
         return FALSE;
-    CStr S = gpApp->GetConfig(SZ_SECT_COMMON, SZ_KEY_WAGONS);
-    CStr T;
-    const char * p = S.GetData();
+    std::string S = gpApp->GetConfig(SZ_SECT_COMMON, SZ_KEY_WAGONS);
+    std::string T;
+    const char * p = S.c_str();
     while (p && *p)
     {
-        p = T.GetToken(p, ',', TRIM_ALL);
-        if (0==stricmp(item, T.GetData()))
+        p = GetToken(T, p, ',', TRIM_ALL);
+        if (0==stricmp(item, T.c_str()))
             return TRUE;
     }
     return FALSE;
@@ -5141,13 +5143,13 @@ BOOL CGameDataHelper::IsWagonPuller(const char * item)
 {
     if (!item)
         return FALSE;
-    CStr S = gpApp->GetConfig(SZ_SECT_COMMON, SZ_KEY_WAGON_PULLERS);
-    CStr T;
-    const char * p = S.GetData();
+    std::string S = gpApp->GetConfig(SZ_SECT_COMMON, SZ_KEY_WAGON_PULLERS);
+    std::string T;
+    const char * p = S.c_str();
     while (p && *p)
     {
-        p = T.GetToken(p, ',', TRIM_ALL);
-        if (0==stricmp(item, T.GetData()))
+        p = GetToken(T, p, ',', TRIM_ALL);
+        if (0==stricmp(item, T.c_str()))
             return TRUE;
     }
     return FALSE;
@@ -5160,9 +5162,9 @@ int CGameDataHelper::WagonCapacity()
 
 //==========================================================================
 
-void FontToStr(const wxFont * font, CStr & s)
+void FontToStr(const wxFont * font, std::string & s)
 {
-    s.Empty();
+    s.clear();
     s << (long)font->GetPointSize()  << ","
       << (long)font->GetFamily   ()  << ","
       << (long)font->GetStyle    ()  << ","
@@ -5191,15 +5193,15 @@ wxFont * NewFontFromStr(const char * p)
     wxFont     *   font;
 
 
-    CStr           S;
+    std::string           S;
 
     if (p && *p)
     {
-        p = S.GetToken(SkipSpaces(p), ',');  size     = atol(S.GetData());
-        p = S.GetToken(SkipSpaces(p), ',');  family   = atol(S.GetData());
-        p = S.GetToken(SkipSpaces(p), ',');  style    = atol(S.GetData());
-        p = S.GetToken(SkipSpaces(p), ',');  weight   = atol(S.GetData());
-        p = S.GetToken(SkipSpaces(p), ',');  encoding = atol(S.GetData());
+        p = GetToken(S, SkipSpaces(p), ',');  size     = atol(S.c_str());
+        p = GetToken(S, SkipSpaces(p), ',');  family   = atol(S.c_str());
+        p = GetToken(S, SkipSpaces(p), ',');  style    = atol(S.c_str());
+        p = GetToken(S, SkipSpaces(p), ',');  weight   = atol(S.c_str());
+        p = GetToken(S, SkipSpaces(p), ',');  encoding = atol(S.c_str());
                                              facename = wxString::FromAscii(SkipSpaces(p));
     }
     else
@@ -5221,17 +5223,17 @@ wxFont * NewFontFromStr(const char * p)
 
 void StrToColor(wxColour * cr, const char * p)
 {
-    CStr          S;
+    std::string          S;
     int           r, g, b;
 
-    p = S.GetToken(p, ',');
-    r = atol(S.GetData());
+    p = GetToken(S, p, ',');
+    r = atol(S.c_str());
 
-    p = S.GetToken(p, ',');
-    g = atol(S.GetData());
+    p = GetToken(S, p, ',');
+    g = atol(S.c_str());
 
-    p = S.GetToken(p, ',');
-    b = atol(S.GetData());
+    p = GetToken(S, p, ',');
+    b = atol(S.c_str());
 
     cr->Set(r,g,b);
 }
@@ -5262,10 +5264,10 @@ void ColorToStr(char * p, wxColour * cr)
 #endif
 
 
-void MakePathRelative(const char * cur_dir, CStr & path)
+void MakePathRelative(const char * cur_dir, std::string & path)
 {
-    const char * p = path.GetData();
-    CStr         rel_path;
+    const char * p = path.c_str();
+    std::string         rel_path;
 
     while (*p && EQUAL_PATH_CHARS(*p, *cur_dir) )
     {
@@ -5288,27 +5290,27 @@ void MakePathRelative(const char * cur_dir, CStr & path)
 
     rel_path << p;
 
-    if (path.GetLength() > rel_path.GetLength())
+    if (path.size() > rel_path.size())
         path = rel_path;
 }
 
 //-------------------------------------------------------------------------
 
-void MakePathFull(const char * cur_dir, CStr & path)
+void MakePathFull(const char * cur_dir, std::string & path)
 {
-    CStr full_path;
-    CStr rel_path;
+    std::string full_path;
+    std::string rel_path;
     
     full_path = cur_dir;
     rel_path = path;
 
-    if (!full_path.IsEmpty() && full_path.GetData()[full_path.GetLength()-1] != SEP)
-        full_path.AddCh( SEP);
+    if (!full_path.empty() && full_path.c_str()[full_path.size()-1] != SEP)
+        AddCh(full_path,  SEP);
 
-    if (!rel_path.IsEmpty())
+    if (!rel_path.empty())
     {
-        if (rel_path.GetData()[0]=='.' && rel_path.GetData()[1]==SEP)
-            rel_path.DelSubStr(0,2);
+        if (rel_path.c_str()[0]=='.' && rel_path.c_str()[1]==SEP)
+            DelSubStr(rel_path, 0,2);
     }
     
     path = full_path;
@@ -5317,7 +5319,7 @@ void MakePathFull(const char * cur_dir, CStr & path)
 
 //-------------------------------------------------------------------------
 
-void GetDirFromPath(const char * path, CStr & dir)
+void GetDirFromPath(const char * path, std::string & dir)
 {
     int n = 0;
     const char * p;
@@ -5326,8 +5328,8 @@ void GetDirFromPath(const char * path, CStr & dir)
         return;
 
     dir = path;
-    p   = dir.GetData() + (dir.GetLength()-1);
-    while (*p!='\\' && *p!='/' && n<dir.GetLength())
+    p   = dir.c_str() + (dir.size()-1);
+    while (*p!='\\' && *p!='/' && n<dir.size())
     {
         p--;
         n++;
@@ -5336,18 +5338,18 @@ void GetDirFromPath(const char * path, CStr & dir)
         n++;
 
     if (n>0)
-        dir.DelSubStr(dir.GetLength()-n, n);
-    if (dir.IsEmpty())
+        DelSubStr(dir, dir.size()-n, n);
+    if (dir.empty())
         dir = ".";
 }
 
 //-------------------------------------------------------------------------
 
-void GetFileFromPath(const char * path, CStr & file)
+void GetFileFromPath(const char * path, std::string & file)
 {
     const char * p = strrchr(path, SEP);
     
-    file.Empty();
+    file.clear();
     if (p && *p)
     {
         p++;

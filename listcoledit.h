@@ -28,8 +28,8 @@
 class TUnitColData
 {
 public:
-    CStr   PropName;
-    CStr   Caption;
+    std::string   PropName;
+    std::string   Caption;
     int    width;
     int    flags;
 };
@@ -46,9 +46,9 @@ public:
     bool Insert(TUnitColData* p) {
         auto it = std::lower_bound(m_items.begin(), m_items.end(), p,
             [](TUnitColData* a, TUnitColData* b) {
-                return stricmp(a->PropName.GetData(), b->PropName.GetData()) < 0;
+                return stricmp(a->PropName.c_str(), b->PropName.c_str()) < 0;
             });
-        if (it != m_items.end() && stricmp((*it)->PropName.GetData(), p->PropName.GetData()) == 0)
+        if (it != m_items.end() && stricmp((*it)->PropName.c_str(), p->PropName.c_str()) == 0)
             return false;
         m_items.insert(it, p);
         return true;
@@ -56,9 +56,9 @@ public:
     bool Search(TUnitColData* key, int& idx) {
         auto it = std::lower_bound(m_items.begin(), m_items.end(), key,
             [](TUnitColData* a, TUnitColData* b) {
-                return stricmp(a->PropName.GetData(), b->PropName.GetData()) < 0;
+                return stricmp(a->PropName.c_str(), b->PropName.c_str()) < 0;
             });
-        if (it != m_items.end() && stricmp((*it)->PropName.GetData(), key->PropName.GetData()) == 0) {
+        if (it != m_items.end() && stricmp((*it)->PropName.c_str(), key->PropName.c_str()) == 0) {
             idx = (int)(it - m_items.begin());
             return true;
         }
@@ -94,8 +94,8 @@ private:
     void  AddItem();
     void  DeleteItem();
 
-    CStr             m_WorkKey;
-    CStr             m_SetName;
+    std::string             m_WorkKey;
+    std::string             m_SetName;
     CUnitColDataColl m_Fields;
     BOOL             m_SetIsValid;
     int              m_SourceIdx;

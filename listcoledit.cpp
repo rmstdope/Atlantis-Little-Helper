@@ -24,7 +24,7 @@
 #include "wx/dialog.h"
 
 
-#include "cstr.h"
+#include "string_utils.h"
 #include "cfgfile.h"
 #include "files.h"
 #include "atlaparser.h"
@@ -70,8 +70,8 @@ CListHeaderEditDlg::CListHeaderEditDlg(wxWindow *parent, const char * szWorkKey)
     wxBoxSizer   * rowsizer;
     wxBoxSizer   * colsizer;
     wxBoxSizer   * colsizer_d;
-    CStr           ConfigKey;
-    CStr           S;
+    std::string           ConfigKey;
+    std::string           S;
     wxButton     * btnAdd;
     wxButton     * btnDel;
     wxButton     * btnDelAll;
@@ -163,7 +163,7 @@ void CListHeaderEditDlg::LoadSetCombo()
     const char * setselect;
     int          x=0, i=0;
 
-    setselect   = gpApp->GetConfig(SZ_SECT_LIST_COL_CURRENT, m_WorkKey.GetData());
+    setselect   = gpApp->GetConfig(SZ_SECT_LIST_COL_CURRENT, m_WorkKey.c_str());
     setnameoffs = strlen(SZ_SECT_LIST_COL_UNIT);
     setsection  = gpApp->GetNextSectionName(CONFIG_FILE_CONFIG, SZ_SECT_LIST_COL_UNIT);
     while (setsection)
@@ -195,8 +195,8 @@ void CListHeaderEditDlg::LoadListSrc()
 
 void CListHeaderEditDlg::LoadListDest(const char * szNewName)
 {
-    CStr           S;
-    CStr           Section;
+    std::string           S;
+    std::string           Section;
     int            sectidx;
     const char   * szName;
     const char   * szValue;
@@ -215,30 +215,30 @@ void CListHeaderEditDlg::LoadListDest(const char * szNewName)
     m_SetIsValid = FALSE;
 
     m_SetName =szNewName;
-    if (m_SetName.IsEmpty())
+    if (m_SetName.empty())
         return;
 
     Section << SZ_SECT_LIST_COL_UNIT << m_SetName;
 
-    sectidx = gpApp->GetSectionFirst(Section.GetData(), szName, szValue);
+    sectidx = gpApp->GetSectionFirst(Section.c_str(), szName, szValue);
     while (sectidx >= 0)
     {
 // 001 = 87, 0, faction, FName
         m_SetIsValid  = TRUE;
         pField        = new TUnitColData;
 
-        szValue       = SkipSpaces(S.GetToken(szValue, ','));
-        pField->width = atol(S.GetData());
-        szValue       = SkipSpaces(S.GetToken(szValue, ','));
-        pField->flags = atol(S.GetData());
-        szValue       = SkipSpaces(pField->PropName.GetToken(szValue, ','));
-        szValue       = SkipSpaces(pField->Caption.GetToken(szValue, ','));
+        szValue       = SkipSpaces(GetToken(S, szValue, ','));
+        pField->width = atol(S.c_str());
+        szValue       = SkipSpaces(GetToken(S, szValue, ','));
+        pField->flags = atol(S.c_str());
+        szValue       = SkipSpaces(GetToken(pField->PropName, szValue, ','));
+        szValue       = SkipSpaces(GetToken(pField->Caption, szValue, ','));
 
-        m_lstDest->InsertItem(m_lstDest->GetItemCount() , wxString::FromAscii(pField->PropName.GetData()));
+        m_lstDest->InsertItem(m_lstDest->GetItemCount() , wxString::FromAscii(pField->PropName.c_str()));
         if (!m_Fields.Insert(pField))
             delete pField;
 
-        sectidx = gpApp->GetSectionNext(sectidx, Section.GetData(), szName, szValue);
+        sectidx = gpApp->GetSectionNext(sectidx, Section.c_str(), szName, szValue);
     }
 }
 
@@ -246,9 +246,9 @@ void CListHeaderEditDlg::LoadListDest(const char * szNewName)
 
 void  CListHeaderEditDlg::SaveListDest()
 {
-    CStr           S;
-    CStr           Value;
-    CStr           Section;
+    std::string           S;
+    std::string           Value;
+    std::string           Section;
     int            x;
     TUnitColData   Dummy;
     TUnitColData * pField;
@@ -262,16 +262,16 @@ void  CListHeaderEditDlg::SaveListDest()
     ProcessCaption(m_DestIdx, m_DestIdx);
 
     for (x=0; x<(int)m_cbSetName->GetCount(); x++)
-        if (0==stricmp(m_cbSetName->GetString(x).mb_str(), m_SetName.GetData()))
+        if (0==stricmp(m_cbSetName->GetString(x).mb_str(), m_SetName.c_str()))
         {
             found = TRUE;
             break;
         }
     if (!found)
-        m_cbSetName->Append(wxString::FromAscii(m_SetName.GetData()));
+        m_cbSetName->Append(wxString::FromAscii(m_SetName.c_str()));
 
     Section << SZ_SECT_LIST_COL_UNIT << m_SetName;
-    gpApp->RemoveSection(Section.GetData());
+    gpApp->RemoveSection(Section.c_str());
 
     for (x=0; x<m_lstDest->GetItemCount(); x++)
     {
@@ -279,9 +279,9 @@ void  CListHeaderEditDlg::SaveListDest()
         if (m_Fields.Search(&Dummy, idx))
         {
             pField = m_Fields.At(idx);
-            S.Format("%03d", x);
-            Value.Format("%d, %lu, %s, %s", pField->width, pField->flags, pField->PropName.GetData(), pField->Caption.GetData());
-            gpApp->SetConfig(Section.GetData(), S.GetData(), Value.GetData());
+            Format(S, "%03d", x);
+            Format(Value, "%d, %lu, %s, %s", pField->width, pField->flags, pField->PropName.c_str(), pField->Caption.c_str());
+            gpApp->SetConfig(Section.c_str(), S.c_str(), Value.c_str());
         }
     }
 
@@ -299,7 +299,7 @@ void  CListHeaderEditDlg::AddItem()
 
     if (m_SourceIdx >= 0 && m_SourceIdx < m_lstSource->GetItemCount())
         Dummy.PropName = m_lstSource->GetItemText(m_SourceIdx).mb_str();
-    if (Dummy.PropName.IsEmpty())
+    if (Dummy.PropName.empty())
         return;
 
     if (m_Fields.Search(&Dummy, idx))
@@ -307,7 +307,7 @@ void  CListHeaderEditDlg::AddItem()
     else
     {
         {
-            auto it__ = gpApp->m_pAtlantis->m_UnitPropertyTypes.find(Dummy.PropName.GetData());
+            auto it__ = gpApp->m_pAtlantis->m_UnitPropertyTypes.find(Dummy.PropName.c_str());
             if (it__ != gpApp->m_pAtlantis->m_UnitPropertyTypes.end())
                 if (eLong == (EValueType)it__->second)
                     flags = LIST_FLAG_ALIGN_RIGHT;
@@ -325,7 +325,7 @@ void  CListHeaderEditDlg::AddItem()
         }
     }
     if (pField) {
-        m_lstDest->InsertItem(m_DestIdx+1, wxString::FromAscii(pField->PropName.GetData()));
+        m_lstDest->InsertItem(m_DestIdx+1, wxString::FromAscii(pField->PropName.c_str()));
         m_lstDest->SetItemState(m_DestIdx+1, wxLIST_STATE_SELECTED, wxLIST_STATE_SELECTED);
     }
     m_SetIsValid = TRUE;
@@ -338,7 +338,7 @@ void  CListHeaderEditDlg::ProcessCaption(int oldidx, int newidx)
     TUnitColData   Dummy;
     TUnitColData * pField;
     int            idx;
-    CStr           Caption;
+    std::string           Caption;
 
     // Save caption
     if (oldidx >= 0 && oldidx < m_lstDest->GetItemCount())
@@ -358,10 +358,10 @@ void  CListHeaderEditDlg::ProcessCaption(int oldidx, int newidx)
         if (m_Fields.Search(&Dummy, idx))
         {
             pField          = m_Fields.At(idx);
-            Caption         = pField->Caption.GetData();
+            Caption         = pField->Caption.c_str();
         }
     }
-    m_txtCaption->SetValue(wxString::FromAscii(Caption.GetData()));
+    m_txtCaption->SetValue(wxString::FromAscii(Caption.c_str()));
 }
 
 //--------------------------------------------------------------------------
@@ -382,14 +382,14 @@ void  CListHeaderEditDlg::DeleteItem()
 
 void CListHeaderEditDlg::OnButton(wxCommandEvent& event)
 {
-    CStr       S;
+    std::string       S;
 
     switch (event.GetId())
     {
     case wxID_OK:
         SaveListDest();
         S << SZ_SECT_LIST_COL_UNIT << m_SetName;
-        gpApp->SetConfig(SZ_SECT_LIST_COL_CURRENT, m_WorkKey.GetData(), S.GetData());
+        gpApp->SetConfig(SZ_SECT_LIST_COL_CURRENT, m_WorkKey.c_str(), S.c_str());
         StoreSize();
         EndModal(wxID_OK);
         break;

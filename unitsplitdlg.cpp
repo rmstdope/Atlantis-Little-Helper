@@ -24,7 +24,7 @@
 #include "wx/dialog.h"
 
 
-#include "cstr.h"
+#include "string_utils.h"
 #include "cfgfile.h"
 #include "files.h"
 #include "atlaparser.h"
@@ -140,27 +140,27 @@ void CUnitSplitDlg::ScanProperties()
     // make a spin control for each property
 
     int             propidx;
-    CStr            propname;
+    std::string            propname;
     EValueType      type;
     const void    * value;
     wxSpinCtrl    * pSpin;
 
     propidx  = 0;
     propname = m_pUnit->GetPropertyName(propidx);
-    while (!propname.IsEmpty())
+    while (!propname.empty())
     {
-        if (m_pUnit->GetProperty(propname.GetData(), type, value, eOriginal) &&
+        if (m_pUnit->GetProperty(propname.c_str(), type, value, eOriginal) &&
             eLong==type &&
-            !IsASkillRelatedProperty(propname.GetData()) &&
-            0!=stricmp(PRP_SEQUENCE     , propname.GetData()) &&
-            0!=stricmp(PRP_STRUCT_ID    , propname.GetData())&&
-            0!=stricmp(PRP_FRIEND_OR_FOE, propname.GetData())
+            !IsASkillRelatedProperty(propname.c_str()) &&
+            0!=stricmp(PRP_SEQUENCE     , propname.c_str()) &&
+            0!=stricmp(PRP_STRUCT_ID    , propname.c_str())&&
+            0!=stricmp(PRP_FRIEND_OR_FOE, propname.c_str())
            )
         {
             pSpin = new wxSpinCtrl   (this, -1, wxT("1"));
             pSpin->SetRange(0, 0x7fffffff);
             pSpin->SetValue(0);
-            pSpin->SetName(wxString::FromAscii(propname.GetData()));
+            pSpin->SetName(wxString::FromAscii(propname.c_str()));
 
             m_SplitControls.push_back(pSpin);
         }
@@ -174,7 +174,7 @@ void CUnitSplitDlg::OnOk(wxCommandEvent& event)
 {
     CLand * pLand;
     int     id,i,idx;
-    CStr    S, Cmd;
+    std::string    S, Cmd;
     wxSpinCtrl * pSpin;
     wxString     sBoo;
     const char * p;
@@ -189,12 +189,12 @@ void CUnitSplitDlg::OnOk(wxCommandEvent& event)
     p = sBoo.mb_str();
     while (p && *p)
     {
-        p = SkipSpaces(S.GetToken(p, '\n', TRIM_ALL));
+        p = SkipSpaces(GetToken(S, p, '\n', TRIM_ALL));
         Cmd << "   " << S << EOL_SCR;
     }
 
-    m_pUnit->Orders.TrimRight(TRIM_ALL);
-    if (!m_pUnit->Orders.IsEmpty())
+    TrimRight(m_pUnit->Orders, TRIM_ALL);
+    if (!m_pUnit->Orders.empty())
         m_pUnit->Orders << EOL_SCR;
 
     for (i=0; i<m_spinUnitCount->GetValue(); i++)

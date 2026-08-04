@@ -21,7 +21,7 @@
 #include "wx/splitter.h"
 #include "wx/listctrl.h"
 
-#include "cstr.h"
+#include "string_utils.h"
 #include "cfgfile.h"
 #include "files.h"
 #include "atlaparser.h"
@@ -461,11 +461,11 @@ void CMapFrame::Done(BOOL SetClosedFlag)
     switch (m_Layout)
     {
     case AH_LAYOUT_1_WIN:
-        gpApp->SetConfig(m_sConfigSection.GetData(), SZ_KEY_HEIGHT_0, m_Splitter ->GetSashPosition());
-        gpApp->SetConfig(m_sConfigSection.GetData(), SZ_KEY_WIDTH_0 , m_Splitter1->GetSashPosition());
-        gpApp->SetConfig(m_sConfigSection.GetData(), SZ_KEY_HEIGHT_1, m_Splitter2->GetSashPosition());
-        gpApp->SetConfig(m_sConfigSection.GetData(), SZ_KEY_HEIGHT_2, m_Splitter3->GetSashPosition());
-        gpApp->SetConfig(m_sConfigSection.GetData(), SZ_KEY_WIDTH_1 , m_Splitter4->GetSashPosition());
+        gpApp->SetConfig(m_sConfigSection.c_str(), SZ_KEY_HEIGHT_0, m_Splitter ->GetSashPosition());
+        gpApp->SetConfig(m_sConfigSection.c_str(), SZ_KEY_WIDTH_0 , m_Splitter1->GetSashPosition());
+        gpApp->SetConfig(m_sConfigSection.c_str(), SZ_KEY_HEIGHT_1, m_Splitter2->GetSashPosition());
+        gpApp->SetConfig(m_sConfigSection.c_str(), SZ_KEY_HEIGHT_2, m_Splitter3->GetSashPosition());
+        gpApp->SetConfig(m_sConfigSection.c_str(), SZ_KEY_WIDTH_1 , m_Splitter4->GetSashPosition());
 
         pUnitPane  = (CUnitPane*)gpApp->m_Panes[AH_PANE_UNITS_HEX];
         if (pUnitPane)
@@ -474,7 +474,7 @@ void CMapFrame::Done(BOOL SetClosedFlag)
         break;
 
     case AH_LAYOUT_2_WIN:
-        gpApp->SetConfig(m_sConfigSection.GetData(), SZ_KEY_HEIGHT_0, m_Splitter->GetSashPosition());
+        gpApp->SetConfig(m_sConfigSection.c_str(), SZ_KEY_HEIGHT_0, m_Splitter->GetSashPosition());
         break;
 
     case AH_LAYOUT_3_WIN:
@@ -525,7 +525,7 @@ void CMapFrame::OnAbout(wxCommandEvent& WXUNUSED(event))
                wxT(AH_VERSION),
                AH_BuildNumber,
                wxVERSION_STRING,
-               sPyVersion.GetData() );
+               sPyVersion.c_str() );
 
 
     wxMessageBox(msg, wxT("About"), wxOK | wxICON_INFORMATION, this);
@@ -620,14 +620,14 @@ void CMapFrame::OnViewObjectsNewUpdate(wxUpdateUIEvent& event)
 
 void CMapFrame::OnViewEventsUpdate(wxUpdateUIEvent& event)
 {
-    event.Enable(!gpApp->m_pAtlantis->m_Events.Description.IsEmpty());
+    event.Enable(!gpApp->m_pAtlantis->m_Events.Description.empty());
 }
 
 //--------------------------------------------------------------------
 
 void CMapFrame::OnViewSecurityEventsUpdate(wxUpdateUIEvent& event)
 {
-    event.Enable(!gpApp->m_pAtlantis->m_SecurityEvents.Description.IsEmpty());
+    event.Enable(!gpApp->m_pAtlantis->m_SecurityEvents.Description.empty());
 }
 
 //--------------------------------------------------------------------
@@ -641,7 +641,7 @@ void CMapFrame::OnViewNewProductsUpdate(wxUpdateUIEvent& event)
 
 void CMapFrame::OnViewErrorsUpdate(wxUpdateUIEvent& event)
 {
-    event.Enable(!gpApp->m_pAtlantis->m_Errors.Description.IsEmpty());
+    event.Enable(!gpApp->m_pAtlantis->m_Errors.Description.empty());
 }
 
 //--------------------------------------------------------------------

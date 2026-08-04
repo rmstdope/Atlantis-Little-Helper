@@ -22,7 +22,7 @@
 #include "wx/listctrl.h"
 #include "wx/splitter.h"
 
-#include "cstr.h"
+#include "string_utils.h"
 #include "cfgfile.h"
 #include "files.h"
 #include "atlaparser.h"
@@ -128,9 +128,9 @@ void CEditsFrame::Done(BOOL SetClosedFlag)
     switch (m_Layout)
     {
     case AH_LAYOUT_3_WIN:
-        gpApp->SetConfig(m_sConfigSection.GetData(), SZ_KEY_HEIGHT_0, m_Splitter1->GetSashPosition());
-        gpApp->SetConfig(m_sConfigSection.GetData(), SZ_KEY_HEIGHT_1, m_Splitter2->GetSashPosition());
-        gpApp->SetConfig(m_sConfigSection.GetData(), SZ_KEY_WIDTH_0 , m_Splitter3->GetSashPosition());
+        gpApp->SetConfig(m_sConfigSection.c_str(), SZ_KEY_HEIGHT_0, m_Splitter1->GetSashPosition());
+        gpApp->SetConfig(m_sConfigSection.c_str(), SZ_KEY_HEIGHT_1, m_Splitter2->GetSashPosition());
+        gpApp->SetConfig(m_sConfigSection.c_str(), SZ_KEY_WIDTH_0 , m_Splitter3->GetSashPosition());
 
         break;
 

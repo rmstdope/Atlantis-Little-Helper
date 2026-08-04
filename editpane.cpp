@@ -19,7 +19,7 @@
 
 #include "stdhdr.h"
 
-#include "cstr.h"
+#include "string_utils.h"
 #include "cfgfile.h"
 #include "files.h"
 #include "atlaparser.h"
@@ -122,11 +122,11 @@ void CEditPane::Init()
 
 //--------------------------------------------------------------------
 
-void CEditPane::SetSource(CStr * pSource, BOOL * pChanged)
+void CEditPane::SetSource(std::string * pSource, BOOL * pChanged)
 {
     m_pSource   = pSource; 
     m_pChanged  = pChanged;
-    m_pEditor->SetValue(pSource?wxString::FromAscii(pSource->GetData()):wxT(""));
+    m_pEditor->SetValue(pSource?wxString::FromAscii(pSource->c_str()):wxT(""));
 }
 
 //--------------------------------------------------------------------
@@ -142,7 +142,7 @@ BOOL CEditPane::SaveModifications()
     if (m_pEditor->IsModified())
     {
         if (m_pSource)
-            m_pSource->SetStr(m_pEditor->GetValue().mb_str());
+            *m_pSource = m_pEditor->GetValue().mb_str();
         if (m_pChanged)
             *m_pChanged = TRUE;
         m_pEditor->DiscardEdits();
@@ -158,9 +158,9 @@ BOOL CEditPane::SaveModifications()
 
 //--------------------------------------------------------------------
 
-void CEditPane::GetValue(CStr & value)
+void CEditPane::GetValue(std::string & value)
 {
-    value.SetStr(m_pEditor->GetValue().mb_str());
+    SetStr(value, m_pEditor->GetValue().mb_str());
 }
 
 //--------------------------------------------------------------------

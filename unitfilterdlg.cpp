@@ -24,7 +24,7 @@
 #include "wx/dialog.h"
 
 
-#include "cstr.h"
+#include "string_utils.h"
 #include "cfgfile.h"
 #include "files.h"
 #include "atlaparser.h"
@@ -59,8 +59,7 @@ END_EVENT_TABLE()
 //--------------------------------------------------------------------------
 
 CUnitFilterDlg::CUnitFilterDlg(wxWindow *parent, const char * szConfigSection)
-               :CResizableDlg( parent, "Unit Locator's filter", SZ_SECT_WND_UNITS_FLTR_DLG),
-                m_bReady(0)
+               :CResizableDlg( parent, "Unit Locator's filter", SZ_SECT_WND_UNITS_FLTR_DLG), m_bReady(0)
                 
 {
     CMapPane   * pMapPane   = (CMapPane  * )gpApp->m_Panes[AH_PANE_MAP];
@@ -70,7 +69,7 @@ CUnitFilterDlg::CUnitFilterDlg(wxWindow *parent, const char * szConfigSection)
     wxBoxSizer * rowsizer;
     wxFlexGridSizer * gridsizer;
     int          count;
-    CStr         sConfSet;
+    std::string         sConfSet;
     wxStaticText * stSetName;
     int            idx;
 
@@ -169,12 +168,12 @@ CUnitFilterDlg::CUnitFilterDlg(wxWindow *parent, const char * szConfigSection)
 
 
     sConfSet = gpApp->GetConfig(szConfigSection, SZ_KEY_FLTR_SET);
-    sConfSet.TrimRight(TRIM_ALL);
-    if (sConfSet.IsEmpty())
+    TrimRight(sConfSet, TRIM_ALL);
+    if (sConfSet.empty())
         sConfSet << SZ_SECT_UNIT_FILTER << "Default";
-    LoadSetCombo(sConfSet.GetData());
+    LoadSetCombo(sConfSet.c_str());
     Init();
-    Load(sConfSet.GetData());
+    Load(sConfSet.c_str());
 
     CResizableDlg::SetSize();
 
@@ -222,7 +221,7 @@ void CUnitFilterDlg::Init()
     int          i;
     const char * item;
     int          skilllen;
-    CStr         S;
+    std::string         S;
 
     skilllen    = strlen(PRP_SKILL_POSTFIX);
     for (count=0; count < UNIT_SIMPLE_FLTR_COUNT; count++)
@@ -236,8 +235,8 @@ void CUnitFilterDlg::Init()
 
             // do not show 'skill days' property
             S = item;
-            if (!IsASkillRelatedProperty(S.GetData()) ||
-                S.FindSubStrR(PRP_SKILL_POSTFIX) == S.GetLength()-skilllen)
+            if (!IsASkillRelatedProperty(S.c_str()) ||
+                FindSubStrR(S, PRP_SKILL_POSTFIX) == S.size()-skilllen)
             {
                  m_cbProperty[count]->Append(wxString::FromAscii(item));
             }
@@ -257,17 +256,17 @@ void CUnitFilterDlg::Load(const char * szConfigSection)
 {
     int          count;
     int          i;
-    CStr         ConfigKey;
+    std::string         ConfigKey;
     const char * selvalue;
     int          selidx;
-    CStr         S;
+    std::string         S;
 
     m_sCurrentSection = szConfigSection;
 
     for (count=0; count < UNIT_SIMPLE_FLTR_COUNT; count++)
     {
-        ConfigKey.Format("%s%d", SZ_KEY_UNIT_FLTR_PROPERTY, count);
-        selvalue = gpApp->GetConfig(szConfigSection, ConfigKey.GetData());
+        Format(ConfigKey, "%s%d", SZ_KEY_UNIT_FLTR_PROPERTY, count);
+        selvalue = gpApp->GetConfig(szConfigSection, ConfigKey.c_str());
         selidx   = 0;
         for (i=0; i<(int)m_cbProperty[count]->GetCount(); i++)
             if (0==stricmp(m_cbProperty[count]->GetString(i).mb_str(), selvalue))
@@ -277,9 +276,9 @@ void CUnitFilterDlg::Load(const char * szConfigSection)
             }
         m_cbProperty[count]->SetSelection(selidx);
 
-        ConfigKey.Format("%s%d", SZ_KEY_UNIT_FLTR_COMPARE , count);
-        m_cbCompare [count]->SetValue(wxString::FromAscii(gpApp->GetConfig(szConfigSection, ConfigKey.GetData())));
-        selvalue = gpApp->GetConfig(szConfigSection, ConfigKey.GetData());
+        Format(ConfigKey, "%s%d", SZ_KEY_UNIT_FLTR_COMPARE , count);
+        m_cbCompare [count]->SetValue(wxString::FromAscii(gpApp->GetConfig(szConfigSection, ConfigKey.c_str())));
+        selvalue = gpApp->GetConfig(szConfigSection, ConfigKey.c_str());
         selidx   = 0;
         for (i=0; i<(int)m_cbCompare[count]->GetCount(); i++)
             if (0==stricmp(m_cbCompare[count]->GetString(i).mb_str(), selvalue))
@@ -289,14 +288,14 @@ void CUnitFilterDlg::Load(const char * szConfigSection)
             }
         m_cbCompare[count]->SetSelection(selidx);
 
-        ConfigKey.Format("%s%d", SZ_KEY_UNIT_FLTR_VALUE   , count);
-        m_tcValue   [count]->SetValue(wxString::FromAscii(SkipSpaces(gpApp->GetConfig(szConfigSection, ConfigKey.GetData())) ));
+        Format(ConfigKey, "%s%d", SZ_KEY_UNIT_FLTR_VALUE   , count);
+        m_tcValue   [count]->SetValue(wxString::FromAscii(SkipSpaces(gpApp->GetConfig(szConfigSection, ConfigKey.c_str())) ));
     }
 
     m_tcFilterText->SetValue(wxString::FromAscii(gpApp->GetConfig(szConfigSection, SZ_KEY_UNIT_FLTR_PYTHON_CODE)));
 
     S = gpApp->GetConfig(szConfigSection, SZ_KEY_UNIT_FLTR_SOURCE);
-    if (0==stricmp(S.GetData(), SZ_KEY_UNIT_FLTR_SOURCE_PYTHON))
+    if (0==stricmp(S.c_str(), SZ_KEY_UNIT_FLTR_SOURCE_PYTHON))
     {
         m_rbUsePython->SetValue(TRUE);
         EnableBoxes(FALSE);
@@ -310,32 +309,32 @@ void CUnitFilterDlg::Load(const char * szConfigSection)
     S = gpApp->GetConfig(szConfigSection, SZ_KEY_UNIT_FLTR_SELECTED_HEXES);
     m_sSavedConfigSelected = S;
     if ( m_chUseSelectedHexes->IsEnabled() )
-        m_chUseSelectedHexes->SetValue(atol(S.GetData()) != 0);
+        m_chUseSelectedHexes->SetValue(atol(S.c_str()) != 0);
 
     S = gpApp->GetConfig(szConfigSection, SZ_KEY_UNIT_FLTR_SHOW_ON_MAP);
-    m_chDisplayOnMap->SetValue(atol(S.GetData()) != 0);
+    m_chDisplayOnMap->SetValue(atol(S.c_str()) != 0);
 }
 
 //--------------------------------------------------------------------------
 
 BOOL CUnitFilterDlg::IsValid()
 {
-    CStr         S1, S2;
+    std::string         S1, S2;
     int          count;
     BOOL         isvalid = FALSE;
 
     if (m_rbUseBoxes->GetValue())
         for (count=0; count < UNIT_SIMPLE_FLTR_COUNT; count++)
         {
-            S1 = m_cbProperty[count]->GetValue().mb_str();   S1.TrimRight(TRIM_ALL);
-            S2 = m_cbCompare[count]->GetValue().mb_str();    S2.TrimRight(TRIM_ALL);
-            if (!S1.IsEmpty() && !S2.IsEmpty())
+            S1 = m_cbProperty[count]->GetValue().mb_str();   TrimRight(S1, TRIM_ALL);
+            S2 = m_cbCompare[count]->GetValue().mb_str();    TrimRight(S2, TRIM_ALL);
+            if (!S1.empty() && !S2.empty())
                 isvalid = TRUE;
         }
     else
     {
         S1 = m_tcFilterText->GetValue().mb_str();
-        if (!S1.IsEmpty() )
+        if (!S1.empty() )
             isvalid = TRUE;
     }
     return isvalid;
@@ -346,50 +345,50 @@ BOOL CUnitFilterDlg::IsValid()
 void CUnitFilterDlg::Save()
 {
     int          count;
-    CStr         ConfigKey;
-    CStr         SetName;
-    CStr         S;
+    std::string         ConfigKey;
+    std::string         SetName;
+    std::string         S;
     BOOL         found = FALSE;
 
     m_IsSaving = TRUE;
 
-    gpApp->RemoveSection(m_sCurrentSection.GetData());
+    gpApp->RemoveSection(m_sCurrentSection.c_str());
 
     if (IsValid())
     {
         SetName = m_sCurrentSection;
-        SetName.DelSubStr(0, strlen(SZ_SECT_UNIT_FILTER));
+        DelSubStr(SetName, 0, strlen(SZ_SECT_UNIT_FILTER));
 
         for (count=0; count<(int)m_cbSetName->GetCount(); count++)
-            if (0==stricmp(m_cbSetName->GetString(count).mb_str(), SetName.GetData()))
+            if (0==stricmp(m_cbSetName->GetString(count).mb_str(), SetName.c_str()))
             {
                 found = TRUE;
                 break;
             }
         if (!found)
-            m_cbSetName->Append(wxString::FromAscii(SetName.GetData()));
+            m_cbSetName->Append(wxString::FromAscii(SetName.c_str()));
 
 
         for (count=0; count < UNIT_SIMPLE_FLTR_COUNT; count++)
         {
-            ConfigKey.Format("%s%d", SZ_KEY_UNIT_FLTR_PROPERTY, count);
-            gpApp->SetConfig(m_sCurrentSection.GetData(), ConfigKey.GetData(), m_cbProperty[count]->GetValue().mb_str());
+            Format(ConfigKey, "%s%d", SZ_KEY_UNIT_FLTR_PROPERTY, count);
+            gpApp->SetConfig(m_sCurrentSection.c_str(), ConfigKey.c_str(), m_cbProperty[count]->GetValue().mb_str());
 
-            ConfigKey.Format("%s%d", SZ_KEY_UNIT_FLTR_COMPARE , count);
-            gpApp->SetConfig(m_sCurrentSection.GetData(), ConfigKey.GetData(), m_cbCompare[count]->GetValue().mb_str());
+            Format(ConfigKey, "%s%d", SZ_KEY_UNIT_FLTR_COMPARE , count);
+            gpApp->SetConfig(m_sCurrentSection.c_str(), ConfigKey.c_str(), m_cbCompare[count]->GetValue().mb_str());
 
-            ConfigKey.Format("%s%d", SZ_KEY_UNIT_FLTR_VALUE   , count);
-            gpApp->SetConfig(m_sCurrentSection.GetData(), ConfigKey.GetData(), m_tcValue[count]->GetValue().mb_str());
+            Format(ConfigKey, "%s%d", SZ_KEY_UNIT_FLTR_VALUE   , count);
+            gpApp->SetConfig(m_sCurrentSection.c_str(), ConfigKey.c_str(), m_tcValue[count]->GetValue().mb_str());
         }
 
-        gpApp->SetConfig(m_sCurrentSection.GetData(), SZ_KEY_UNIT_FLTR_PYTHON_CODE, m_tcFilterText->GetValue().mb_str());
-        gpApp->SetConfig(m_sCurrentSection.GetData(), SZ_KEY_UNIT_FLTR_SOURCE, m_rbUsePython->GetValue() ? SZ_KEY_UNIT_FLTR_SOURCE_PYTHON : "");
+        gpApp->SetConfig(m_sCurrentSection.c_str(), SZ_KEY_UNIT_FLTR_PYTHON_CODE, m_tcFilterText->GetValue().mb_str());
+        gpApp->SetConfig(m_sCurrentSection.c_str(), SZ_KEY_UNIT_FLTR_SOURCE, m_rbUsePython->GetValue() ? SZ_KEY_UNIT_FLTR_SOURCE_PYTHON : "");
 
         S = m_sSavedConfigSelected;
         if ( m_chUseSelectedHexes->IsEnabled() )
             S = m_chUseSelectedHexes->GetValue()?"1":"0";
-        gpApp->SetConfig(m_sCurrentSection.GetData(), SZ_KEY_UNIT_FLTR_SELECTED_HEXES, S.GetData());
-        gpApp->SetConfig(m_sCurrentSection.GetData(), SZ_KEY_UNIT_FLTR_SHOW_ON_MAP, m_chDisplayOnMap->GetValue()?"1":"0");
+        gpApp->SetConfig(m_sCurrentSection.c_str(), SZ_KEY_UNIT_FLTR_SELECTED_HEXES, S.c_str());
+        gpApp->SetConfig(m_sCurrentSection.c_str(), SZ_KEY_UNIT_FLTR_SHOW_ON_MAP, m_chDisplayOnMap->GetValue()?"1":"0");
 
     }
 
@@ -400,14 +399,14 @@ void CUnitFilterDlg::Save()
 
 void CUnitFilterDlg::Reload(const char * setname)
 {
-    CStr  Sect;
+    std::string  Sect;
 
     if (m_IsSaving)
         return;
 
     Save();
     Sect << SZ_SECT_UNIT_FILTER << setname;
-    Load(Sect.GetData());
+    Load(Sect.c_str());
 }
 
 //--------------------------------------------------------------------------
@@ -470,43 +469,43 @@ void CUnitFilterDlg::OnBoxesChange  (wxCommandEvent& event)
     if (m_rbUseBoxes->GetValue())
     {
         int i;
-        CStr s, s1, s2, s3;
+        std::string s, s1, s2, s3;
 
         for (i=0; i < UNIT_SIMPLE_FLTR_COUNT; i++)
         {
             s1 = m_cbProperty[i]->GetValue().mb_str();
             s2 = m_cbCompare [i]->GetValue().mb_str();
             s3 = m_tcValue   [i]->GetValue().mb_str();
-            if (!s1.IsEmpty() || !s2.IsEmpty() || !s3.IsEmpty())
+            if (!s1.empty() || !s2.empty() || !s3.empty())
             {
                 // adjust 'equal to'
-                s2.TrimLeft();
-                s2.TrimRight();
-                if (0 == strcmp(s2.GetData(), "="))
+                TrimLeft(s2);
+                TrimRight(s2);
+                if (0 == strcmp(s2.c_str(), "="))
                     s2 = "==";
 
                 // quote strings
-                s1.TrimLeft();
-                s1.TrimRight();
+                TrimLeft(s1);
+                TrimRight(s1);
 
                 EValueType type = eLong;
                 {
-                    auto it__ = gpApp->m_pAtlantis->m_UnitPropertyTypes.find(s1.GetData());
+                    auto it__ = gpApp->m_pAtlantis->m_UnitPropertyTypes.find(s1.c_str());
                     if (it__ != gpApp->m_pAtlantis->m_UnitPropertyTypes.end())
                         type = (EValueType)it__->second;
                 }
                 if (eCharPtr == type)
                 {
-                    s3.InsStr("\"", 0, 1);
+                    InsStr(s3, "\"", 0, 1);
                     s3 << '\"';
                 }
 
-                if (!s.IsEmpty())
+                if (!s.empty())
                     s << " and ";
                 s << s1 << s2 << s3;
             }
         }
-        m_tcFilterText->SetValue(wxString::FromAscii(s.GetData()));
+        m_tcFilterText->SetValue(wxString::FromAscii(s.c_str()));
     }
 }
 
@@ -526,7 +525,7 @@ void CUnitFilterDlg::OnButton(wxCommandEvent& event)
     wxObject * object = event.GetEventObject();
     int        i;
 
-    m_TrackingGroup.Empty();
+    m_TrackingGroup.clear();
     if (object == m_btnRemove)
     {
         for (i=0; i < UNIT_SIMPLE_FLTR_COUNT; i++)
@@ -540,22 +539,22 @@ void CUnitFilterDlg::OnButton(wxCommandEvent& event)
     else if (object == m_btnTracking)
     {
         int          sectidx;
-        CStr         S;
+        std::string         S;
         const char * szName;
         const char * szValue;
 
         sectidx = gpApp->GetSectionFirst(SZ_SECT_UNIT_TRACKING, szName, szValue);
         while (sectidx >= 0)
         {
-            if (!S.IsEmpty())
+            if (!S.empty())
                 S << ",";
             S << szName;
             sectidx = gpApp->GetSectionNext(sectidx, SZ_SECT_UNIT_TRACKING, szName, szValue);
         }
-        if (S.IsEmpty())
+        if (S.empty())
             S = "Default";
 
-        CComboboxDlg dlg(this, "Show a tracking group", "Select a group to load units from.", S.GetData());
+        CComboboxDlg dlg(this, "Show a tracking group", "Select a group to load units from.", S.c_str());
         if (wxID_OK == dlg.ShowModal())
         {
             m_TrackingGroup = dlg.m_Choice;
@@ -573,7 +572,7 @@ void CUnitFilterDlg::OnButton(wxCommandEvent& event)
     else if (object == m_btnSet)
     {
         Save();
-        gpApp->SetConfig(m_sControllingConfig.GetData(), SZ_KEY_FLTR_SET, m_sCurrentSection.GetData());
+        gpApp->SetConfig(m_sControllingConfig.c_str(), SZ_KEY_FLTR_SET, m_sCurrentSection.c_str());
         StoreSize();
         EndModal(wxID_OK);
     }
@@ -593,4 +592,3 @@ void CUnitFilterDlg::OnButton(wxCommandEvent& event)
                      );
     }
 }
-

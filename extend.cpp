@@ -19,7 +19,7 @@
 
 #include "stdhdr.h"
 
-#include "cstr.h"
+#include "string_utils.h"
 #include "cfgfile.h"
 #include "files.h"
 #include "atlaparser.h"
@@ -170,10 +170,10 @@ extern "C" PyObject * unitfltr_getproperty(PyObject *self, PyObject* args)
     else
     {
         // python is case sensitive, so lowercase all string values
-        CStr S;
-        S.SetStr((const char *)value);
-        S.ToLower();
-        return Py_BuildValue("s", S.GetData());
+        std::string S;
+        SetStr(S, (const char *)value);
+        ToLower(S);
+        return Py_BuildValue("s", S.c_str());
     }
 }
 
@@ -194,16 +194,16 @@ void initunitfltr(void)
 
 
 
-eEErr  CPythonEmbedder::InitUnitFilter(const char * userfilter, CStr & sPythonFilter)
+eEErr  CPythonEmbedder::InitUnitFilter(const char * userfilter, std::string & sPythonFilter)
 {
     eEErr        result = E_OK;
-    CStr         sToken;
+    std::string         sToken;
     const char * p = userfilter;
     char         ch;
     int          idx;
-    CStr         sCommand;
+    std::string         sCommand;
 
-    sPythonFilter.Empty();
+    sPythonFilter.clear();
     result = InitGeneric();
     if (E_OK != result)
         return result;
@@ -220,13 +220,13 @@ eEErr  CPythonEmbedder::InitUnitFilter(const char * userfilter, CStr & sPythonFi
              << "    res = " ;
     while (p && *p)
     {
-        p = sToken.GetToken(p, "+-*/<>=!()., \t\r\n", ch, TRIM_ALL, FALSE);
+        p = GetToken(sToken, p, "+-*/<>=!()., \t\r\n", ch, TRIM_ALL, FALSE);
 
         // python is case sensitive, so lowercase all quoted strings
-        if (!sToken.IsEmpty() && '\"' == sToken.GetData()[0] && '\"' == sToken.GetData()[sToken.GetLength()-1])
-            sToken.ToLower();
+        if (!sToken.empty() && '\"' == sToken.c_str()[0] && '\"' == sToken.c_str()[sToken.size()-1])
+            ToLower(sToken);
 
-        if (gpApp->m_pAtlantis->m_UnitPropertyNames.Search((void*)sToken.GetData(), idx))
+        if (gpApp->m_pAtlantis->m_UnitPropertyNames.Search((void*)sToken.c_str(), idx))
             sCommand << SZ_ALH_UNIT_FILTER_MODULE << "." << SZ_ALH_UNIT_FILTER_FN_GET_PROPERTY << "(\"" << sToken << "\")";
         else
             sCommand << sToken;
@@ -243,7 +243,7 @@ eEErr  CPythonEmbedder::InitUnitFilter(const char * userfilter, CStr & sPythonFi
 
     initunitfltr();
 
-    m_pCode   = Py_CompileString((char*)sCommand.GetData(), SZ_UNIT_FILTER_MODULE,  Py_file_input);
+    m_pCode   = Py_CompileString((char*)sCommand.c_str(), SZ_UNIT_FILTER_MODULE,  Py_file_input);
                 CHECK_NULL_PTR(m_pCode, E_PYTHON, "Py_CompileString()")
     m_pModule = PyImport_ExecCodeModule((char*)SZ_UNIT_FILTER_MODULE, m_pCode);
                 CHECK_NULL_PTR(m_pModule, E_PYTHON, "PyImport_ExecCodeModule()")
@@ -311,14 +311,14 @@ void   CPythonEmbedder::DoneUnitFilter()
 
 //-------------------------------------------------------------------------
 
-void   CPythonEmbedder::GetCommonCode(CStr & code)
+void   CPythonEmbedder::GetCommonCode(std::string & code)
 {
     CFileReader  F;
     CFileWriter  W;
-    CStr         S;
+    std::string         S;
     int          x;
 
-    code.Empty();
+    code.clear();
     if (F.Open(SZ_COMMON_PY_FILE))
     {
         while (F.GetNextLine(S))
@@ -330,18 +330,18 @@ void   CPythonEmbedder::GetCommonCode(CStr & code)
         if (W.Open(SZ_COMMON_PY_FILE))
         {
             code << "import string";
-            W.WriteBuf(code.GetData(), code.GetLength());
+            W.WriteBuf(code.c_str(), code.size());
             W.Close();
         }
     }
 
     // 0D 0A sequence kills the dumb python parser on windows
 
-    x = code.FindSubStr("\r");
+    x = FindSubStr(code, "\r");
     while (x>=0)
     {
-        code.DelCh(x);
-        x = code.FindSubStr("\r");
+        DelCh(code, x);
+        x = FindSubStr(code, "\r");
     }
 }
 

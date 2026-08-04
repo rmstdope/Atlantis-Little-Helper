@@ -121,7 +121,7 @@ class CComboboxDlg : public wxDialog
 public:
     CComboboxDlg(wxWindow *parent, const char * szTitle, const char * szMessage, const char * szChoices);
 
-    CStr m_Choice;
+    std::string m_Choice;
 
 private:
     void OnButton(wxCommandEvent& event);
@@ -138,7 +138,7 @@ class CGetTextDlg : public CResizableDlg
 public:
     CGetTextDlg(wxWindow *parent, const char * szTitle, const char * szMessage);
 
-    CStr m_Text;
+    std::string m_Text;
 
 private:
     void OnButton(wxCommandEvent& event);
