@@ -25,12 +25,10 @@
 
 
 #include "cstr.h"
-#include "collection.h"
 #include "cfgfile.h"
 #include "files.h"
 #include "atlaparser.h"
 #include "consts_ah.h"
-#include "hash.h"
 #include "ahapp.h"
 #include "ahframe.h"
 
@@ -87,19 +85,19 @@ CUnitSplitDlg::CUnitSplitDlg(wxWindow *parent, CUnit * pUnit)
     topsizer->Add(st              , 0, wxALIGN_LEFT | wxALL , SPACER_GENERIC);
 
     cols = 2;
-    rows = m_SplitControls.Count() / cols;
+    rows = (int)m_SplitControls.size() / cols;
     while (rows > cols*5)
     {
         cols++;
-        rows = m_SplitControls.Count() / cols;
+        rows = (int)m_SplitControls.size() / cols;
     }
-    while (rows*cols < m_SplitControls.Count())
+    while (rows*cols < (int)m_SplitControls.size())
         rows++;
 
     gridsizer = new wxGridSizer(rows, cols, 3, 3) ;
-    for (idx=0; idx<m_SplitControls.Count(); idx++ )
+    for (idx=0; idx<(int)m_SplitControls.size(); idx++ )
     {
-        pSpin = (wxSpinCtrl*)m_SplitControls.At(idx);
+        pSpin = m_SplitControls[idx];
 
         sizer    = new wxBoxSizer( wxHORIZONTAL );
         st       = new wxStaticText(this, -1, pSpin->GetName());
@@ -132,7 +130,7 @@ CUnitSplitDlg::CUnitSplitDlg(wxWindow *parent, CUnit * pUnit)
 
 CUnitSplitDlg::~CUnitSplitDlg()
 {
-    m_SplitControls.DeleteAll();
+    m_SplitControls.clear();
 }
 
 //--------------------------------------------------------------------------
@@ -164,7 +162,7 @@ void CUnitSplitDlg::ScanProperties()
             pSpin->SetValue(0);
             pSpin->SetName(wxString::FromAscii(propname.GetData()));
 
-            m_SplitControls.AtInsert(m_SplitControls.Count(), pSpin);
+            m_SplitControls.push_back(pSpin);
         }
         propname = m_pUnit->GetPropertyName(++propidx);
     }
@@ -205,9 +203,9 @@ void CUnitSplitDlg::OnOk(wxCommandEvent& event)
         m_pUnit->Orders << Cmd;
         m_pUnit->Orders << "END" << EOL_SCR;
 
-        for (idx=0; idx<m_SplitControls.Count(); idx++ )
+        for (idx=0; idx<(int)m_SplitControls.size(); idx++ )
         {
-            pSpin = (wxSpinCtrl*)m_SplitControls.At(idx);
+            pSpin = m_SplitControls[idx];
 
             if (pSpin->GetValue() > 0)
                 m_pUnit->Orders << "GIVE NEW " << (long)(id+i) << " " << (long)pSpin->GetValue() << " " << pSpin->GetName().mb_str() << EOL_SCR;

@@ -22,8 +22,9 @@
 #include "wx/listctrl.h"
 
 #include "cstr.h"
-#include "collection.h"
 #include "cfgfile.h"
+#include <set>
+#include <vector>
 #include "files.h"
 #include "atlaparser.h"
 #include "consts.h"
@@ -100,7 +101,7 @@ void CUnitPaneFltr::Update(CUnitFilterDlg * pFilter)
     CUnit          * pUnit, * pPrevUnit;
     BOOL             ok;
     CStr             TrackingGroup;
-    CLongSortColl    Tracking(32);
+    std::set<long>   Tracking;
     const char     * p;
     CStr             S;
     BOOL             bUsePython = FALSE;
@@ -172,7 +173,7 @@ void CUnitPaneFltr::Update(CUnitFilterDlg * pFilter)
         while (p && *p)
         {
             p = S.GetToken(p, ',');
-            Tracking.Insert((void*)atol(S.GetData()));
+            Tracking.insert(atol(S.GetData()));
         }
     }
 
@@ -273,7 +274,7 @@ void CUnitPaneFltr::Update(CUnitFilterDlg * pFilter)
                 ok    = TRUE;
     
                 if (!TrackingGroup.IsEmpty())
-                    ok = Tracking.Search((void*)pUnit->Id, i);
+                    ok = (Tracking.count(pUnit->Id) > 0);
                 else if (bUsePython)
                 {
                     rcPy = Python.RunUnitFilter(pUnit, ok);
@@ -463,8 +464,7 @@ void CUnitPaneFltr::OnPopupMenuIssueOrders(wxCommandEvent& event)
     CUnit        * pUnit;
     CEditPane    * pOrders;
     CGetTextDlg    dlg(this, "Order", "Orders for the selected units");
-    CLongSortColl  LandIds;
-    int            i;
+    std::set<long>   LandIds;
     CLand        * pLand;
     CUnitPane    * pUnitPane;
 
@@ -489,26 +489,24 @@ void CUnitPaneFltr::OnPopupMenuIssueOrders(wxCommandEvent& event)
             if (!pUnit->Orders.IsEmpty())
                 pUnit->Orders << EOL_SCR;
             pUnit->Orders << dlg.m_Text;
-            LandIds.Insert((void*)pUnit->LandId);
+            LandIds.insert(pUnit->LandId);
         }
         idx   = GetNextItem(idx, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
     }
 
-    if (LandIds.Count()>0)
+    if (!LandIds.empty())
     {
         gpApp->SetOrdersChanged(TRUE);
 /*        gpApp->m_pAtlantis->RunOrders(m_pCurLand);
         Update(m_pCurLand);*/
-        for (i=0; i<LandIds.Count(); i++)
+        for (long landId : LandIds)
         {
-            pLand = gpApp->m_pAtlantis->GetLand((long)LandIds.At(i));
+            pLand = gpApp->m_pAtlantis->GetLand(landId);
             gpApp->m_pAtlantis->RunOrders(pLand);
         }
         pUnitPane = (CUnitPane*)gpApp->m_Panes[AH_PANE_UNITS_HEX];
         if (pUnitPane)
             pUnitPane->Update(pUnitPane->m_pCurLand);
     }
-
-    LandIds.DeleteAll();
 }
 

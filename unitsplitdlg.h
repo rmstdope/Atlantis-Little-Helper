@@ -20,6 +20,8 @@
 #ifndef __AH_SPLIT_UNIT_DIALOG_INCL__
 #define __AH_SPLIT_UNIT_DIALOG_INCL__
 
+#include <vector>
+
 
 
 class CUnitSplitDlg : public CResizableDlg
@@ -35,7 +37,7 @@ private:
     void OnOk           (wxCommandEvent& event);
 
     CUnit         * m_pUnit         ;
-    CLongColl     m_SplitControls   ;
+    std::vector<wxSpinCtrl*> m_SplitControls   ;
 
     wxButton      * m_btnOk         ;
     wxButton      * m_btnCancel     ;

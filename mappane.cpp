@@ -28,13 +28,14 @@
 #endif
 
 #include "cstr.h"
-#include "collection.h"
 #include "cfgfile.h"
+#include <algorithm>
+#include <vector>
+#include <string>
 #include "files.h"
 #include "atlaparser.h"
 #include "consts.h"
 #include "consts_ah.h"
-#include "hash.h"
 
 #include "ahapp.h"
 #include "ahframe.h"
@@ -161,7 +162,7 @@ CMapPane::CMapPane(wxWindow * parent, wxWindowID id, int layout)
     m_ShowState        = 0;
     m_MinSelMen        = 0;
     m_pCities          = new CBaseCollById(32);
-    m_pTrackHexes      = new CLongColl(8);
+    m_pTrackHexes      = new std::vector<long>();
     m_pPopupLand       = NULL;
     m_UnknownColorIdx  = -1;
     m_Hatch            = FALSE;
@@ -214,9 +215,11 @@ CMapPane::~CMapPane()
     delete m_pCities;
     delete m_pTrackHexes;
 
-    m_TerrainBrushes.FreeAll();
-    m_TerrainNames  .FreeAll();
-    m_EdgeProps     .FreeAll();
+    for (auto* b : m_TerrainBrushes) delete b;
+    m_TerrainBrushes.clear();
+    m_TerrainNames  .clear();
+    for (auto* e : m_EdgeProps) delete e;
+    m_EdgeProps     .clear();
 }
 
 //--------------------------------------------------------------------------
@@ -240,10 +243,10 @@ void CMapPane::Init(CAhFrame * pParentFrame)
         x = atol(S.GetData());
         x = (x/2)*2;  // make it even!
         if (x>0)
-            m_HexSizes.Insert((void*)x);
+            m_HexSizes.push_back(x);
     }
-    if (0==m_HexSizes.Count())
-        m_HexSizes.Insert((void*)24);
+    if (0==m_HexSizes.size())
+        m_HexSizes.push_back(24);
 
     m_SelPlane             = atol(gpApp->GetConfig(SZ_SECT_MAP_PANE  , SZ_KEY_PLANE_SEL       ));
 
@@ -358,10 +361,10 @@ void CMapPane::ApplyOneColor(wxColour & cr, const char * name)
     CFileReader  F;
     wxColour     cr2;
 
-    m_TerrainNames.Insert(strdup(name));
+    m_TerrainNames.push_back(name);
 
     if (0==stricmp(SZ_KEY_MAP_UNKNOWN, name))
-        m_UnknownColorIdx = m_TerrainBrushes.Count();
+        m_UnknownColorIdx = (int)m_TerrainBrushes.size();
 
 #ifndef __WXMAC_OSX__
     S << name << ".bmp";
@@ -377,11 +380,11 @@ void CMapPane::ApplyOneColor(wxColour & cr, const char * name)
 
     if (!pBrush)
         pBrush = new wxBrush(cr, wxSOLID);
-    m_TerrainBrushes.Insert(pBrush);
+    m_TerrainBrushes.push_back(pBrush);
 
     cr2.Set(cr.Red() >> 1, cr.Green()  >> 1, cr.Blue() >> 1);
     pBrush = new wxBrush(cr2, wxCROSSDIAG_HATCH);
-    m_TerrainBrushes.Insert(pBrush);
+    m_TerrainBrushes.push_back(pBrush);
 
 }
 
@@ -491,8 +494,9 @@ void CMapPane::ApplyColors()
         m_pDarkColor[i] = new wxColor((char) (cr.Red()*.66),(char) (cr.Green()*.66),(char) (cr.Blue()*.66));
     }
 
-    m_TerrainBrushes.FreeAll();
-    m_TerrainNames  .FreeAll();
+    for (auto* b : m_TerrainBrushes) delete b;
+    m_TerrainBrushes.clear();
+    m_TerrainNames  .clear();
     m_UnknownColorIdx  = -1;
 
     for (n=0; n<gpApp->m_pAtlantis->m_Planes.Count(); n++)
@@ -517,7 +521,8 @@ void CMapPane::ApplyColors()
 //    }
 
     // load edge structures colors
-    m_EdgeProps.FreeAll();
+    for (auto* e : m_EdgeProps) delete e;
+    m_EdgeProps.clear();
 //    idx = gpApp->GetSectionFirst(SZ_SECT_EDGE_STRUCTS, name, value);
 //    while (idx>=0)
 //    {
@@ -543,13 +548,13 @@ wxBrush * CMapPane::GetLandBrush(CLand * pLand, BOOL GetHatched)
 //    int          Hatch;
 
     idx = pLand?pLand->guiColor:m_UnknownColorIdx;
-    if (idx<0 || idx>=m_TerrainBrushes.Count())
+    if (idx<0 || idx>=(int)m_TerrainBrushes.size())
     {
         idx = -1;
         name = pLand?pLand->TerrainType.GetData():SZ_KEY_MAP_UNKNOWN;
 
-        for (i=0; i<m_TerrainNames.Count(); i++)
-            if (0==stricmp(name, (const char*)m_TerrainNames.At(i)))
+        for (i=0; i<(int)m_TerrainNames.size(); i++)
+            if (0==stricmp(name, m_TerrainNames[i].c_str()))
             {
                 idx = i*2;
                 break;
@@ -560,7 +565,7 @@ wxBrush * CMapPane::GetLandBrush(CLand * pLand, BOOL GetHatched)
             // totally new color, but try to read it, so it gets into config file
             StrToColor(&cr,   gpApp->GetConfig(SZ_SECT_COLORS, name) );
             //Hatch = atol(gpApp->GetConfig(SZ_SECT_COMMON,  SZ_KEY_HATCH_UNVISITED));
-            idx   = m_TerrainBrushes.Count();
+            idx   = (int)m_TerrainBrushes.size();
             ApplyOneColor(cr, name);
         }
 
@@ -573,7 +578,7 @@ wxBrush * CMapPane::GetLandBrush(CLand * pLand, BOOL GetHatched)
     if (GetHatched)
         idx++;
 
-    return (wxBrush*)m_TerrainBrushes.At(idx);
+    return m_TerrainBrushes[idx];
 }
 
 //--------------------------------------------------------------------------
@@ -589,8 +594,12 @@ CEdgeStructProperties * CMapPane::GetEdgeProps(const char * name)
     int                  idx;
 
     Dummy.name = name;
-    if (m_EdgeProps.Search(&Dummy, idx))
-        pEdgeProp = (CEdgeStructProperties*)m_EdgeProps.At(idx);
+    auto it = std::lower_bound(m_EdgeProps.begin(), m_EdgeProps.end(), &Dummy,
+        [](CEdgeStructProperties* a, CEdgeStructProperties* b) {
+            return stricmp(a->name.GetData(), b->name.GetData()) < 0;
+        });
+    if (it != m_EdgeProps.end() && stricmp((*it)->name.GetData(), name) == 0)
+        pEdgeProp = *it;
     else
     {
         pEdgeProp = new CEdgeStructProperties;
@@ -631,7 +640,12 @@ CEdgeStructProperties * CMapPane::GetEdgeProps(const char * name)
         StrToColor(&cr, gpApp->GetConfig(SZ_SECT_COLORS, S.GetData()));
         pEdgeProp->pen = new wxPen(cr, n, wxSOLID);
 
-        m_EdgeProps.Insert(pEdgeProp);
+        // re-compute insertion point (name may differ from Dummy used above)
+        it = std::lower_bound(m_EdgeProps.begin(), m_EdgeProps.end(), pEdgeProp,
+            [](CEdgeStructProperties* a, CEdgeStructProperties* b) {
+                return stricmp(a->name.GetData(), b->name.GetData()) < 0;
+            });
+        m_EdgeProps.insert(it, pEdgeProp);
     }
 
     return pEdgeProp;
@@ -770,8 +784,8 @@ BOOL CMapPane::SetHexSize(int HexSizeIdx)
     m_HexSizeIdx    = HexSizeIdx;
     if (m_HexSizeIdx < 0)
         m_HexSizeIdx = 0;
-    if (m_HexSizeIdx >= m_HexSizes.Count())
-        m_HexSizeIdx = m_HexSizes.Count()-1;
+    if (m_HexSizeIdx >= (int)m_HexSizes.size())
+        m_HexSizeIdx = (int)m_HexSizes.size()-1;
 
     Changed = (OldIdx != m_HexSizeIdx);
     if (Changed)
@@ -780,7 +794,7 @@ BOOL CMapPane::SetHexSize(int HexSizeIdx)
         if (m_HexSizeIdxOld < 0)
             m_HexSizeIdxOld = m_HexSizeIdx;
 
-        m_HexSize       = (long)m_HexSizes.At(m_HexSizeIdx);
+        m_HexSize       = m_HexSizes[m_HexSizeIdx];
         m_HexHalfSize   = m_HexSize / 2;
         m_HexHalfHeight = (int)(m_HexSize * cos30 + 0.5);
         m_HexHeight     = m_HexHalfHeight * 2;
@@ -2918,24 +2932,24 @@ void CMapPane::RedrawTracksForUnit(CPlane * pPlane, CUnit * pUnit, wxDC * pDC, B
 
 
     // Erase old tracks
-    for (i=0; i<m_pTrackHexes->Count(); i++)
+    for (i=0; i<(int)m_pTrackHexes->size(); i++)
     {
-        HexId = (long)m_pTrackHexes->At(i);
+        HexId = (*m_pTrackHexes)[i];
         LandIdToCoord(HexId, X, Y, Z);
         pLand = gpApp->m_pAtlantis->GetLand(HexId);
 
         DrawHex(X, Y, pDC, pLand, pPlane, &rect);
     }
     for (dp=0; dp<=MAX_DP_BORDER; dp++)
-        for (i=0; i<m_pTrackHexes->Count(); i++)
+        for (i=0; i<(int)m_pTrackHexes->size(); i++)
         {
-            HexId = (long)m_pTrackHexes->At(i);
+            HexId = (*m_pTrackHexes)[i];
             LandIdToCoord(HexId, X, Y, Z);
             pLand = gpApp->m_pAtlantis->GetLand(HexId);
 
             DrawHexBorder(X, Y, pDC, pLand, TRUE, pPlane, &rect, dp, TRUE);
         }
-    m_pTrackHexes->DeleteAll();
+    m_pTrackHexes->clear();
 
     pLand = gpApp->m_pAtlantis->GetLand(m_SelHexX, m_SelHexY, m_SelPlane, TRUE);
     DrawHexBorder(m_SelHexX, m_SelHexY, pDC, pLand, TRUE, pPlane, &rect, pLand?MAX_DP_BORDER:0, TRUE);
@@ -2946,7 +2960,7 @@ void CMapPane::RedrawTracksForUnit(CPlane * pPlane, CUnit * pUnit, wxDC * pDC, B
     // draw new tracks and remeber hexes
     if (pUnit && pUnit->pMovement)
     {
-        m_pTrackHexes->Insert((void*)pUnit->LandId);
+        m_pTrackHexes->push_back(pUnit->LandId);
         LandIdToCoord(pUnit->LandId, X, Y, Z);
         GetHexCenter(X, Y, wx0, wy0);
 
@@ -3020,7 +3034,7 @@ void CMapPane::DrawSingleTrack(int X, int Y, int wx, int wy, wxDC * pDC, CUnit *
 
         HexId = (*pUnit->pMovement)[i];
         if (0==copyno)
-            m_pTrackHexes->Insert((void*)HexId);
+            m_pTrackHexes->push_back(HexId);
 
         LandIdToCoord(HexId, X1, Y1, Z);
 
@@ -3965,7 +3979,7 @@ BOOL CMapPane::IsToolActive(wxUpdateUIEvent& event)
     switch (event.GetId())
     {
     case tool_zoomin    :
-        Ok = (m_HexSizeIdx < m_HexSizes.Count()-1);
+        Ok = (m_HexSizeIdx < (int)m_HexSizes.size()-1);
         break;
 
     case tool_zoomout   :
