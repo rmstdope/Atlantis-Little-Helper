@@ -697,6 +697,7 @@ CGetTextDlg::CGetTextDlg(wxWindow *parent, const char * szTitle, const char * sz
     btnOk       = new wxButton     (this, wxID_OK    , wxT("Ok")    );
     btnCancel   = new wxButton     (this, wxID_CANCEL, wxT("Cancel") );
     m_tcText    = new wxTextCtrl(this, -1, wxT(""), wxDefaultPosition, wxSize(60,60), wxTE_MULTILINE | wxHSCROLL );
+    DisableSmartSubstitutions(m_tcText);
 
 
     topsizer = new wxBoxSizer( wxVERTICAL );

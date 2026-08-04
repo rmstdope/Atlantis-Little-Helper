@@ -13,3 +13,14 @@
     #include "wx/wx.h"
 #endif
 
+// macOS replaces straight quotes/dashes with typographic ones while typing,
+// but Atlantis orders must stay plain ASCII.
+inline void DisableSmartSubstitutions(wxTextCtrl * pTextCtrl)
+{
+#ifdef __WXOSX__
+    pTextCtrl->OSXDisableAllSmartSubstitutions();
+#else
+    wxUnusedVar(pTextCtrl);
+#endif
+}
+

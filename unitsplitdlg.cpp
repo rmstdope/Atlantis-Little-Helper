@@ -69,6 +69,7 @@ CUnitSplitDlg::CUnitSplitDlg(wxWindow *parent, CUnit * pUnit)
     m_btnCancel     = new wxButton     (this, wxID_CANCEL , wxT("Cancel") );
     m_spinUnitCount = new wxSpinCtrl   (this, -1, wxT("1"), wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1, 100000);
     m_textNewCommand= new wxTextCtrl  (this, -1, wxT(""), wxDefaultPosition, wxSize(100,50), wxTE_MULTILINE );
+    DisableSmartSubstitutions(m_textNewCommand);
 
     sizer    = new wxBoxSizer( wxHORIZONTAL );
         sizer->Add(m_spinUnitCount , 0, wxALIGN_CENTER | wxALL , SPACER_GENERIC);
