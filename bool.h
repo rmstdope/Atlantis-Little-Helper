@@ -1,9 +1,1 @@
-#ifndef BOOL
-#define BOOL bool
-#endif
-#ifndef TRUE
-#define TRUE true
-#endif
-#ifndef FALSE
-#define FALSE false
-#endif
+// bool.h: Legacy compatibility header. BOOL/TRUE/FALSE removed; use bool/true/false directly.

@@ -60,7 +60,6 @@ CPythonEmbedder::CPythonEmbedder(CAtlaParser * pAtlantis)
 {
     m_pAtlantis       = pAtlantis;
     m_bInitUnitFilter = false;
-    m_bInitUnitFilter = false;
     m_bInitGeneric    = false;
 
     m_pCode   = nullptr;

@@ -20,6 +20,7 @@
 #ifndef __AH_APP_INCL__
 #define __AH_APP_INCL__
 
+#include <algorithm>
 #include <vector>
 #include <set>
 #include <unordered_map>
