@@ -26,7 +26,7 @@
 
 #include "data.h"
 
-#include "cstr.h"
+#include "string_utils.h"
 #include "cfgfile.h"
 #include "files.h"
 #include "atlaparser.h"
@@ -99,8 +99,10 @@ BOOL IsASkillRelatedProperty(const char * propname)
 
 //=============================================================
 
-CBaseObject::CBaseObject() : Name(32), Description(128)
+CBaseObject::CBaseObject()
 {
+    Name.reserve(32);
+    Description.reserve(128);
     Id = 0;
 }
 
@@ -142,12 +144,12 @@ BOOL CBaseObject::GetProperty(const char  *  name,
         else if (0==stricmp(name, PRP_NAME))
         {
             type  = eCharPtr;
-            value = Name.GetData();
+            value = Name.c_str();
         }
         else if (0==stricmp(name, PRP_FULL_TEXT))
         {
             type  = eCharPtr;
-            value = Description.GetData();
+            value = Description.c_str();
         }
         else
             Ok = FALSE;
@@ -164,7 +166,7 @@ void CBaseObject::SetName(const char * newname)
 
     // save org value if not saved
     if (!GetProperty(PRP_ORG_NAME, type, value, eNormal))
-        SetProperty(PRP_ORG_NAME, eCharPtr, (void*)Name.GetData(), eBoth);
+        SetProperty(PRP_ORG_NAME, eCharPtr, (void*)Name.c_str(), eBoth);
     Name = newname;
 }
 
@@ -177,7 +179,7 @@ void CBaseObject::SetDescription(const char * newdescr)
 
     // save org value if not saved
     if (!GetProperty(PRP_ORG_DESCR, type, value, eNormal))
-        SetProperty(PRP_ORG_DESCR, eCharPtr, (void*)Description.GetData(), eBoth);
+        SetProperty(PRP_ORG_DESCR, eCharPtr, (void*)Description.c_str(), eBoth);
     Description = newdescr;
 }
 
@@ -214,17 +216,17 @@ void CBaseObject::ResetNormalProperties()
 
 //-------------------------------------------------------------
 
-void CBaseObject::DebugPrint(CStr & sDest)
+void CBaseObject::DebugPrint(std::string & sDest)
 {
     sDest << "\n"
           << "Id          = " << Id << "\n"
-          << "Name        = " << Name.GetData() << "\n"
-          << "Description = " << Description.GetData() << "\n";
+          << "Name        = " << Name.c_str() << "\n"
+          << "Description = " << Description.c_str() << "\n";
 }
 
 //=============================================================
 
-void CFaction::DebugPrint(CStr & sDest)
+void CFaction::DebugPrint(std::string & sDest)
 {
     CBaseObject::DebugPrint(sDest);
 
@@ -283,7 +285,7 @@ CLand::~CLand()
     Products.FreeAll();
 }
 
-void CLand::DebugPrint(CStr & sDest)
+void CLand::DebugPrint(std::string & sDest)
 {
     CBaseObject::DebugPrint(sDest);
 
@@ -423,7 +425,7 @@ CStruct * CLand::AddNewStruct(CStruct * pNewStruct)
     {
         pStruct = (CStruct*)Structs.At(idx);
 
-//        if (0==stricmp(pStruct->Kind.GetData(), "Shaft") )
+//        if (0==stricmp(pStruct->Kind.c_str(), "Shaft") )
         if (pStruct->Attr & SA_SHAFT  )
         {
             // process links for shafts
@@ -431,12 +433,12 @@ CStruct * CLand::AddNewStruct(CStruct * pNewStruct)
             int  x1, x2, x3;
             BOOL Link;
 
-            x1   = pNewStruct->Description.FindSubStr(";");
-            x2   = pNewStruct->Description.FindSubStr("links");
-            x3   = pNewStruct->Description.FindSubStr("to");
+            x1   = FindSubStr(pNewStruct->Description, ";");
+            x2   = FindSubStr(pNewStruct->Description, "links");
+            x3   = FindSubStr(pNewStruct->Description, "to");
             Link = ( x1>=0 && x1<x2 && x2<x3 );
 
-            if (Link || pNewStruct->Description.GetLength() > pStruct->Description.GetLength())
+            if (Link || pNewStruct->Description.size() > pStruct->Description.size())
                 pStruct->Description= pNewStruct->Description;
         }
         else
@@ -669,7 +671,7 @@ void CLand::AddNewEdgeStruct(const char * name, int direction)
 //=============================================================
 
 std::multimap<std::string,std::string> * CUnit::m_PropertyGroupsColl = NULL;
-CStr          CUnit::m_CustomFlagNames[UNIT_CUSTOM_FLAG_COUNT];
+std::string          CUnit::m_CustomFlagNames[UNIT_CUSTOM_FLAG_COUNT];
 BOOL          CUnit::m_CustomFlagNamesLoaded = FALSE;
 
 
@@ -681,8 +683,13 @@ std::multimap<std::string,std::string> * CUnit::GetPropertyGroups()
 
 //-------------------------------------------------------------
 
-CUnit::CUnit() : CBaseObject(), Comments(16), DefOrders(32), Orders(32), Errors(32), Events(32)
+CUnit::CUnit() : CBaseObject()
 {
+    Comments.reserve(16);
+    DefOrders.reserve(32);
+    Orders.reserve(32);
+    Errors.reserve(32);
+    Events.reserve(32);
     IsOurs        = false;
     FactionId     = 0;
     pFaction      = NULL;
@@ -759,17 +766,17 @@ CUnit * CUnit::AllocSimpleCopy()
 void CUnit::ExtractCommentsFromDefOrders()
 {
     const char * p;
-    CStr         S;
+    std::string         S;
 
-    Comments.Empty();
-    p = DefOrders.GetData();
+    Comments.clear();
+    p = DefOrders.c_str();
     while (p)
     {
-        p = S.GetToken(p, '\n', TRIM_ALL);
-        if ( (S.GetLength() > 1) && (';' == S.GetData()[0]) )
+        p = GetToken(S, p, '\n', TRIM_ALL);
+        if ( (S.size() > 1) && (';' == S.c_str()[0]) )
         {
-            Comments.SetStr(&S.GetData()[1], S.GetLength()-1);
-            Comments.TrimLeft(TRIM_ALL);
+            SetStr(Comments, S.c_str() + 1, (int)S.size() - 1);
+            TrimLeft(Comments, TRIM_ALL);
             break;
         }
     }
@@ -784,8 +791,8 @@ void CUnit::ResetNormalProperties()
 
     CBaseObject::ResetNormalProperties();
     Teaching = 0;
-    StudyingSkill.Empty();
-    ProducingItem.Empty();
+    StudyingSkill.clear();
+    ProducingItem.clear();
     SilvRcvd = 0;
 
     Flags     = FlagsOrg;
@@ -819,7 +826,7 @@ void CUnit::CalcWeightsAndMovement()
     int           movecount;
     EValueType    type;
     const void  * n;
-    CStr          sValue;
+    std::string          sValue;
     int           i;
     
     memset(Weight, 0, sizeof(Weight));
@@ -878,7 +885,7 @@ void CUnit::CalcWeightsAndMovement()
     }
     
     // Set movement name
-    sValue.Empty();
+    sValue.clear();
     if (Weight[0])
     {
         i = 3;
@@ -892,18 +899,18 @@ void CUnit::CalcWeightsAndMovement()
     if (Weight[4] >= Weight[0]) // can swim
         sValue << ',' << movenames[4];
     
-    SetProperty(PRP_MOVEMENT, eCharPtr, sValue.GetData(), eNormal);
+    SetProperty(PRP_MOVEMENT, eCharPtr, sValue.c_str(), eNormal);
 }
 
 //-------------------------------------------------------------
 
-void CUnit::CheckWeight(CStr & sErr)
+void CUnit::CheckWeight(std::string & sErr)
 {
     int           i;
     const char ** movenames;
     int           broken = 0;
 
-    sErr.Empty();
+    sErr.clear();
     gpDataHelper->GetMoveNames(movenames);
 
     for (i=1; i<MOVE_MODE_MAX; i++)
@@ -958,7 +965,7 @@ BOOL CUnit::GetProperty(const char  *  name,
          )
        )
     {
-        CStr sValue, sValueAbbr, sKey;
+        std::string sValue, sValueAbbr, sKey;
         int  i, x;
 
         if (Flags & UNIT_FLAG_TAXING           )  sValue << '$';
@@ -978,24 +985,24 @@ BOOL CUnit::GetProperty(const char  *  name,
         if (Flags & UNIT_FLAG_SHARING          )  sValue << 'z';
 
         type  = eCharPtr;
-        SetProperty(PRP_FLAGS_STANDARD, type, sValue.GetData(), eNormal);
+        SetProperty(PRP_FLAGS_STANDARD, type, sValue.c_str(), eNormal);
 
         LoadCustomFlagNames();
-        sValue.Empty();
+        sValue.clear();
         x = 1;
         for (i=0; i<UNIT_CUSTOM_FLAG_COUNT; i++)
         {
             if (Flags & x)
             {
-                if (!sValue.IsEmpty())
+                if (!sValue.empty())
                     sValue << ',';
                 sValue     << GetCustomFlagName(i);
                 sValueAbbr << (long)(i+1);
             }
             x <<= 1;
         }
-        SetProperty(PRP_FLAGS_CUSTOM     , type, sValue.GetData()    , eNormal);
-        SetProperty(PRP_FLAGS_CUSTOM_ABBR, type, sValueAbbr.GetData(), eNormal);
+        SetProperty(PRP_FLAGS_CUSTOM     , type, sValue.c_str()    , eNormal);
+        SetProperty(PRP_FLAGS_CUSTOM_ABBR, type, sValueAbbr.c_str(), eNormal);
 
         FlagsLast = Flags;
     }
@@ -1006,17 +1013,18 @@ BOOL CUnit::GetProperty(const char  *  name,
         if (0==stricmp(name, PRP_COMMENTS  ))
         {
             type  = eCharPtr;
-            value = Comments.GetData();
+            value = Comments.c_str();
         }
         else if (0==stricmp(name, PRP_ORDERS    ))
         {
             // decorate for stupid wxw 2.8.0 list control
-            const char * src = Orders.GetData();
+            const char * src = Orders.c_str();
             char       * dest;
             int          destlen = 0;
 
-            OrdersDecorated.Empty();
-            dest = OrdersDecorated.AllocExtraBuf(Orders.GetLength()*3+1);
+            OrdersDecorated.clear();
+            OrdersDecorated.resize(Orders.size() * 3 + 1);
+            dest = &OrdersDecorated[0];
 
             while (src && *src)
             {
@@ -1035,15 +1043,15 @@ BOOL CUnit::GetProperty(const char  *  name,
                 }
                 src++;
             }
-            OrdersDecorated.UseExtraBuf(destlen);
+            OrdersDecorated.resize(destlen);
 
             type  = eCharPtr;
-            value = OrdersDecorated.GetData();
+            value = OrdersDecorated.c_str();
 
 
             /*
             type  = eCharPtr;
-            value = Orders.GetData();
+            value = Orders.c_str();
             */
         }
         else if (0==stricmp(name, PRP_FACTION_ID))
@@ -1055,7 +1063,7 @@ BOOL CUnit::GetProperty(const char  *  name,
         {
             type  = eCharPtr;
             if (pFaction)
-                value = pFaction->Name.GetData();
+                value = pFaction->Name.c_str();
             else
                 value = "";
         }
@@ -1072,7 +1080,7 @@ BOOL CUnit::GetProperty(const char  *  name,
         else if (0==stricmp(name, PRP_TEACHING ))
         {
             type  = eLong;
-            if (StudyingSkill.IsEmpty())
+            if (StudyingSkill.empty())
                 value = (void*)(long)ceil(Teaching);
             else
                 value = (void*)(long)floor(Teaching);
@@ -1099,13 +1107,13 @@ void CUnit::LoadCustomFlagNames()
     if (!m_CustomFlagNamesLoaded)
     {
         int  i;
-        CStr sKey;
+        std::string sKey;
 
         for (i=0; i<UNIT_CUSTOM_FLAG_COUNT; i++)
         {
-            sKey.Empty();
+            sKey.clear();
             sKey << (long)i;
-            m_CustomFlagNames[i] = gpApp->GetConfig(SZ_SECT_UNIT_FLAG_NAMES, sKey.GetData());
+            m_CustomFlagNames[i] = gpApp->GetConfig(SZ_SECT_UNIT_FLAG_NAMES, sKey.c_str());
         }
         m_CustomFlagNamesLoaded = TRUE;
     }
@@ -1119,7 +1127,7 @@ void CUnit::ResetCustomFlagNames()
 
     m_CustomFlagNamesLoaded = FALSE;
     for (i=0; i<UNIT_CUSTOM_FLAG_COUNT; i++)
-        m_CustomFlagNames[i].Empty();
+        m_CustomFlagNames[i].clear();
 }
 
 //-------------------------------------------------------------
@@ -1127,14 +1135,14 @@ void CUnit::ResetCustomFlagNames()
 const char * CUnit::GetCustomFlagName(int no)
 {
     if (m_CustomFlagNamesLoaded && no>=0 && no<UNIT_CUSTOM_FLAG_COUNT)
-        return m_CustomFlagNames[no].GetData();
+        return m_CustomFlagNames[no].c_str();
     else
         return NULL;
 }
 
 //-------------------------------------------------------------
 
-void CUnit::DebugPrint(CStr & sDest)
+void CUnit::DebugPrint(std::string & sDest)
 {
     CBaseObject::DebugPrint(sDest);
 
@@ -1227,7 +1235,7 @@ int  CBaseCollByName::Compare(void * pItem1, void * pItem2) const
 {
     CBaseObject * pBase1 = (CBaseObject*)pItem1;
     CBaseObject * pBase2 = (CBaseObject*)pItem2;
-    return stricmp(pBase1->Name.GetData(), pBase2->Name.GetData());
+    return stricmp(pBase1->Name.c_str(), pBase2->Name.c_str());
 }
 
 //-------------------------------------------------------------
@@ -1339,38 +1347,38 @@ void TProdDetails::Empty()
 {
     int i;
 
-    skillname.Empty();
+    skillname.clear();
     skilllevel=0;
     months=0;
-    toolname.Empty();
+    toolname.clear();
     toolhelp=0;
     for (i=0; i<MAX_RES_NUM; i++)
     {
-        resname[i].Empty();
+        resname[i].clear();
         resamt[i]=0;
     }
 }
 
 //=============================================================
 
-void MakeQualifiedPropertyName(const char * prefix, const char * shortname, CStr & FullName)
+void MakeQualifiedPropertyName(const char * prefix, const char * shortname, std::string & FullName)
 {
-    FullName.Empty();
+    FullName.clear();
     FullName << prefix;
 
-    if (!FullName.IsEmpty() && '.' != FullName.GetData()[FullName.GetLength()-1])
+    if (!FullName.empty() && '.' != FullName.c_str()[FullName.size()-1])
         FullName << ".";
     FullName << shortname;
 }
 
 //-------------------------------------------------------------
 
-void SplitQualifiedPropertyName(const char * fullname, CStr & Prefix, CStr & ShortName)
+void SplitQualifiedPropertyName(const char * fullname, std::string & Prefix, std::string & ShortName)
 {
     const char * p;
 
-    Prefix.Empty();
-    ShortName.Empty();
+    Prefix.clear();
+    ShortName.clear();
 
     if (fullname && *fullname)
     {
@@ -1378,14 +1386,14 @@ void SplitQualifiedPropertyName(const char * fullname, CStr & Prefix, CStr & Sho
         if (p)
         {
             ShortName = p+1;
-            Prefix.AddBuf(fullname, p-fullname);
+            AddBuf(Prefix, fullname, (int)(p-fullname));
         }
     }
 }
 
 //--------------------------------------------------------------------------
 
-BOOL EvaluateBaseObjectByBoxes(CBaseObject * pObj, CStr * Property, eCompareOp * CompareOp, CStr * sValue, long * lValue, int count)
+BOOL EvaluateBaseObjectByBoxes(CBaseObject * pObj, std::string * Property, eCompareOp * CompareOp, std::string * sValue, long * lValue, int count)
 {
     int i;
     EValueType       type;
@@ -1394,12 +1402,12 @@ BOOL EvaluateBaseObjectByBoxes(CBaseObject * pObj, CStr * Property, eCompareOp *
 
     for (i=0; i<count; i++)
     {
-        if (!Property[i].IsEmpty() && (NOP!=CompareOp[i]))
+        if (!Property[i].empty() && (NOP!=CompareOp[i]))
         {
-            if ( !pObj->GetProperty(Property[i].GetData(), type, value, eNormal))
+            if ( !pObj->GetProperty(Property[i].c_str(), type, value, eNormal))
             {
                 // make an empty sValue
-                auto it__ = gpApp->m_pAtlantis->m_UnitPropertyTypes.find(Property[i].GetData());
+                auto it__ = gpApp->m_pAtlantis->m_UnitPropertyTypes.find(Property[i].c_str());
                 if (it__ != gpApp->m_pAtlantis->m_UnitPropertyTypes.end())
                 {
                     type = (EValueType)it__->second;
@@ -1432,12 +1440,12 @@ BOOL EvaluateBaseObjectByBoxes(CBaseObject * pObj, CStr * Property, eCompareOp *
             case eCharPtr:
                 switch (CompareOp[i])
                 {
-                case GT: ok = (stricmp((const char *)value, sValue[i].GetData()) >  0); break;
-                case GE: ok = (stricmp((const char *)value, sValue[i].GetData()) >= 0); break;
-                case EQ: ok = (stricmp((const char *)value, sValue[i].GetData()) == 0); break;
-                case LE: ok = (stricmp((const char *)value, sValue[i].GetData()) <= 0); break;
-                case LT: ok = (stricmp((const char *)value, sValue[i].GetData()) <  0); break;
-                case NE: ok = (stricmp((const char *)value, sValue[i].GetData()) != 0); break;
+                case GT: ok = (stricmp((const char *)value, sValue[i].c_str()) >  0); break;
+                case GE: ok = (stricmp((const char *)value, sValue[i].c_str()) >= 0); break;
+                case EQ: ok = (stricmp((const char *)value, sValue[i].c_str()) == 0); break;
+                case LE: ok = (stricmp((const char *)value, sValue[i].c_str()) <= 0); break;
+                case LT: ok = (stricmp((const char *)value, sValue[i].c_str()) <  0); break;
+                case NE: ok = (stricmp((const char *)value, sValue[i].c_str()) != 0); break;
                 default: break;
                 }
                 break;

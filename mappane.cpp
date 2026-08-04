@@ -27,7 +27,7 @@
     #include "wx/numdlg.h"
 #endif
 
-#include "cstr.h"
+#include "string_utils.h"
 #include "cfgfile.h"
 #include <algorithm>
 #include <vector>
@@ -229,7 +229,7 @@ void CMapPane::Init(CAhFrame * pParentFrame)
 {
     const char * p;
     long         x;
-    CStr         S;
+    std::string         S;
 
     m_pFrame        = pParentFrame;
 
@@ -239,8 +239,8 @@ void CMapPane::Init(CAhFrame * pParentFrame)
     p = gpApp->GetConfig(SZ_SECT_COMMON, SZ_KEY_HEX_SIZE_LIST);
     while (p && *p)
     {
-        p = SkipSpaces(S.GetToken(p, ','));
-        x = atol(S.GetData());
+        p = SkipSpaces(GetToken(S, p, ','));
+        x = atol(S.c_str());
         x = (x/2)*2;  // make it even!
         if (x>0)
             m_HexSizes.push_back(x);
@@ -271,22 +271,22 @@ void CMapPane::Done()
 
 void CMapPane::SavePlaneConfig()
 {
-    CStr   sSection;
+    std::string   sSection;
 
     sSection << "PLANE_" << m_SelPlane;
 
-    gpApp->SetConfig(sSection.GetData(), SZ_KEY_HEX_SIZE       , m_HexSizeIdx               );
-    gpApp->SetConfig(sSection.GetData(), SZ_KEY_HEX_SIZE_OLD   , m_HexSizeIdxOld            );
-    gpApp->SetConfig(sSection.GetData(), SZ_KEY_ATLA_X0        , m_AtlaX0                   );
-    gpApp->SetConfig(sSection.GetData(), SZ_KEY_ATLA_Y0        , m_AtlaY0                   );
-    gpApp->SetConfig(sSection.GetData(), SZ_KEY_HEX_SEL_X      , m_SelHexX                  );
-    gpApp->SetConfig(sSection.GetData(), SZ_KEY_HEX_SEL_Y      , m_SelHexY                  );
+    gpApp->SetConfig(sSection.c_str(), SZ_KEY_HEX_SIZE       , m_HexSizeIdx               );
+    gpApp->SetConfig(sSection.c_str(), SZ_KEY_HEX_SIZE_OLD   , m_HexSizeIdxOld            );
+    gpApp->SetConfig(sSection.c_str(), SZ_KEY_ATLA_X0        , m_AtlaX0                   );
+    gpApp->SetConfig(sSection.c_str(), SZ_KEY_ATLA_Y0        , m_AtlaY0                   );
+    gpApp->SetConfig(sSection.c_str(), SZ_KEY_HEX_SEL_X      , m_SelHexX                  );
+    gpApp->SetConfig(sSection.c_str(), SZ_KEY_HEX_SEL_Y      , m_SelHexY                  );
 
     if (gpApp->m_pAtlantis)
     {
         CLand * pLand = gpApp->m_pAtlantis->GetLand(m_SelHexX, m_SelHexY, m_SelPlane, TRUE);
         if (pLand)
-            gpApp->SetConfig(sSection.GetData(), SZ_KEY_UNIT_SEL, pLand->guiUnit);
+            gpApp->SetConfig(sSection.c_str(), SZ_KEY_UNIT_SEL, pLand->guiUnit);
     }
 
 }
@@ -295,18 +295,18 @@ void CMapPane::SavePlaneConfig()
 
 void CMapPane::LoadPlaneConfig()
 {
-    CStr   sSection;
+    std::string   sSection;
     long   x;
 
     sSection << "PLANE_" << m_SelPlane;
 
-    x                      = atol(gpApp->GetConfig(sSection.GetData(), SZ_KEY_HEX_SIZE        ));
+    x                      = atol(gpApp->GetConfig(sSection.c_str(), SZ_KEY_HEX_SIZE        ));
     SetHexSize(x);
-    m_HexSizeIdxOld        = atol(gpApp->GetConfig(sSection.GetData(), SZ_KEY_HEX_SIZE_OLD    ));
-    m_AtlaX0               = atol(gpApp->GetConfig(sSection.GetData(), SZ_KEY_ATLA_X0         ));
-    m_AtlaY0               = atol(gpApp->GetConfig(sSection.GetData(), SZ_KEY_ATLA_Y0         ));
-    m_SelHexX              = atol(gpApp->GetConfig(sSection.GetData(), SZ_KEY_HEX_SEL_X       ));
-    m_SelHexY              = atol(gpApp->GetConfig(sSection.GetData(), SZ_KEY_HEX_SEL_Y       ));
+    m_HexSizeIdxOld        = atol(gpApp->GetConfig(sSection.c_str(), SZ_KEY_HEX_SIZE_OLD    ));
+    m_AtlaX0               = atol(gpApp->GetConfig(sSection.c_str(), SZ_KEY_ATLA_X0         ));
+    m_AtlaY0               = atol(gpApp->GetConfig(sSection.c_str(), SZ_KEY_ATLA_Y0         ));
+    m_SelHexX              = atol(gpApp->GetConfig(sSection.c_str(), SZ_KEY_HEX_SEL_X       ));
+    m_SelHexY              = atol(gpApp->GetConfig(sSection.c_str(), SZ_KEY_HEX_SEL_Y       ));
 }
 
 
@@ -323,7 +323,7 @@ void CMapPane::ApplyFonts()
 //{
 //    wxColour     cr;
 //    const char * p;
-//    CStr         S;
+//    std::string         S;
 //    int          n;
 //    CEdgeStructProperties * pEdgeProp = new CEdgeStructProperties;
 //
@@ -332,19 +332,19 @@ void CMapPane::ApplyFonts()
 //
 //    // Orientation
 //    p = value;
-//    p = SkipSpaces(S.GetToken(p, ','));
-//    pEdgeProp->orientation = atol(S.GetData());
+//    p = SkipSpaces(GetToken(S, p, ','));
+//    pEdgeProp->orientation = atol(S.c_str());
 //
 //    // Thickness
-//    p = SkipSpaces(S.GetToken(p, ','));
-//    n = atol(S.GetData());
+//    p = SkipSpaces(GetToken(S, p, ','));
+//    n = atol(S.c_str());
 //    if (n<=0)
 //        n = 1;
 //
 //    // Color
 //    S = SZ_KEY_MAP_PREFIX;
 //    S << name;
-//    StrToColor(&cr, gpApp->GetConfig(SZ_SECT_COLORS, S.GetData()));
+//    StrToColor(&cr, gpApp->GetConfig(SZ_SECT_COLORS, S.c_str()));
 //    pEdgeProp->pen = new wxPen(cr, n, wxSOLID);
 //
 //    if (!m_EdgeProps.Insert(pEdgeProp))
@@ -357,7 +357,7 @@ void CMapPane::ApplyOneColor(wxColour & cr, const char * name)
 {
     wxBrush    * pBrush = NULL;
     wxBitmap     bmp;
-    CStr         S;
+    std::string         S;
     CFileReader  F;
     wxColour     cr2;
 
@@ -368,10 +368,10 @@ void CMapPane::ApplyOneColor(wxColour & cr, const char * name)
 
 #ifndef __WXMAC_OSX__
     S << name << ".bmp";
-    if (F.Open(S.GetData()))
+    if (F.Open(S.c_str()))
     {
         F.Close();
-        if (bmp.LoadFile(wxString::FromAscii(S.GetData()), wxBITMAP_TYPE_BMP ))
+        if (bmp.LoadFile(wxString::FromAscii(S.c_str()), wxBITMAP_TYPE_BMP ))
         {
             pBrush = new wxBrush(bmp);
         }
@@ -551,7 +551,7 @@ wxBrush * CMapPane::GetLandBrush(CLand * pLand, BOOL GetHatched)
     if (idx<0 || idx>=(int)m_TerrainBrushes.size())
     {
         idx = -1;
-        name = pLand?pLand->TerrainType.GetData():SZ_KEY_MAP_UNKNOWN;
+        name = pLand?pLand->TerrainType.c_str():SZ_KEY_MAP_UNKNOWN;
 
         for (i=0; i<(int)m_TerrainNames.size(); i++)
             if (0==stricmp(name, m_TerrainNames[i].c_str()))
@@ -587,7 +587,7 @@ CEdgeStructProperties * CMapPane::GetEdgeProps(const char * name)
 {
     wxColour     cr;
     const char * p;
-    CStr         S;
+    std::string         S;
     int          n;
     CEdgeStructProperties * pEdgeProp; //
     CEdgeStructProperties   Dummy;
@@ -596,9 +596,9 @@ CEdgeStructProperties * CMapPane::GetEdgeProps(const char * name)
     Dummy.name = name;
     auto it = std::lower_bound(m_EdgeProps.begin(), m_EdgeProps.end(), &Dummy,
         [](CEdgeStructProperties* a, CEdgeStructProperties* b) {
-            return stricmp(a->name.GetData(), b->name.GetData()) < 0;
+            return stricmp(a->name.c_str(), b->name.c_str()) < 0;
         });
-    if (it != m_EdgeProps.end() && stricmp((*it)->name.GetData(), name) == 0)
+    if (it != m_EdgeProps.end() && stricmp((*it)->name.c_str(), name) == 0)
         pEdgeProp = *it;
     else
     {
@@ -614,36 +614,36 @@ CEdgeStructProperties * CMapPane::GetEdgeProps(const char * name)
             p = "border,1";
             gpApp->SetConfig(SZ_SECT_EDGE_STRUCTS, name, p);
         }
-        p = SkipSpaces(S.GetToken(p, ','));
-        if (0==stricmp(S.GetData(), "border"))
+        p = SkipSpaces(GetToken(S, p, ','));
+        if (0==stricmp(S.c_str(), "border"))
             pEdgeProp->shape = EDGE_SHAPE_BORDER;
-        else if (0==stricmp(S.GetData(), "road"))
+        else if (0==stricmp(S.c_str(), "road"))
             pEdgeProp->shape = EDGE_SHAPE_ROAD;
-        else if (0==stricmp(S.GetData(), "bridge"))
+        else if (0==stricmp(S.c_str(), "bridge"))
             pEdgeProp->shape = EDGE_SHAPE_BRIDGE;
-        else if (0==stricmp(S.GetData(), "anchor"))
+        else if (0==stricmp(S.c_str(), "anchor"))
             pEdgeProp->shape = EDGE_SHAPE_ANCHOR;
-        else if (0==stricmp(S.GetData(), "rocks"))
+        else if (0==stricmp(S.c_str(), "rocks"))
             pEdgeProp->shape = EDGE_SHAPE_ROCKS;
         else
             pEdgeProp->shape = EDGE_SHAPE_IGNORE;
 
         // Thickness
-        p = SkipSpaces(S.GetToken(p, ','));
-        n = atol(S.GetData());
+        p = SkipSpaces(GetToken(S, p, ','));
+        n = atol(S.c_str());
         if (n<=0)
             n = 1;
 
         // Color
         S = SZ_KEY_MAP_PREFIX;
         S << name;
-        StrToColor(&cr, gpApp->GetConfig(SZ_SECT_COLORS, S.GetData()));
+        StrToColor(&cr, gpApp->GetConfig(SZ_SECT_COLORS, S.c_str()));
         pEdgeProp->pen = new wxPen(cr, n, wxSOLID);
 
         // re-compute insertion point (name may differ from Dummy used above)
         it = std::lower_bound(m_EdgeProps.begin(), m_EdgeProps.end(), pEdgeProp,
             [](CEdgeStructProperties* a, CEdgeStructProperties* b) {
-                return stricmp(a->name.GetData(), b->name.GetData()) < 0;
+                return stricmp(a->name.c_str(), b->name.c_str()) < 0;
             });
         m_EdgeProps.insert(it, pEdgeProp);
     }
@@ -912,7 +912,7 @@ void CMapPane::DrawEdgeStructures(wxDC * pDC, CLand * pLand, wxPoint * point, in
             int xa2, ya2, xb2, yb2;
 
             CStruct               * pEdge = (CStruct*)pLand->EdgeStructs.At(i);
-            CEdgeStructProperties * pProps = GetEdgeProps(pEdge->Kind.GetData());
+            CEdgeStructProperties * pProps = GetEdgeProps(pEdge->Kind.c_str());
             
             wxPen * pPen = pProps->pen;
             int offset = 1;
@@ -1805,7 +1805,7 @@ void CMapPane::DrawHexFlags(wxDC * pDC, CLand * pLand, int x0, int y0)
     static int dfy[LAND_FLAG_COUNT] = { 4,  0,  4};
 
     for (i=0; i<LAND_FLAG_COUNT; i++)
-        if (pLand && !pLand->FlagText[i].IsEmpty())
+        if (pLand && !pLand->FlagText[i].empty())
         {
             pDC->SetPen  (*m_pPenFlag[i]);
             pDC->DrawLine(x0+dfx[i],   y0+dfy[i]   , x0+dfx[i]  , y0+dfy[i]-10);
@@ -1988,7 +1988,7 @@ void CMapPane::DrawOneHex(int NoX, int NoY, int x0, int y0, wxDC * pDC, CLand * 
         DrawTaxTrade(pDC, pLand, point);
 
     // Cities
-    if (pLand && m_Detail>=TOWN_DETAIL && !pLand->CityName.IsEmpty())
+    if (pLand && m_Detail>=TOWN_DETAIL && !pLand->CityName.empty())
         DrawCity(pDC, pLand, x0, y0);
 
     // Units
@@ -2596,7 +2596,7 @@ void CMapPane::DrawCitiesAndWeather(wxDC * pDC, wxRect * pRect, CPlane * pPlane)
         pLand = (CLand*)m_pCities->At(i);
         LandIdToCoord(pLand->Id, nx, ny, nz);
         GetHexCenter(nx, ny, wx, wy);
-        pDC->GetTextExtent(wxString::FromAscii(pLand->CityName.GetData()), &w, &h, &descent, &ext);
+        pDC->GetTextExtent(wxString::FromAscii(pLand->CityName.c_str()), &w, &h, &descent, &ext);
 
         if (pPlane && (pPlane->Width>0) )
         {
@@ -2607,12 +2607,12 @@ void CMapPane::DrawCitiesAndWeather(wxDC * pDC, wxRect * pRect, CPlane * pPlane)
             wx += dwx;
             while (wx < pRect->x + pRect->width + m_HexSize)
             {
-                pDC->DrawText(wxString::FromAscii(pLand->CityName.GetData()), wx-w/2, wy-ext);
+                pDC->DrawText(wxString::FromAscii(pLand->CityName.c_str()), wx-w/2, wy-ext);
                 wx += dwx;
             }
         }
         else
-            pDC->DrawText(wxString::FromAscii(pLand->CityName.GetData()), wx-w/2, wy-ext);
+            pDC->DrawText(wxString::FromAscii(pLand->CityName.c_str()), wx-w/2, wy-ext);
     }
 
     // now for the weather
@@ -2735,7 +2735,7 @@ void CMapPane::OnPaint(wxPaintEvent &WXUNUSED(event))
             {
                 pLand = gpApp->m_pAtlantis->GetLand(nx, ny, m_SelPlane, TRUE);
                 if ((m_ShowState & SHOW_NAMES)
-                       &&(m_Detail>=NAME_DETAIL)&&(pLand && !pLand->CityName.IsEmpty()))
+                       &&(m_Detail>=NAME_DETAIL)&&(pLand && !pLand->CityName.empty()))
                     m_pCities->Insert(pLand);
                 DrawHex(nx, ny, &dc, pLand, pPlane, &rect);
             }
@@ -3597,7 +3597,7 @@ void CMapPane::OnMouseEvent(wxMouseEvent& event)
                 menu.Append(menu_Popup_Battles, wxT("Battles"));
             menu.Append(menu_Popup_Financial   , wxT("Financial details for the hex"));
             
-            if (0==strcmp(m_pPopupLand->Name.GetData(), SZ_MANUAL_HEX_PROVINCE))
+            if (0==strcmp(m_pPopupLand->Name.c_str(), SZ_MANUAL_HEX_PROVINCE))
                 menu.Append(menu_Popup_Del_Hex   , wxT("Remove Hex terrain"));
         }
         else
@@ -3643,16 +3643,16 @@ void CMapPane::CenterClick(wxPoint point)
 
 void CMapPane::MarkFoundHexes(CHexFilterDlg * pFilter)
 {
-    CStr             Property [HEX_SIMPLE_FLTR_COUNT];
-    CStr             Compare  [HEX_SIMPLE_FLTR_COUNT];
-    CStr             sValue   [HEX_SIMPLE_FLTR_COUNT];
+    std::string             Property [HEX_SIMPLE_FLTR_COUNT];
+    std::string             Compare  [HEX_SIMPLE_FLTR_COUNT];
+    std::string             sValue   [HEX_SIMPLE_FLTR_COUNT];
     long             lValue   [HEX_SIMPLE_FLTR_COUNT];
     eCompareOp       CompareOp[HEX_SIMPLE_FLTR_COUNT];
     int              i,k,n;
     CLand          * pLand;
     CPlane         * pPlane;
 //    CStruct        * pStruct;
-    CStr             LandList(64), sCoord(32), Msg;
+    std::string LandList, sCoord, Msg;
 
     if (!pFilter)
         return;
@@ -3664,18 +3664,18 @@ void CMapPane::MarkFoundHexes(CHexFilterDlg * pFilter)
         Compare [i] = pFilter->m_cbCompare [i]->GetValue().mb_str();
         sValue  [i] = pFilter->m_tcValue   [i]->GetValue().mb_str();
 
-        Property[i].TrimRight(TRIM_ALL);    Property[i].TrimLeft(TRIM_ALL);
-        Compare [i].TrimRight(TRIM_ALL);    Compare [i].TrimLeft(TRIM_ALL);
-        sValue  [i].TrimRight(TRIM_ALL);    sValue  [i].TrimLeft(TRIM_ALL);
+        TrimRight(Property[i], TRIM_ALL);    TrimLeft(Property[i], TRIM_ALL);
+        TrimRight(Compare[i], TRIM_ALL);    TrimLeft(Compare[i], TRIM_ALL);
+        TrimRight(sValue[i], TRIM_ALL);    TrimLeft(sValue[i], TRIM_ALL);
 
         CompareOp[i] = NOP;
         for (k=GT; k<NOP; k++)
-            if (0==stricmp(HEX_FILTER_OPERATION[k], Compare[i].GetData()))
+            if (0==stricmp(HEX_FILTER_OPERATION[k], Compare[i].c_str()))
             {
                 CompareOp[i] = (eCompareOp)k;
                 break;
             }
-        lValue[i] = atol(sValue[i].GetData());
+        lValue[i] = atol(sValue[i].c_str());
     }
 
 
@@ -3694,12 +3694,12 @@ void CMapPane::MarkFoundHexes(CHexFilterDlg * pFilter)
         }
     }
 
-    if (LandList.IsEmpty())
+    if (LandList.empty())
         wxMessageBox(wxT("None found"));
     else
     {
         Msg << "=====================" << EOL_SCR << LandList;
-        gpApp->ShowError(Msg.GetData(), Msg.GetLength(), TRUE);
+        gpApp->ShowError(Msg.c_str(), Msg.size(), TRUE);
     }
 }
 
@@ -3763,7 +3763,7 @@ void CMapPane::OnPopupMenuFlag(wxCommandEvent& WXUNUSED(event))
             break;
         case wxID_NO:
             for (i=0; i<LAND_FLAG_COUNT; i++)
-                m_pPopupLand->FlagText[i].Empty();
+                m_pPopupLand->FlagText[i].clear();
             break;
         default:
             return;
@@ -3788,7 +3788,7 @@ void CMapPane::OnPopupMenuBattles(wxCommandEvent & event)
     {
         pBattle = (CBattle * )gpApp->m_pAtlantis->m_Battles.At(i);
 
-        if (gpApp->m_pAtlantis->LandStrCoordToId(pBattle->LandStrId.GetData(), id) && id==m_pPopupLand->Id)
+        if (gpApp->m_pAtlantis->LandStrCoordToId(pBattle->LandStrId.c_str(), id) && id==m_pPopupLand->Id)
             Battles.Insert(pBattle);
     }
     gpApp->ShowDescriptionList(Battles, "Battles");

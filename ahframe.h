@@ -32,7 +32,7 @@ public:
     virtual void    Update();
     virtual void    Done(BOOL SetClosedFlag);
 
-    CStr            m_sConfigSection;
+    std::string            m_sConfigSection;
 
     wxWindow      * m_Panes [AH_PANE_COUNT ];
 
@@ -77,7 +77,7 @@ protected:
     void SetPos();
     void OnClose (wxCloseEvent& event);
 
-    CStr m_sConfigSection;
+    std::string m_sConfigSection;
 
     DECLARE_EVENT_TABLE()
 };

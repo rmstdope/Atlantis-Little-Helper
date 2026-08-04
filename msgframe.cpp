@@ -19,7 +19,7 @@
 
 #include "stdhdr.h"
 
-#include "cstr.h"
+#include "string_utils.h"
 #include "cfgfile.h"
 #include "files.h"
 #include "atlaparser.h"

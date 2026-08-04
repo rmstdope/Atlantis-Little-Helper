@@ -19,7 +19,7 @@
 
 #include "stdhdr.h"
 
-#include "cstr.h"
+#include "string_utils.h"
 #include "cfgfile.h"
 #include "files.h"
 #include "atlaparser.h"
@@ -119,13 +119,13 @@ void CAhFrame::Done(BOOL SetClosedFlag)
         GetPosition(&x, &y);
         GetSize    (&w, &h);
 
-        gpApp->SetConfig(m_sConfigSection.GetData(), SZ_KEY_X1, x);
-        gpApp->SetConfig(m_sConfigSection.GetData(), SZ_KEY_Y1, y);
+        gpApp->SetConfig(m_sConfigSection.c_str(), SZ_KEY_X1, x);
+        gpApp->SetConfig(m_sConfigSection.c_str(), SZ_KEY_Y1, y);
         
-        gpApp->SetConfig(m_sConfigSection.GetData(), SZ_KEY_X2, x+w);
-        gpApp->SetConfig(m_sConfigSection.GetData(), SZ_KEY_Y2, y+h);
+        gpApp->SetConfig(m_sConfigSection.c_str(), SZ_KEY_X2, x+w);
+        gpApp->SetConfig(m_sConfigSection.c_str(), SZ_KEY_Y2, y+h);
 
-        gpApp->SetConfig(m_sConfigSection.GetData(), SZ_KEY_OPEN, SetClosedFlag?"0":"1");
+        gpApp->SetConfig(m_sConfigSection.c_str(), SZ_KEY_OPEN, SetClosedFlag?"0":"1");
 
         for (i=0; i<AH_PANE_COUNT; i++)
             if (m_Panes[i])
@@ -200,12 +200,12 @@ void CResizableDlg::SetSize()
 {
     int x, y, w=-1, h=-1;
 
-    x = atol(gpApp->GetConfig(m_sConfigSection.GetData(), SZ_KEY_X1));
-    y = atol(gpApp->GetConfig(m_sConfigSection.GetData(), SZ_KEY_Y1));
+    x = atol(gpApp->GetConfig(m_sConfigSection.c_str(), SZ_KEY_X1));
+    y = atol(gpApp->GetConfig(m_sConfigSection.c_str(), SZ_KEY_Y1));
     if (GetWindowStyle() & wxRESIZE_BORDER)
     {
-        w = atol(gpApp->GetConfig(m_sConfigSection.GetData(), SZ_KEY_X2)) - x;
-        h = atol(gpApp->GetConfig(m_sConfigSection.GetData(), SZ_KEY_Y2)) - y;
+        w = atol(gpApp->GetConfig(m_sConfigSection.c_str(), SZ_KEY_X2)) - x;
+        h = atol(gpApp->GetConfig(m_sConfigSection.c_str(), SZ_KEY_Y2)) - y;
     }
 
     wxDialog::SetSize(x, y, w, h, wxSIZE_ALLOW_MINUS_ONE);
@@ -215,8 +215,8 @@ void CResizableDlg::SetPos()
 {
     int x, y;
 
-    x = atol(gpApp->GetConfig(m_sConfigSection.GetData(), SZ_KEY_X1));
-    y = atol(gpApp->GetConfig(m_sConfigSection.GetData(), SZ_KEY_Y1));
+    x = atol(gpApp->GetConfig(m_sConfigSection.c_str(), SZ_KEY_X1));
+    y = atol(gpApp->GetConfig(m_sConfigSection.c_str(), SZ_KEY_Y1));
 
     wxDialog::Move(x, y);
 }
@@ -228,10 +228,10 @@ void CResizableDlg::StoreSize()
     GetPosition(&x, &y);
     GetSize    (&w, &h);
 
-    gpApp->SetConfig(m_sConfigSection.GetData(), SZ_KEY_X1, x);
-    gpApp->SetConfig(m_sConfigSection.GetData(), SZ_KEY_Y1, y);
-    gpApp->SetConfig(m_sConfigSection.GetData(), SZ_KEY_X2, x+w);
-    gpApp->SetConfig(m_sConfigSection.GetData(), SZ_KEY_Y2, y+h);
+    gpApp->SetConfig(m_sConfigSection.c_str(), SZ_KEY_X1, x);
+    gpApp->SetConfig(m_sConfigSection.c_str(), SZ_KEY_Y1, y);
+    gpApp->SetConfig(m_sConfigSection.c_str(), SZ_KEY_X2, x+w);
+    gpApp->SetConfig(m_sConfigSection.c_str(), SZ_KEY_Y2, y+h);
 }
 
 void CResizableDlg::OnClose(wxCloseEvent& event)

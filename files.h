@@ -21,7 +21,7 @@
 #define __FILES_H_INCL__
 
 #include <stdio.h>
-#include "cstr.h"
+#include "string_utils.h"
 
 
 
@@ -39,7 +39,7 @@ public:
     void Close();
 
     BOOL GetNextChar(char & ch);
-    BOOL GetNextLine(CStr & s);
+    BOOL GetNextLine(std::string & s);
 
     void QueueChar(char ch);
     void QueueString(const char * p, int n=0);
@@ -51,8 +51,8 @@ protected:
     size_t   m_nPos;
     size_t   m_nSize;
     char     m_Buf[RW_BUF_SIZE];
-    CStr     m_Queue;
-    CStr     m_FileName;
+    std::string     m_Queue;
+    std::string     m_FileName;
 };
 
 //---------------------------------------------------------------
@@ -72,7 +72,7 @@ protected:
     BOOL Flush();
 
     FILE   * m_f;
-    CStr     m_s;
+    std::string     m_s;
 };
 
 //---------------------------------------------------------------

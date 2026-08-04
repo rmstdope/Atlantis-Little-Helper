@@ -28,10 +28,10 @@
 typedef struct _CONFIG_PARAM
 {
 public:
-    const char * szSection;
-    const char * szName;
-    const char * szValue;
-    const char * szComment;
+    std::string  szSection;
+    std::string  szName;
+    std::string  szValue;
+    std::string  szComment;
     int          SectionLen; // excluding zero
     int          NameLen;    // excluding zero
     int          ValueLen;   // excluding zero

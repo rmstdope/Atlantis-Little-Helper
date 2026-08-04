@@ -26,7 +26,7 @@
 #include <algorithm>
 #include "files.h"
 #include "consts.h"
-#include "cstr.h"
+#include "string_utils.h"
 #include "cfgfile.h"
 
 #include "objs.h"
@@ -170,9 +170,10 @@ CAtlaParser::CAtlaParser()
 //----------------------------------------------------------------------
 
 CAtlaParser::CAtlaParser(CGameDataHelper * pHelper)
-            : m_sOrderErrors(256)
+            : m_sOrderErrors()
 {
     gpDataHelper      = pHelper;
+    m_sOrderErrors.reserve(256);
 
     m_CrntFactionId   = 0;
     m_ParseErr        = ERR_NOTHING;
@@ -242,7 +243,7 @@ void CAtlaParser::Clear()
     m_Units.FreeAll();
 
     m_CrntFactionId = 0;
-    m_CrntFactionPwd.Empty();
+    m_CrntFactionPwd.clear();
     m_OurFactions.clear();
     m_TaxLandStrs.clear();
     m_TradeLandStrs.clear();
@@ -258,17 +259,17 @@ void CAtlaParser::Clear()
     m_Objects.FreeAll();
     m_Battles.FreeAll();
     m_Gates.FreeAll();
-    m_Events.Description.Empty();
-    m_SecurityEvents.Description.Empty();
-    m_HexEvents.Description.Empty();
-    m_Errors.Description.Empty();
+    m_Events.Description.clear();
+    m_SecurityEvents.Description.clear();
+    m_HexEvents.Description.clear();
+    m_Errors.Description.clear();
     m_NewProducts.FreeAll();
     m_TempSailingEvents.FreeAll();
 }
 
 //----------------------------------------------------------------------
 
-BOOL CAtlaParser::ReadNextLine(CStr & s)
+BOOL CAtlaParser::ReadNextLine(std::string & s)
 {
     BOOL Ok=FALSE;
 
@@ -278,7 +279,7 @@ BOOL CAtlaParser::ReadNextLine(CStr & s)
         if (Ok)
         {
             m_nCurLine++;
-            s.TrimRight(TRIM_ALL);
+            TrimRight(s, TRIM_ALL);
             s << EOL_SCR;
         }
     }
@@ -287,11 +288,11 @@ BOOL CAtlaParser::ReadNextLine(CStr & s)
 
 //----------------------------------------------------------------------
 
-void CAtlaParser::PutLineBack (CStr & s)
+void CAtlaParser::PutLineBack (std::string & s)
 {
     m_nCurLine--;
     if (m_pSource)
-        m_pSource->QueueString(s.GetData(), s.GetLength());
+        m_pSource->QueueString(s.c_str(), s.size());
 };
 
 //----------------------------------------------------------------------
@@ -299,9 +300,9 @@ void CAtlaParser::PutLineBack (CStr & s)
 int CAtlaParser::ParseFactionInfo(BOOL GetNo, BOOL Join)
 {
     int          err    = ERR_OK;
-    CStr         Line(128);
-    CStr         FNo;
-    CStr         Str;
+    std::string Line;
+    std::string         FNo;
+    std::string         Str;
     int          LineNo = 0;
     const char * p;
     const char * s;
@@ -313,9 +314,9 @@ int CAtlaParser::ParseFactionInfo(BOOL GetNo, BOOL Join)
     {
         m_FactionInfo << Line;
 
-        Line.TrimRight(TRIM_ALL);
+        TrimRight(Line, TRIM_ALL);
 
-        if (Line.IsEmpty())
+        if (Line.empty())
             break;  // stop at empty line
 
 
@@ -323,17 +324,17 @@ int CAtlaParser::ParseFactionInfo(BOOL GetNo, BOOL Join)
             switch (LineNo)
             {
             case 0:  // faction number
-                s = Line.GetData();
+                s = Line.c_str();
                 p = strchr(s, '(');
                 if (p)
                 {
                     pMyFaction = new CFaction;
-                    pMyFaction->Description << Line.GetData() << EOL_SCR;
-                    pMyFaction->Name.SetStr(s, (p-s));
+                    pMyFaction->Description << Line.c_str() << EOL_SCR;
+                    SetStr(pMyFaction->Name, s, (p-s));
                     s = p+1;
                     p = strchr(s, ')');
-                    FNo.SetStr(s, (p-s));
-                    m_CrntFactionId = atol(FNo.GetData());
+                    SetStr(FNo, s, (p-s));
+                    m_CrntFactionId = atol(FNo.c_str());
                     pMyFaction->Id  = m_CrntFactionId;
                     if (!m_Factions.Insert(pMyFaction))
                         delete pMyFaction;
@@ -342,9 +343,9 @@ int CAtlaParser::ParseFactionInfo(BOOL GetNo, BOOL Join)
                 }
                 break;
             case 1:  // date  December, Year 2
-                p = Str.GetToken(Line.GetData(), ',');
+                p = GetToken(Str, Line.c_str(), ',');
                 for (i=0; i<sizeof(Monthes)/sizeof(char*); i++)
-                    if (0==Str.FindSubStr(Monthes[i]))
+                    if (0==FindSubStr(Str, Monthes[i]))
                     {
                         yearmon = i+1;
                         break;
@@ -352,9 +353,9 @@ int CAtlaParser::ParseFactionInfo(BOOL GetNo, BOOL Join)
                 p = SkipSpaces(p);
                 //while (p && *p<=' ')
                 //    p++;
-                p = Str.GetToken(p, ' '); // 'Year'
-                p = Str.GetToken(p, ' ');
-                yearmon += 100*atol(Str.GetData());
+                p = GetToken(Str, p, ' '); // 'Year'
+                p = GetToken(Str, p, ' ');
+                yearmon += 100*atol(Str.c_str());
 
                 if (m_JoiningRep && m_YearMon != yearmon)
                 {
@@ -448,26 +449,26 @@ int  CAtlaParser::ApplyLandFlags()
 
 void CAtlaParser::ParseOneMovementEvent(const char * params, const char * structid, const char * fullevent)
 {
-    CStr         Buf(64);
-    CStr         Buf2(64);
+    std::string Buf;
+    std::string Buf2;
     char         ch;
     CLand      * pLand1 = NULL;
     CLand      * pLand2 = NULL;
-    CStr         S;
+    std::string         S;
     CBaseObject* pSailEvent;
 
     while (params)
     {
-        params = SkipSpaces(S.GetToken(params, " \n", ch, TRIM_ALL));
-        if (0==stricmp(S.GetData(), "to"))
+        params = SkipSpaces(GetToken(S, params, " \n", ch, TRIM_ALL));
+        if (0==stricmp(S.c_str(), "to"))
             break;
         Buf << S << ' ';
     }
-    if (0==stricmp(S.GetData(), "to"))
+    if (0==stricmp(S.c_str(), "to"))
     {
         while (params)
         {
-            params = SkipSpaces(S.GetToken(params, " \n", ch, TRIM_ALL));
+            params = SkipSpaces(GetToken(S, params, " \n", ch, TRIM_ALL));
             Buf2 << S << ' ';
         }
     }
@@ -476,7 +477,7 @@ void CAtlaParser::ParseOneMovementEvent(const char * params, const char * struct
 
     // It is nice to parse 'to' terrain as well, since the unit
     // can be killed at the destination on sight...
-    if (!Buf2.IsEmpty())
+    if (!Buf2.empty())
         ParseTerrain(NULL, 0, Buf2, FALSE, &pLand2);
 
     // check for links between planes
@@ -501,22 +502,22 @@ void CAtlaParser::ParseOneMovementEvent(const char * params, const char * struct
 
 //----------------------------------------------------------------------
 
-BOOL CAtlaParser::ParseOneUnitEvent(CStr & EventLine, BOOL IsEvent, int UnitId)
+BOOL CAtlaParser::ParseOneUnitEvent(std::string & EventLine, BOOL IsEvent, int UnitId)
 {
     CUnit      * pUnit = NULL;
     const char * p;
-    CStr         Name;
+    std::string         Name;
     BOOL         Taken = FALSE;
     long         x;
     int          idx;
-    CStr         Buf(64);
+    std::string Buf;
 
 
-    p = Name.GetToken(EventLine.GetData(), '(');
+    p = GetToken(Name, EventLine.c_str(), '(');
     if (UnitId>0)
     {
         pUnit = MakeUnit(UnitId);
-        if (pUnit->Name.IsEmpty())
+        if (pUnit->Name.empty())
             pUnit->Name = Name;
     }
     if (pUnit)
@@ -536,44 +537,44 @@ BOOL CAtlaParser::ParseOneUnitEvent(CStr & EventLine, BOOL IsEvent, int UnitId)
             p++;
         p = SkipSpaces(p);
 
-        p = SkipSpaces(Buf.GetToken(p, ' ', TRIM_ALL));
-        if ( (0==stricmp("walks"   , Buf.GetData())) ||
-             (0==stricmp("rides"   , Buf.GetData())) ||
-             (0==stricmp("flies"   , Buf.GetData())) )
+        p = SkipSpaces(GetToken(Buf, p, ' ', TRIM_ALL));
+        if ( (0==stricmp("walks"   , Buf.c_str())) ||
+             (0==stricmp("rides"   , Buf.c_str())) ||
+             (0==stricmp("flies"   , Buf.c_str())) )
         {
-            p = SkipSpaces(Buf.GetToken(p, ' ', TRIM_ALL));
-            if (0==stricmp("from"  , Buf.GetData()))
+            p = SkipSpaces(GetToken(Buf, p, ' ', TRIM_ALL));
+            if (0==stricmp("from"  , Buf.c_str()))
                 ParseOneMovementEvent(p, NULL, NULL);
         }
 
-        else if ( p && ('$'==*p) && ( (0==stricmp("collects", Buf.GetData())) ||
-                                      (0==stricmp("pillages", Buf.GetData())) )
+        else if ( p && ('$'==*p) && ( (0==stricmp("collects", Buf.c_str())) ||
+                                      (0==stricmp("pillages", Buf.c_str())) )
                 )
         {
-            p = Buf.GetToken(p, '(', TRIM_ALL);
-            p = Buf.GetToken(p, ')', TRIM_ALL);
-            m_TaxLandStrs.insert(Buf.GetData());
+            p = GetToken(Buf, p, '(', TRIM_ALL);
+            p = GetToken(Buf, p, ')', TRIM_ALL);
+            m_TaxLandStrs.insert(Buf.c_str());
         }
-        else if (0==stricmp("produces", Buf.GetData()))
+        else if (0==stricmp("produces", Buf.c_str()))
         {
-            p = Buf.GetToken(p, '(', TRIM_ALL);
-            p = Buf.GetToken(p, ')', TRIM_ALL);
-            m_TradeLandStrs.insert(Buf.GetData());
+            p = GetToken(Buf, p, '(', TRIM_ALL);
+            p = GetToken(Buf, p, ')', TRIM_ALL);
+            m_TradeLandStrs.insert(Buf.c_str());
         }
 
         // Performs work, is a trade activity
         // And now it is called 'construction'
 
         // TBD: maybe implement buying and selling trade goods later
-        else if (0==stricmp("performs", Buf.GetData()))
+        else if (0==stricmp("performs", Buf.c_str()))
         {
-            p = SkipSpaces(Buf.GetToken(p, ' ', TRIM_ALL));
-            if (0==stricmp("work"        , Buf.GetData()) ||
-                0==stricmp("construction", Buf.GetData()) )
+            p = SkipSpaces(GetToken(Buf, p, ' ', TRIM_ALL));
+            if (0==stricmp("work"        , Buf.c_str()) ||
+                0==stricmp("construction", Buf.c_str()) )
             {
-                p = Buf.GetToken(EventLine.GetData(), '(', TRIM_ALL);
-                p = Buf.GetToken(p                  , ')', TRIM_ALL);
-                x = atol(Buf.GetData());
+                p = GetToken(Buf, EventLine.c_str(), '(', TRIM_ALL);
+                p = GetToken(Buf, p                  , ')', TRIM_ALL);
+                x = atol(Buf.c_str());
                 m_TradeUnitIds.insert(x);
 
             }
@@ -583,15 +584,15 @@ BOOL CAtlaParser::ParseOneUnitEvent(CStr & EventLine, BOOL IsEvent, int UnitId)
         // Unit (3849) is caught attempting to steal from Unit (1662) in Lotan.
         // Unit (3595) steals double bow [DBOW] from So many farmers (1766).
         // Unit (1023): Is forbidden entry to swamp (31,17) in Dorantor by 
-        else if (0==stricmp("has"    , Buf.GetData()) && EventLine.FindSubStr("stolen")>=0 ||
-                 0==stricmp("is"     , Buf.GetData()) && EventLine.FindSubStr("caught")>=0  ||
-                 0==stricmp("steals" , Buf.GetData()) ||
-                 0==stricmp("is"     , Buf.GetData()) && EventLine.FindSubStr("forbidden")>=0 ||
-                 0==stricmp("forbids", Buf.GetData()) && EventLine.FindSubStr("entry")>=0
+        else if (0==stricmp("has"    , Buf.c_str()) && FindSubStr(EventLine, "stolen")>=0 ||
+                 0==stricmp("is"     , Buf.c_str()) && FindSubStr(EventLine, "caught")>=0  ||
+                 0==stricmp("steals" , Buf.c_str()) ||
+                 0==stricmp("is"     , Buf.c_str()) && FindSubStr(EventLine, "forbidden")>=0 ||
+                 0==stricmp("forbids", Buf.c_str()) && FindSubStr(EventLine, "entry")>=0
                 )
         {
             BOOL show = TRUE;
-            if (0==stricmp("steals", Buf.GetData()) && 
+            if (0==stricmp("steals", Buf.c_str()) && 
                 0==atol(gpDataHelper->GetConfString(SZ_SECT_COMMON, SZ_KEY_SHOW_STEALS)))
                 show = FALSE;
             if (show)
@@ -605,16 +606,16 @@ BOOL CAtlaParser::ParseOneUnitEvent(CStr & EventLine, BOOL IsEvent, int UnitId)
 
 //----------------------------------------------------------------------
 
-BOOL CAtlaParser::ParseOneLandEvent(CStr & EventLine, BOOL IsEvent)
+BOOL CAtlaParser::ParseOneLandEvent(std::string & EventLine, BOOL IsEvent)
 {
     const char * p;
-    CStr         Buf;
-    CStr         S;
+    std::string         Buf;
+    std::string         S;
     BOOL         Taken = FALSE;
     CLand      * pLand = NULL;
 
-    p = Buf.GetToken(EventLine.GetData(), ')');
-    p = S.GetToken(p, ',');
+    p = GetToken(Buf, EventLine.c_str(), ')');
+    p = GetToken(S, p, ',');
     Buf << ") " << S;
     ParseTerrain(NULL, 0, Buf, FALSE, &pLand);
     if (pLand)
@@ -636,37 +637,37 @@ BOOL CAtlaParser::ParseOneLandEvent(CStr & EventLine, BOOL IsEvent)
 
 //Choppers (1101): Produces 13 wood [WOOD] in swamp (7,35) in Moffat.
 
-int CAtlaParser::ParseOneEvent(CStr & EventLine, BOOL IsEvent)
+int CAtlaParser::ParseOneEvent(std::string & EventLine, BOOL IsEvent)
 {
     const char * p;
-    CStr         Buf(64);
-    CStr         StructId;
-    CStr         Name;
+    std::string Buf;
+    std::string         StructId;
+    std::string         Name;
     long         x;
     char         ch;
     BOOL         Taken = FALSE;
     BOOL         Valid;
 
-    if (EventLine.IsEmpty())
+    if (EventLine.empty())
         return 0;
     EventLine << EOL_SCR;
 
 
-    p = Name.GetToken(EventLine.GetData(), "([", ch, TRIM_ALL);
+    p = GetToken(Name, EventLine.c_str(), "([", ch, TRIM_ALL);
     switch (ch)
     {
     case '(':
-        p = Buf.GetInteger(p, Valid);
+        p = GetInteger(Buf, p, Valid);
         if (*p == ')')
         {
-            if (0==strnicmp(Name.GetData(), "The address of ", 15))
+            if (0==strnicmp(Name.c_str(), "The address of ", 15))
             {
                 // it will goto generic events
             }
             else
             {
                 // it is  a unit!
-                x = atol(Buf.GetData());
+                x = atol(Buf.c_str());
                 Taken = ParseOneUnitEvent(EventLine, IsEvent, x);
             }
         }
@@ -680,21 +681,21 @@ int CAtlaParser::ParseOneEvent(CStr & EventLine, BOOL IsEvent)
     case '[':   // ship, probably
         if (IsEvent)
         {
-            p = SkipSpaces(StructId.GetToken(p, ']', TRIM_ALL));
+            p = SkipSpaces(GetToken(StructId, p, ']', TRIM_ALL));
             //while (p && (*p>' ') )
             //    p++;
             //p = SkipSpaces(p);
-            p = SkipSpaces(Buf.GetToken(p, ' ', TRIM_ALL));
-            if (0==stricmp("sails"   , Buf.GetData()))
+            p = SkipSpaces(GetToken(Buf, p, ' ', TRIM_ALL));
+            if (0==stricmp("sails"   , Buf.c_str()))
             {
-                p = SkipSpaces(Buf.GetToken(p, ' ', TRIM_ALL));
-                if (0==stricmp("from"  , Buf.GetData()))
-                    ParseOneMovementEvent(p, StructId.GetData(), EventLine.GetData());
+                p = SkipSpaces(GetToken(Buf, p, ' ', TRIM_ALL));
+                if (0==stricmp("from"  , Buf.c_str()))
+                    ParseOneMovementEvent(p, StructId.c_str(), EventLine.c_str());
 //                {
 //                    Buf = p;
-//                    x = Buf.FindSubStr(" to ");
+//                    x = FindSubStr(Buf, " to ");
 //                    if (x>0)
-//                        Buf.DelSubStr(x, Buf.GetLength()-x);
+//                        DelSubStr(Buf, x, Buf.size()-x);
 //                    ParseTerrain(NULL, 0, Buf, FALSE, NULL);
 //                }
             }
@@ -720,16 +721,16 @@ int CAtlaParser::ParseOneEvent(CStr & EventLine, BOOL IsEvent)
 int CAtlaParser::ParseEvents(BOOL IsEvents)
 {
     int          err   = ERR_OK;
-    CStr         Line(128);
-    CStr         OneEvent(128);
+    std::string Line;
+    std::string OneEvent;
     char         ch;
 
 
     while ((ERR_OK==err) && ReadNextLine(Line))
     {
-        Line.TrimRight(TRIM_ALL);
+        TrimRight(Line, TRIM_ALL);
 
-        if (Line.IsEmpty())
+        if (Line.empty())
         {
             ParseOneEvent(OneEvent, IsEvents);
             break;  // stop at empty line
@@ -737,21 +738,21 @@ int CAtlaParser::ParseEvents(BOOL IsEvents)
 
 //        // comment/error may take more than one line.
 //        // Dot at the end is not reliable!
-//        if (strchr(Line.GetData(), ':') ||
-//            strchr(Line.GetData(), '[') ||
-//            (!OneEvent.IsEmpty() && ('.'==OneEvent.GetData()[OneEvent.GetLength()-1]))
+//        if (strchr(Line.c_str(), ':') ||
+//            strchr(Line.c_str(), '[') ||
+//            (!OneEvent.empty() && ('.'==OneEvent.c_str()[OneEvent.size()-1]))
 //           )
 
         // Looks like it is time to check spaces at the line start :((
         // additional event lines start with spaces
-        ch = Line.GetData()[0];
+        ch = Line.c_str()[0];
         if (ch != ' ' && ch != '\t')
         {
             // That is hopefully a new event
             ParseOneEvent(OneEvent, IsEvents);
-            OneEvent.Empty();
+            OneEvent.clear();
         }
-        if (!OneEvent.IsEmpty())
+        if (!OneEvent.empty())
             OneEvent << EOL_SCR;
         OneEvent << Line;
 
@@ -763,7 +764,7 @@ int CAtlaParser::ParseEvents(BOOL IsEvents)
 
 //----------------------------------------------------------------------
 
-int CAtlaParser::ParseOneImportantEvent(CStr & EventLine)
+int CAtlaParser::ParseOneImportantEvent(std::string & EventLine)
 {
     m_HexEvents.Description << EventLine << EOL_SCR;
     m_Events.Description << EventLine << EOL_SCR;
@@ -775,8 +776,8 @@ int CAtlaParser::ParseOneImportantEvent(CStr & EventLine)
 int CAtlaParser::ParseImportantEvents()
 {
     int          err   = ERR_OK;
-    CStr         Line(128);
-    CStr         OneEvent(128);
+    std::string Line;
+    std::string OneEvent;
     char         ch;
     int          i;
     BOOL         DoBreak = FALSE;
@@ -785,10 +786,10 @@ int CAtlaParser::ParseImportantEvents()
 
     while ((ERR_OK==err) && ReadNextLine(Line))
     {
-        Line.TrimRight(TRIM_ALL);
+        TrimRight(Line, TRIM_ALL);
 
         for (i=0; i<(int)sizeof(ExitEndHeader)/(int)sizeof(const char *); i++)
-            if (0==strnicmp(Line.GetData(), ExitEndHeader[i], ExitEndHeaderLen[i] ))
+            if (0==strnicmp(Line.c_str(), ExitEndHeader[i], ExitEndHeaderLen[i] ))
         {
             Line << EOL_FILE;
             PutLineBack(Line);
@@ -801,14 +802,14 @@ int CAtlaParser::ParseImportantEvents()
 
         // Looks like it is time to check spaces at the line start :((
         // additional event lines start with spaces
-        ch = Line.GetData()[0];
+        ch = Line.c_str()[0];
         if (ch != ' ' && ch != '\t')
         {
             // That is hopefully a new event
             ParseOneImportantEvent(OneEvent);
-            OneEvent.Empty();
+            OneEvent.clear();
         }
-        if (!OneEvent.IsEmpty())
+        if (!OneEvent.empty())
             OneEvent << EOL_SCR;
         OneEvent << Line;
 
@@ -829,30 +830,30 @@ int CAtlaParser::ParseErrors()
 
 //----------------------------------------------------------------------
 
-int CAtlaParser::ParseUnclSilver(CStr & Line)
+int CAtlaParser::ParseUnclSilver(std::string & Line)
 {
     const char * p;
     const char * s;
-    CStr         N;
+    std::string         N;
     CFaction   * pFaction;
 
     m_FactionInfo << Line;
 
-    Line.TrimRight(TRIM_ALL);
-    s = Line.GetData() + sizeof(HDR_SILVER)-1;
+    TrimRight(Line, TRIM_ALL);
+    s = Line.c_str() + sizeof(HDR_SILVER)-1;
     p = strchr(s, '.');
 
     if (p)
-        N.SetStr(s, p-s);
+        SetStr(N, s, p-s);
     else
-        N.SetStr(s);
-    N.TrimLeft();
+        SetStr(N, s);
+    TrimLeft(N);
 
-    N.TrimRight(TRIM_ALL);
+    TrimRight(N, TRIM_ALL);
 
     pFaction = GetFaction(m_CrntFactionId);
     if (pFaction)
-        pFaction->UnclaimedSilver = atol(N.GetData());
+        pFaction->UnclaimedSilver = atol(N.c_str());
 
     return ERR_OK;
 }
@@ -867,17 +868,17 @@ Neutral : none.
 Friendly : none.
 Ally : none.
 */
-int CAtlaParser::ParseAttitudes(CStr & Line, BOOL Join)
+int CAtlaParser::ParseAttitudes(std::string & Line, BOOL Join)
 {
-    CStr         Info;
-    CStr         FNo;
-    CStr         S1;
+    std::string         Info;
+    std::string         FNo;
+    std::string         S1;
     const char * str;
     const char * p;
     const char * s;
     char         ch, c;
     int          attitude = ATT_FRIEND1;
-    CStr         attitudes[4];
+    std::string         attitudes[4];
     BOOL         apply_attitudes = TRUE;
     BOOL         def;
 
@@ -894,43 +895,43 @@ int CAtlaParser::ParseAttitudes(CStr & Line, BOOL Join)
     {
         while(attitude <= ATT_ENEMY)
         {
-            if(0<=attitudes[attitude].FindSubStr("Own")) break;
+            if(0<=FindSubStr(attitudes[attitude], "Own")) break;
             attitude++;
         }
         gpDataHelper->SetAttitudeForFaction(-1, attitude);
         attitude = ATT_ENEMY;
     }
 
-    while (!Line.IsEmpty()) // is this correct?
+    while (!Line.empty()) // is this correct?
     {
-        str = Line.GetData();
+        str = Line.c_str();
         m_FactionInfo << Line;
 
         if(apply_attitudes) // parse attitudes
         {
             while(str)
             {
-                str = Info.GetToken(str, ":,.", ch, TRIM_ALL);
-                p   = Info.GetData();
+                str = GetToken(Info, str, ":,.", ch, TRIM_ALL);
+                p   = Info.c_str();
                 switch(ch)
                 {
                     case ':': // attitude type
                         // check for default line
                         def = FALSE;
-                        if(Info.FindSubStr("(default") > 0)
+                        if(FindSubStr(Info, "(default") > 0)
                         {
                             // parse the default line
-                            s = S1.GetToken(p, "(", c, TRIM_ALL);
-                            S1.GetToken(s, ")" ,c , TRIM_ALL);
-                            s = S1.GetData();
-                            p = Info.GetToken(s, " ", c, TRIM_ALL);
+                            s = GetToken(S1, p, "(", c, TRIM_ALL);
+                            GetToken(S1, s, ")" ,c , TRIM_ALL);
+                            s = S1.c_str();
+                            p = GetToken(Info, s, " ", c, TRIM_ALL);
                             def = TRUE;
                             m_FactionInfo << EOL_SCR;
                         }
                         // which attitude is it?
                         while(attitude >= ATT_FRIEND1)
                         {
-                            if(0<=attitudes[attitude].FindSubStr(p)) break;
+                            if(0<=FindSubStr(attitudes[attitude], p)) break;
                             attitude--;
                         }
                         if((!Join) && def && (attitude >= ATT_FRIEND1) && (attitude < ATT_UNDECLARED))
@@ -946,11 +947,11 @@ int CAtlaParser::ParseAttitudes(CStr & Line, BOOL Join)
                         {
                             // parse faction id
                             if(0==strcmp(p,"none")) break;
-                            s = S1.GetToken(p, "(", c, TRIM_ALL);
-                            FNo.GetToken(s, ")", c, TRIM_ALL);
-                            if (!FNo.IsEmpty())
+                            s = GetToken(S1, p, "(", c, TRIM_ALL);
+                            GetToken(FNo, s, ")", c, TRIM_ALL);
+                            if (!FNo.empty())
                             {
-                                int id = atol(FNo.GetData());
+                                int id = atol(FNo.c_str());
                                 gpDataHelper->SetAttitudeForFaction(id, attitude);
                             }
                         }
@@ -959,7 +960,7 @@ int CAtlaParser::ParseAttitudes(CStr & Line, BOOL Join)
             }
         }
         ReadNextLine(Line);
-        Line.TrimRight(TRIM_ALL);
+        TrimRight(Line, TRIM_ALL);
     }
 
     return ERR_OK;
@@ -1032,7 +1033,7 @@ void CAtlaParser::ParseWeather(const char * src, CLand * pLand)
     BOOL         IsGood;
     int          Zone;
     unsigned int i;
-    CStr         S1, S2;
+    std::string         S1, S2;
     const char * p;
     int          x,y,z;
     CPlane     * pPlane = pLand->pPlane;
@@ -1040,7 +1041,7 @@ void CAtlaParser::ParseWeather(const char * src, CLand * pLand)
     if (!src || !pPlane)
         return;
 
-    if (m_WeatherLine[0].IsEmpty())
+    if (m_WeatherLine[0].empty())
     {
         for (i=0; i<sizeof(m_WeatherLine)/sizeof(*m_WeatherLine); i++)
         {
@@ -1053,7 +1054,7 @@ void CAtlaParser::ParseWeather(const char * src, CLand * pLand)
             Zone      = i >> 2;
 
             m_WeatherLine[i] = gpDataHelper->GetWeatherLine(IsCurrent, IsGood, Zone);
-            m_WeatherLine[i].Normalize();
+            Normalize(m_WeatherLine[i]);
         }
     }
 
@@ -1063,10 +1064,10 @@ void CAtlaParser::ParseWeather(const char * src, CLand * pLand)
         while (*src > ' ')
             src++;
         src = SkipSpaces(src);
-        src = S1.GetToken(src, ';', TRIM_ALL);
-        src = S2.GetToken(src, '.', TRIM_ALL);
-        S1.Normalize();
-        S2.Normalize();
+        src = GetToken(S1, src, ';', TRIM_ALL);
+        src = GetToken(S2, src, '.', TRIM_ALL);
+        Normalize(S1);
+        Normalize(S2);
 
         for (i=0; i<sizeof(m_WeatherLine)/sizeof(*m_WeatherLine); i++)
         {
@@ -1087,10 +1088,10 @@ void CAtlaParser::ParseWeather(const char * src, CLand * pLand)
             */
 
             if (IsCurrent)
-                p = S1.GetData();
+                p = S1.c_str();
             else
-                p = S2.GetData();
-            if (0==stricmp(p, m_WeatherLine[i].GetData()))
+                p = S2.c_str();
+            if (0==stricmp(p, m_WeatherLine[i].c_str()))
             {
                 if (IsGood )
                 {
@@ -1117,7 +1118,7 @@ void CAtlaParser::ParseWeather(const char * src, CLand * pLand)
 
 //----------------------------------------------------------------------
 
-int CAtlaParser::AnalyzeTerrain(CLand * pMotherLand, CLand * pLand, BOOL IsExit, int ExitDir, CStr & Description)
+int CAtlaParser::AnalyzeTerrain(CLand * pMotherLand, CLand * pLand, BOOL IsExit, int ExitDir, std::string & Description)
 {
 /*
 plain (5,39) in Partry, contains Drimnin [city], 3217 peasants (high
@@ -1135,13 +1136,13 @@ plain (5,39) in Partry, contains Drimnin [city], 3217 peasants (high
   Products: 40 grain [GRAI], 33 horses [HORS].
 */
     enum         {eMain, eSale, eWanted, eProduct, eNone} SectType;
-    CStr         Section(64);
-    CStr         Struct (64);
-    CStr         S1     (32);
-    CStr         S2     (32);
-    CStr         N1     (32);
-    CStr         N2     (32);
-    CStr         Buf    (32);
+    std::string Section;
+    std::string Struct;
+    std::string S1;
+    std::string S2;
+    std::string N1;
+    std::string N2;
+    std::string Buf;
     long         n1;
     long         n2;
     const char * src;
@@ -1161,27 +1162,27 @@ plain (5,39) in Partry, contains Drimnin [city], 3217 peasants (high
 
     ProductsWereEmpty = (0==pLand->Products.Count());
     // skip terrain coordinates - they are confusing for the edge thingy
-    srcold   = strchr(Description.GetData(), ')');
+    srcold   = strchr(Description.c_str(), ')');
     if (srcold)
         srcold = SkipSpaces(srcold++);
     else
-        srcold = Description.GetData(); // something must be very wrong here, must never happen
+        srcold = Description.c_str(); // something must be very wrong here, must never happen
 
-    src      = Section.GetToken(srcold, '.', TRIM_ALL);
+    src      = GetToken(Section, srcold, '.', TRIM_ALL);
     if (!m_IsHistory && m_CurYearMon>0)
         ParseWeather(src, pLand);  // weather description should be right after the first section
-    while (!Section.IsEmpty())
+    while (!Section.empty())
     {
         BOOL RerunSection = FALSE;
 
-        str = Section.GetData();
+        str = Section.c_str();
         while (str)
         {
             if (RerunSection)
                 break;
 
-            str = Struct.GetToken(str, ":,", ch, TRIM_ALL);
-            p   = Struct.GetData();
+            str = GetToken(Struct, str, ":,", ch, TRIM_ALL);
+            p   = Struct.c_str();
             switch(ch)
             {
             case ':': // that's a section name!
@@ -1193,7 +1194,7 @@ plain (5,39) in Partry, contains Drimnin [city], 3217 peasants (high
                 else if (0==stricmp("Products", p))
                 {
                     SectType = eProduct;
-                    delpos   = srcold - Description.GetData();
+                    delpos   = srcold - Description.c_str();
                     dellen   = src - srcold;
                 }
                 else if (0==stricmp("Wages"  , p))
@@ -1212,51 +1213,51 @@ plain (5,39) in Partry, contains Drimnin [city], 3217 peasants (high
                 case eMain:    // recognize contains, $ and peasants
                     if ('$'==*p)
                     {
-                        N1.GetInteger(++p, Valid);
-                        pLand->Taxable = atol(N1.GetData());
+                        GetInteger(N1, ++p, Valid);
+                        pLand->Taxable = atol(N1.c_str());
                     }
                     else
                     {
-                        p  = SkipSpaces(S1.GetToken(p, ' ', TRIM_ALL));
-                        p  = S2.GetToken(p, ' ', TRIM_ALL);
-                        n1 = atol(S1.GetData());
+                        p  = SkipSpaces(GetToken(S1, p, ' ', TRIM_ALL));
+                        p  = GetToken(S2, p, ' ', TRIM_ALL);
+                        n1 = atol(S1.c_str());
                         if (n1>0)
                         {
-                            if (0==stricmp("peasants", S2.GetData()))
+                            if (0==stricmp("peasants", S2.c_str()))
                             {
                                 pLand->Peasants = n1;
-                                p  = S2.GetToken(p, '(', TRIM_ALL);
-                                p  = pLand->PeasantRace.GetToken(p, ')', TRIM_ALL);
-                                pLand->PeasantRace.Replace('\r', ' ');
-                                pLand->PeasantRace.Replace('\n', ' ');
-                                pLand->PeasantRace.Replace('\t', ' ');
-                                pLand->PeasantRace.Normalize();
-                                pLand->PeasantRace.Replace(' ', '_');
+                                p  = GetToken(S2, p, '(', TRIM_ALL);
+                                p  = GetToken(pLand->PeasantRace, p, ')', TRIM_ALL);
+                                Replace(pLand->PeasantRace, '\r', ' ');
+                                Replace(pLand->PeasantRace, '\n', ' ');
+                                Replace(pLand->PeasantRace, '\t', ' ');
+                                Normalize(pLand->PeasantRace);
+                                Replace(pLand->PeasantRace, ' ', '_');
                             }
                         }
-                        else if (0==stricmp("contains", S1.GetData()))
+                        else if (0==stricmp("contains", S1.c_str()))
                         {
                             //pLand->CityName = S2;
-                            //p = S2.GetToken(p, '[');
-                            //p = pLand->CityType.GetToken(p, ']');
+                            //p = GetToken(S2, p, '[');
+                            //p = GetToken(pLand->CityType, p, ']');
 
                             //There may be a space in the city name!
-                            p = S1.GetToken(Struct.GetData(), ' ', TRIM_ALL);
+                            p = GetToken(S1, Struct.c_str(), ' ', TRIM_ALL);
 
-                            p = pLand->CityName.GetToken(p, '[', TRIM_ALL);
+                            p = GetToken(pLand->CityName, p, '[', TRIM_ALL);
                             if (!p)
                             {
                                 // ok, it is a dot in the city name! need to append and rerun the section!
                                 RerunSection = TRUE;
                                 break;
                             }
-                            p = pLand->CityType.GetToken(p, ']', TRIM_ALL);
+                            p = GetToken(pLand->CityType, p, ']', TRIM_ALL);
                             // set town type LandFlags
-                            if(0==SafeCmp(pLand->CityType.ToLower(),"town"))
+                            if(0==SafeCmp(ToLower(pLand->CityType),"town"))
                             {
                                 pLand->Flags |= LAND_TOWN;
                             }
-                            else if (0==SafeCmp(pLand->CityType.ToLower(),"city"))
+                            else if (0==SafeCmp(ToLower(pLand->CityType),"city"))
                             {
                                 pLand->Flags |= LAND_CITY;
                             }
@@ -1269,11 +1270,11 @@ plain (5,39) in Partry, contains Drimnin [city], 3217 peasants (high
                             // it must be an edge object...
                             if (pMotherLand)
                             {
-                                pMotherLand->AddNewEdgeStruct(S1.GetData(), ExitDir);
+                                pMotherLand->AddNewEdgeStruct(S1.c_str(), ExitDir);
                                 // also add to neighbouring hex
                                 int adj_dir = ExitDir -3;
                                 if(adj_dir < 0) adj_dir += 6;
-                                pLand->AddNewEdgeStruct(S1.GetData(), adj_dir);
+                                pLand->AddNewEdgeStruct(S1.c_str(), adj_dir);
                             }
                         }
                     }
@@ -1283,67 +1284,67 @@ plain (5,39) in Partry, contains Drimnin [city], 3217 peasants (high
                 case eWanted:  // 35 horses [HORS] at $62
                                // N1 S1     [S2]   at $N2
 
-//                    p = SkipSpaces(N1.GetToken(p, ' ', TRIM_ALL));
-//                    n1= atol(N1.GetData());
+//                    p = SkipSpaces(GetToken(N1, p, ' ', TRIM_ALL));
+//                    n1= atol(N1.c_str());
                     // First number is optional, if missing it is 1
-                    p = N1.GetInteger(p, Valid);
-                    if (N1.IsEmpty())
+                    p = GetInteger(N1, p, Valid);
+                    if (N1.empty())
                     {
-                        N1.GetToken(p, " [", ch);
-                        if (0==stricmp(N1.GetData(), "none"))
+                        GetToken(N1, p, " [", ch);
+                        if (0==stricmp(N1.c_str(), "none"))
                             N1 = "-1";
-                        else if (0==stricmp(N1.GetData(), "unlimited"))
+                        else if (0==stricmp(N1.c_str(), "unlimited"))
                             N1 = "10000000";
                         else
                             N1 = "1";
 
                     }
-                    n1 = atol(N1.GetData());
-                    p = S1.GetToken(p, '[', TRIM_ALL);
-                    p = S2.GetToken(p, ']', TRIM_ALL);
-                    p = N2.GetToken(p, '$', TRIM_ALL);
+                    n1 = atol(N1.c_str());
+                    p = GetToken(S1, p, '[', TRIM_ALL);
+                    p = GetToken(S2, p, ']', TRIM_ALL);
+                    p = GetToken(N2, p, '$', TRIM_ALL);
                     N2= p;
-                    n2= atol(N2.GetData());
+                    n2= atol(N2.c_str());
 
-                    if ((!S2.IsEmpty()) && (n2>0) )
+                    if ((!S2.empty()) && (n2>0) )
                     {
                         if (eSale == SectType)
-                            MakeQualifiedPropertyName(PRP_SALE_AMOUNT_PREFIX, S2.GetData(), Buf);
+                            MakeQualifiedPropertyName(PRP_SALE_AMOUNT_PREFIX, S2.c_str(), Buf);
                         else
-                            MakeQualifiedPropertyName(PRP_WANTED_AMOUNT_PREFIX, S2.GetData(), Buf);
-                        SetLandProperty(pLand, Buf.GetData(), eLong, (void*)n1, eBoth);
+                            MakeQualifiedPropertyName(PRP_WANTED_AMOUNT_PREFIX, S2.c_str(), Buf);
+                        SetLandProperty(pLand, Buf.c_str(), eLong, (void*)n1, eBoth);
 
                         if (eSale == SectType)
-                            MakeQualifiedPropertyName(PRP_SALE_PRICE_PREFIX, S2.GetData(), Buf);
+                            MakeQualifiedPropertyName(PRP_SALE_PRICE_PREFIX, S2.c_str(), Buf);
                         else
-                            MakeQualifiedPropertyName(PRP_WANTED_PRICE_PREFIX, S2.GetData(), Buf);
-                        SetLandProperty(pLand, Buf.GetData(), eLong, (void*)n2, eBoth);
+                            MakeQualifiedPropertyName(PRP_WANTED_PRICE_PREFIX, S2.c_str(), Buf);
+                        SetLandProperty(pLand, Buf.c_str(), eLong, (void*)n2, eBoth);
 
                     }
                     break;
 
                 case eProduct: // Products: 40 grain [GRAI], 33 horses [HORS].
                                //           N1 S1    [S2]
-                    p = SkipSpaces(N1.GetToken(p, ' ', TRIM_ALL));
-                    n1= atol(N1.GetData());
+                    p = SkipSpaces(GetToken(N1, p, ' ', TRIM_ALL));
+                    n1= atol(N1.c_str());
                     if (0==n1)
-                        if (0==stricmp(N1.GetData(), "none"))
+                        if (0==stricmp(N1.c_str(), "none"))
                             n1 = -1;
-                        else if  (0==stricmp(N1.GetData(), "unlimited"))
+                        else if  (0==stricmp(N1.c_str(), "unlimited"))
                             n1 = 10000000;
                     if (n1 >= 0)
                     {
                         pProd = new CProduct;
                         pProd->Amount = n1;
-                        p = pProd->LongName.GetToken(p, '[', TRIM_ALL);
-                        p = pProd->ShortName.GetToken(p, ']', TRIM_ALL);
+                        p = GetToken(pProd->LongName, p, '[', TRIM_ALL);
+                        p = GetToken(pProd->ShortName, p, ']', TRIM_ALL);
                         if (pLand->Products.Search(pProd, idx))
                             pLand->Products.AtFree(idx);
                         else
                             if (!m_IsHistory && !ProductsWereEmpty)
                             {
                                 // we have found a new product! Woo-hoo!
-                                CStr          sCoord;
+                                std::string          sCoord;
                                 CBaseObject * pNewProd = new CBaseObject;
 
                                 //LandIdToCoord(pLand->Id, x, y, z);
@@ -1358,15 +1359,15 @@ plain (5,39) in Partry, contains Drimnin [city], 3217 peasants (high
                         pLand->Products.Insert(pProd);
 
                         // also set as a property to simplify searching
-                        MakeQualifiedPropertyName(PRP_RESOURCE_PREFIX, pProd->ShortName.GetData(), Buf);
-                        SetLandProperty(pLand, Buf.GetData(), eLong, (void*)n1, eBoth);
+                        MakeQualifiedPropertyName(PRP_RESOURCE_PREFIX, pProd->ShortName.c_str(), Buf);
+                        SetLandProperty(pLand, Buf.c_str(), eLong, (void*)n1, eBoth);
                     }
 
                     break;
 
                     /*
                 case eWages: //   Wages: $17.2 (Max: $10937).
-                    p = SkipSpaces(N1.GetToken(p, ' ', TRIM_ALL));
+                    p = SkipSpaces(GetToken(N1, p, ' ', TRIM_ALL));
                     if (!p || !*p)
                     {
                         RerunSection = TRUE;
@@ -1387,20 +1388,20 @@ plain (5,39) in Partry, contains Drimnin [city], 3217 peasants (high
         if (RerunSection)
         {
             // a dot in the city name
-            CStr S;
-            src      = S.GetToken(src, '.');
+            std::string S;
+            src      = GetToken(S, src, '.');
             Section << '.' << S;
         }
         else
         {
             srcold   = src;
-            src      = Section.GetToken(src, '.');
+            src      = GetToken(Section, src, '.');
             SectType = eNone;
         }
     }
 
     if (dellen)
-        Description.DelSubStr(delpos, dellen);
+        DelSubStr(Description, delpos, dellen);
 
     return 0;
 }
@@ -1413,8 +1414,8 @@ void CAtlaParser::ParseWages(CLand * pLand, const char * str1, const char * str2
     //   Wages: $15 (Max: $10273).
 
     const char * src;
-    CStr         N1, N2;
-    CStr         sSrc;
+    std::string         N1, N2;
+    std::string         sSrc;
     BOOL         Valid;
 
     str1 = SkipSpaces(str1);
@@ -1424,19 +1425,19 @@ void CAtlaParser::ParseWages(CLand * pLand, const char * str1, const char * str2
 
     if (strchr(str1, '('))
     {
-        src = SkipSpaces(N1.GetInteger(str1, Valid));
+        src = SkipSpaces(GetInteger(N1, str1, Valid));
     }
     else
     {
         sSrc << str1 << '.' << str2;
-        src = N1.GetDouble(sSrc.GetData(), Valid);
+        src = GetDouble(N1, sSrc.c_str(), Valid);
     }
-    pLand->Wages = atof(N1.GetData());
+    pLand->Wages = atof(N1.c_str());
 
-    src = SkipSpaces(N1.GetToken(src, '$'));
-    src = N1.GetInteger(src, Valid);
+    src = SkipSpaces(GetToken(N1, src, '$'));
+    src = GetInteger(N1, src, Valid);
 
-    pLand->MaxWages = atol(N1.GetData());
+    pLand->MaxWages = atol(N1.c_str());
 }
 
 //----------------------------------------------------------------------
@@ -1456,7 +1457,7 @@ CPlane * CAtlaParser::MakePlane(const char * planename)
         pPlane       = new CPlane;
         pPlane->Id   = m_Planes.Count();
         pPlane->Name = planename;
-        if (!gpDataHelper->GetTropicZone(pPlane->Name.GetData(), pPlane->TropicZoneMin, pPlane->TropicZoneMax))
+        if (!gpDataHelper->GetTropicZone(pPlane->Name.c_str(), pPlane->TropicZoneMin, pPlane->TropicZoneMax))
         {
             pPlane->TropicZoneMin  = TROPIC_ZONE_MAX;
             pPlane->TropicZoneMax  = -(TROPIC_ZONE_MAX);
@@ -1472,20 +1473,20 @@ CPlane * CAtlaParser::MakePlane(const char * planename)
 
 //----------------------------------------------------------------------
 
-int CAtlaParser::ParseTerrain(CLand * pMotherLand, int ExitDir, CStr & FirstLine, BOOL FullMode, CLand ** ppParsedLand)
+int CAtlaParser::ParseTerrain(CLand * pMotherLand, int ExitDir, std::string & FirstLine, BOOL FullMode, CLand ** ppParsedLand)
 {
 // FirstLine looks somewhat like:
 //    swamp (48,52[,somewhere]) in Aghleam, 118 peasants (tribesmen), $354.
 
     int                  err = ERR_OK;
     const char         * p;
-    CStr                 Name;
-    CStr                 S(64);
+    std::string                 Name;
+    std::string S;
     long                 x, y;
     CLand              * pLand = NULL;
-    CStr                 CurLine(128);
-    CStr                 PlaneName(32);
-    CStr                 LandName(32);
+    std::string CurLine;
+    std::string PlaneName;
+    std::string LandName;
     int                  i;
     int                  idxland;
     char                 ch;
@@ -1496,72 +1497,72 @@ int CAtlaParser::ParseTerrain(CLand * pMotherLand, int ExitDir, CStr & FirstLine
     CBaseObject          Dummy;
     int                  no;
     int                  idx;
-    CStr                 TempDescr(64); // Land description is collected in here. It can replace already existing description
+    std::string TempDescr; // Land description is collected in here. It can replace already existing description
     BOOL                 HaveEvents = FALSE;
-    CStr                 CompositeDescr(64);
+    std::string CompositeDescr;
 
-    if (FirstLine.IsEmpty())
+    if (FirstLine.empty())
         goto Exit;
 
-    p = SkipSpaces(Name.GetToken(FirstLine.GetData(), '(', TRIM_ALL));
+    p = SkipSpaces(GetToken(Name, FirstLine.c_str(), '(', TRIM_ALL));
     if (!p )   // it must be '('
         goto Exit;
 
     // ok, now goes (xxx,yyy[,somewhere]) bla-bla-bla
-    p = S.GetToken(p, ',');
-    if (!IsInteger(S.GetData()))
+    p = GetToken(S, p, ',');
+    if (!IsInteger(S.c_str()))
         goto Exit;
-    x = atol(S.GetData());
+    x = atol(S.c_str());
 
     // yyy[,somewhere]) bla-bla-bla
-    p = S.GetToken(p, ",)", ch);
-    if (!IsInteger(S.GetData()))
+    p = GetToken(S, p, ")", ch);
+    if (!IsInteger(S.c_str()))
         goto Exit;
-    y = atol(S.GetData());
+    y = atol(S.c_str());
     if (','==ch)
         // we have a plane name
-        p = PlaneName.GetToken(p, ')');
+        p = GetToken(PlaneName, p, ')');
     else
         PlaneName = DEFAULT_PLANE;
 
     if (!p)
         goto Exit;
 
-    p = SkipSpaces(S.GetToken(SkipSpaces(p), ' ', TRIM_ALL));
-    if (0!=stricmp(S.GetData(),"in"))
+    p = SkipSpaces(GetToken(S, SkipSpaces(p), ' ', TRIM_ALL));
+    if (0!=stricmp(S.c_str(),"in"))
         goto Exit;
-    LandName.GetToken(p, ",.", ch, TRIM_ALL);
+    GetToken(LandName, p, ",.", ch, TRIM_ALL);
 
     // Remove Arcadia III reference to edge location for sailing events
-    if (strchr(LandName.GetData(), '('))
+    if (strchr(LandName.c_str(), '('))
     {
-        int x = strchr(LandName.GetData(), '(') - LandName.GetData();
-        LandName.DelSubStr(x, LandName.GetLength()-x);
-        LandName.TrimRight(TRIM_ALL);
+        int x = strchr(LandName.c_str(), '(') - LandName.c_str();
+        DelSubStr(LandName, x, LandName.size()-x);
+        TrimRight(LandName, TRIM_ALL);
     }
 
-    pPlane = MakePlane(PlaneName.GetData());
+    pPlane = MakePlane(PlaneName.c_str());
 
     Dummy.Id = LandCoordToId(x,y, pPlane->Id);
     if (pPlane->Lands.Search(&Dummy, idxland))
     {
         pLand = (CLand*)pPlane->Lands.At(idxland);
-        if (0!=stricmp(pLand->TerrainType.GetData(), Name.GetData()))
+        if (0!=stricmp(pLand->TerrainType.c_str(), Name.c_str()))
         {
-            S.Format("*** Terrain changed for %s from '%s' to '%s' - clearing stored description and products! ***",
-                     FirstLine.GetData(), pLand->TerrainType.GetData(), Name.GetData());
-            GenericErr(1, S.GetData());
+            Format(S, "*** Terrain changed for %s from '%s' to '%s' - clearing stored description and products! ***",
+                     FirstLine.c_str(), pLand->TerrainType.c_str(), Name.c_str());
+            GenericErr(1, S.c_str());
             pLand->TerrainType  = Name;
-            pLand->Description.Empty();
+            pLand->Description.clear();
             pLand->Products.FreeAll();
         }
-        if (0!=stricmp(pLand->Name.GetData(), LandName.GetData()) )
+        if (0!=stricmp(pLand->Name.c_str(), LandName.c_str()) )
         {
-            S.Format("*** Province changed for %s from '%s' to '%s' - clearing stored description! ***",
-                     FirstLine.GetData(), pLand->Name.GetData(), LandName.GetData());
-            GenericErr(1, S.GetData());
+            Format(S, "*** Province changed for %s from '%s' to '%s' - clearing stored description! ***",
+                     FirstLine.c_str(), pLand->Name.c_str(), LandName.c_str());
+            GenericErr(1, S.c_str());
             pLand->Name     = LandName;
-            pLand->Description.Empty();
+            pLand->Description.clear();
         }
     }
     else
@@ -1585,7 +1586,7 @@ int CAtlaParser::ParseTerrain(CLand * pMotherLand, int ExitDir, CStr & FirstLine
         while (ReadNextLine(CurLine))
         {
             // the line must not start from -+* and must not contain : .
-            const char * s = SkipSpaces(CurLine.GetData());
+            const char * s = SkipSpaces(CurLine.c_str());
             if (!s || !*s)
                 break;
 
@@ -1595,10 +1596,10 @@ int CAtlaParser::ParseTerrain(CLand * pMotherLand, int ExitDir, CStr & FirstLine
                 break;
             }
 
-            CurLine.TrimRight(TRIM_ALL);
+            TrimRight(CurLine, TRIM_ALL);
             TempDescr << CurLine << EOL_SCR;
 
-            if (strchr(CurLine.GetData(), '.'))
+            if (strchr(CurLine.c_str(), '.'))
                 break;
         }
     }
@@ -1610,16 +1611,16 @@ int CAtlaParser::ParseTerrain(CLand * pMotherLand, int ExitDir, CStr & FirstLine
     // It is only scan for exits from the land
     if (!FullMode)
     {
-        TempDescr.TrimRight(TRIM_ALL);
-        pLand->Description.TrimRight(TRIM_ALL);
+        TrimRight(TempDescr, TRIM_ALL);
+        TrimRight(pLand->Description, TRIM_ALL);
 
         //this creates problems with rivers - once you have seen a river,
         //it will be there for all following exits to the same hex
 
-//        if (TempDescr.GetLength() > pLand->Description.GetLength())
+//        if (TempDescr.size() > pLand->Description.size())
 //            pLand->Description = TempDescr;
 
-        if (pLand->Description.IsEmpty())
+        if (pLand->Description.empty())
             pLand->Description = TempDescr;
 
         AnalyzeTerrain(pMotherLand, pLand, pMotherLand!=NULL, ExitDir, TempDescr);
@@ -1642,8 +1643,8 @@ int CAtlaParser::ParseTerrain(CLand * pMotherLand, int ExitDir, CStr & FirstLine
     DoBreak = FALSE;
     while (ReadNextLine(CurLine))
     {
-        CurLine.TrimRight(TRIM_ALL);
-        p = SkipSpaces(CurLine.GetData());
+        TrimRight(CurLine, TRIM_ALL);
+        p = SkipSpaces(CurLine.c_str());
         if (0==stricmp("Events:", p))
         {
             HaveEvents = TRUE;
@@ -1672,7 +1673,7 @@ int CAtlaParser::ParseTerrain(CLand * pMotherLand, int ExitDir, CStr & FirstLine
         if (no>20 && ';'==*p)
         {
             no = strlen(p++);
-            CurLine.DelSubStr(CurLine.GetLength()-no, no);
+            DelSubStr(CurLine, CurLine.size()-no, no);
             pLand->AtlaclientsLastTurnNo = atol(p);
         }
 
@@ -1686,9 +1687,9 @@ int CAtlaParser::ParseTerrain(CLand * pMotherLand, int ExitDir, CStr & FirstLine
     // Unfortunately, Arno in his latest game shows restricted description for hexes
     // through which your scout pass if there are no stationary units in the hex.
     
-    ComposeHexDescriptionForArnoGame(pLand->Description.GetData(), TempDescr.GetData(), CompositeDescr);
+    ComposeHexDescriptionForArnoGame(pLand->Description.c_str(), TempDescr.c_str(), CompositeDescr);
     pLand->Description = CompositeDescr;
-    pLand->Description.TrimRight(TRIM_ALL);
+    TrimRight(pLand->Description, TRIM_ALL);
     AnalyzeTerrain(NULL, pLand, FALSE, ExitDir, pLand->Description);
 
     //Read Events and skip till Exits:
@@ -1697,8 +1698,8 @@ int CAtlaParser::ParseTerrain(CLand * pMotherLand, int ExitDir, CStr & FirstLine
     {
         while (ReadNextLine(CurLine))
         {
-            CurLine.TrimRight(TRIM_ALL);
-            p = SkipSpaces(CurLine.GetData());
+            TrimRight(CurLine, TRIM_ALL);
+            p = SkipSpaces(CurLine.c_str());
             if (0==stricmp("Exits:", p))
                 break;
             for (i=0; i<(int)sizeof(ExitEndHeader)/(int)sizeof(const char *); i++)
@@ -1713,7 +1714,7 @@ int CAtlaParser::ParseTerrain(CLand * pMotherLand, int ExitDir, CStr & FirstLine
                 break;
             pLand->Events << CurLine << EOL_SCR;
         }
-        pLand->Events.TrimRight(TRIM_ALL);
+        TrimRight(pLand->Events, TRIM_ALL);
     }
 
 
@@ -1725,34 +1726,34 @@ int CAtlaParser::ParseTerrain(CLand * pMotherLand, int ExitDir, CStr & FirstLine
 
     // Clear all the Edge structures which were loaded from history
     pLand->EdgeStructs.FreeAll();
-    pLand->Exits.Empty();
+    pLand->Exits.clear();
 
     // now is a list of exits and gates terminated by unit or structure
     pLand->ExitBits = 0;
     while (ReadNextLine(CurLine))
     {
-        if (0==SafeCmp(EOL_SCR, CurLine.GetData()))
+        if (0==SafeCmp(EOL_SCR, CurLine.c_str()))
             continue;
         DoBreak = TRUE;
-        p       = S.GetToken(CurLine.GetData(), ":(", ch);
+        p       = GetToken(S, CurLine.c_str(), ":(", ch);
         switch (ch)
         {
         case ':':  // is it an exit?
 
-            if (0==stricmp(S.GetData(), FLAG_HDR))
+            if (0==stricmp(S.c_str(), FLAG_HDR))
 
             {
                 pLand->FlagText[0] = SkipSpaces(p);
-                pLand->FlagText[0].TrimRight(TRIM_ALL);
+                TrimRight(pLand->FlagText[0], TRIM_ALL);
             }
             for (i=0; i<(int)sizeof(Directions)/(int)sizeof(const char*); i++)
-                if (0==stricmp(S.GetData(), Directions[i]))
+                if (0==stricmp(S.c_str(), Directions[i]))
                 {
                     // yes!
                     pLand->Exits << "  " << S << ": ";
                     pPlane->ExitsCount++;
                     S = p;
-                    S.TrimLeft();
+                    TrimLeft(S);
                     ParseTerrain(pLand, i, S, FALSE, NULL);
                     pLand->ExitBits |= ExitFlags[i];
                     DoBreak = FALSE;
@@ -1761,24 +1762,24 @@ int CAtlaParser::ParseTerrain(CLand * pMotherLand, int ExitDir, CStr & FirstLine
             break;
         case '(': // is it a gate?
             // There is a Gate here (Gate 18 of 35).
-            if (0==stricmp(S.GetData(), "There is a Gate here"))
+            if (0==stricmp(S.c_str(), "There is a Gate here"))
             {
-                CStr sCoord;
+                std::string sCoord;
 
-                p  = SkipSpaces(S.GetToken(p, ' '));
-                p  = S.GetToken(p, ' ');  // S = 18
-                no = atol(S.GetData());
+                p  = SkipSpaces(GetToken(S, p, ' '));
+                p  = GetToken(S, p, ' ');  // S = 18
+                no = atol(S.c_str());
                 pStruct     = new CStruct;
                 pStruct->Id = -no;  // negative, so it does not clash with structures!
-                pStruct->Description = CurLine.GetData();
+                pStruct->Description = CurLine.c_str();
                 pStruct->Kind        = STRUCT_GATE;
-                pStruct->Attr        = gpDataHelper->GetStructAttr(pStruct->Kind.GetData(), pStruct->MaxLoad, pStruct->MinSailingPower);
+                pStruct->Attr        = gpDataHelper->GetStructAttr(pStruct->Kind.c_str(), pStruct->MaxLoad, pStruct->MinSailingPower);
                 pLand->AddNewStruct(pStruct);
 
                 p = SkipSpaces(p);
-                p = SkipSpaces(S.GetToken(p, ' '));  // S = of
-                p = S.GetToken(p, ' ');  // S = 35
-                m_GatesCount = atol(S.GetData());
+                p = SkipSpaces(GetToken(S, p, ' '));  // S = of
+                p = GetToken(S, p, ' ');  // S = 35
+                m_GatesCount = atol(S.c_str());
                 DoBreak = FALSE;
 
 
@@ -1793,7 +1794,7 @@ int CAtlaParser::ParseTerrain(CLand * pMotherLand, int ExitDir, CStr & FirstLine
                     idx = -1;
 
                 ComposeLandStrCoord(pLand, sCoord);
-                pGate->Description.Format("Gate % 4d. ", no);
+                Format(pGate->Description, "Gate % 4d. ", no);
                 pGate->Description << pLand->TerrainType << " (" << sCoord << ")";
                 pGate->Name        = pGate->Description;
 
@@ -1830,13 +1831,13 @@ const char * CountTokensForArno(const char * src, int & count)
 {
     const char * p;
     char         ch;
-    CStr         Token(32);
+    std::string Token;
     
     count = 0;
-    p = Token.GetToken(src, ')');
+    p = GetToken(Token, src, ')');
     while (p && *p)
     {
-        p = Token.GetToken(p, ",.", ch, TRIM_NONE);
+        p = GetToken(Token, p, ",.", ch, TRIM_NONE);
         count++;
         if ('.'==ch)
             break;
@@ -1865,12 +1866,12 @@ plain (55,3) in Lothmarlun, contains Rudoeton [village].
   Products: none.
 */
 
-void CAtlaParser::ComposeHexDescriptionForArnoGame(const char * olddescr, const char * newdescr, CStr & CompositeDescr)
+void CAtlaParser::ComposeHexDescriptionForArnoGame(const char * olddescr, const char * newdescr, std::string & CompositeDescr)
 {
     const char * pnew, * pold;
-    CStr         NewWeather(32); 
+    std::string NewWeather; 
     int          oldcount, newcount;
-    CStr         Token(32);
+    std::string Token;
     
     if (!olddescr || !*olddescr)
     {
@@ -1907,19 +1908,19 @@ void CAtlaParser::ComposeHexDescriptionForArnoGame(const char * olddescr, const 
     // now our new descr is worse, but it contains good weather line, we need to extract it and merge with old descr
     while (pnew && *pnew && *pnew!='-')
         pnew++;
-    pnew = Token.GetToken(pnew, '\n');
-    pnew = NewWeather.GetToken(pnew, '.', TRIM_NONE);
+    pnew = GetToken(Token, pnew, '\n');
+    pnew = GetToken(NewWeather, pnew, '.', TRIM_NONE);
     
-    CompositeDescr.Empty();
-    pnew = Token.GetToken(olddescr, '.');
+    CompositeDescr.clear();
+    pnew = GetToken(Token, olddescr, '.');
     CompositeDescr << Token << "." << EOL_SCR;
     
     while (pnew && *pnew && *pnew!='-')
         pnew++;
-    pnew = Token.GetToken(pnew, '\n');
+    pnew = GetToken(Token, pnew, '\n');
     CompositeDescr << Token << EOL_SCR;
     
-    pnew = Token.GetToken(pnew, '.');    // old weather
+    pnew = GetToken(Token, pnew, '.');    // old weather
     CompositeDescr << NewWeather << "." << pnew;
     
 }
@@ -1989,7 +1990,7 @@ long CAtlaParser::SkillDaysToLevel(long days)
 // Only normal brackets are banned, everything else can be in names and descriptions, including .,[]
 
 
-int CAtlaParser::ParseUnit(CStr & FirstLine, BOOL Join)
+int CAtlaParser::ParseUnit(std::string & FirstLine, BOOL Join)
 {
 #define DOT          '.'
 #define COMMA        ','
@@ -2001,18 +2002,18 @@ int CAtlaParser::ParseUnit(CStr & FirstLine, BOOL Join)
 
     CFaction    * pFaction = NULL;
     CUnit       * pUnit    = NULL;
-    CStr          CurLine (128);
-    CStr          UnitText(128);
-    CStr          UnitPrefix;
-    CStr          Line    (128);
-    CStr          FactName;
-    CStr          Section ( 32);
-    CStr          Buf     (128);
-    CStr          S1      ( 32);
-    CStr          S2      ( 32);
-    CStr          N1      ( 32);
-    CStr          N2      ( 32);
-    CStr          N3      ( 32);
+    std::string CurLine;
+    std::string UnitText;
+    std::string          UnitPrefix;
+    std::string Line;
+    std::string          FactName;
+    std::string Section;
+    std::string Buf;
+    std::string S1;
+    std::string S2;
+    std::string N1;
+    std::string N2;
+    std::string N3;
 //    EValueType    type;
 //    const void  * stance;
     long          n1;
@@ -2026,8 +2027,8 @@ int CAtlaParser::ParseUnit(CStr & FirstLine, BOOL Join)
     BOOL          SkillsFound = FALSE;
     BOOL          Valid;
 
-    FirstLine.TrimRight(TRIM_ALL);
-    p = FirstLine.GetData();
+    TrimRight(FirstLine, TRIM_ALL);
+    p = FirstLine.c_str();
 
     // Get the prefix - leading spaces and the first word
     while (p && *p && *p<=' ')
@@ -2042,7 +2043,7 @@ int CAtlaParser::ParseUnit(CStr & FirstLine, BOOL Join)
 
     while (ReadNextLine(CurLine))
     {
-        p = SkipSpaces(CurLine.GetData());
+        p = SkipSpaces(CurLine.c_str());
 
         // maybe terminated by an empty string
         if (!p || !*p)
@@ -2058,25 +2059,25 @@ int CAtlaParser::ParseUnit(CStr & FirstLine, BOOL Join)
             break;
         }
 
-        CurLine.TrimRight(TRIM_ALL);
-        UnitText.AddStr(CurLine.GetData(), CurLine.GetLength());
+        TrimRight(CurLine, TRIM_ALL);
+        AddStr(UnitText, CurLine.c_str(), CurLine.size());
 
-        UnitText.AddStr(EOL_SCR);
+        AddStr(UnitText, EOL_SCR);
     }
 
     // ===== Read Unit Name, which always goes first!
 
-    p  = S1.GetToken(UnitText.GetData(), '(');
-    p  = N1.GetToken(p, ')');
-    n1 = atol(N1.GetData());
+    p  = GetToken(S1, UnitText.c_str(), '(');
+    p  = GetToken(N1, p, ')');
+    n1 = atol(N1.c_str());
     if (n1<=0)
         return ERR_INV_UNIT;
 
     pUnit = MakeUnit(n1);
     if (m_pCurLand)
         m_pCurLand->AddUnit(pUnit);
-    if (0 == strnicmp(SkipSpaces(UnitPrefix.GetData()), HDR_UNIT_OWN, sizeof(HDR_UNIT_OWN)-1) ||
-        UnitPrefix.GetLength() + UnitText.GetLength() > pUnit->Description.GetLength())
+    if (0 == strnicmp(SkipSpaces(UnitPrefix.c_str()), HDR_UNIT_OWN, sizeof(HDR_UNIT_OWN)-1) ||
+        UnitPrefix.size() + UnitText.size() > pUnit->Description.size())
     {
         pUnit->Description = UnitPrefix;
         pUnit->Description << UnitText;
@@ -2085,7 +2086,7 @@ int CAtlaParser::ParseUnit(CStr & FirstLine, BOOL Join)
     if (m_pCurStruct)
     {
         SetUnitProperty(pUnit, PRP_STRUCT_ID,   eLong,    (void*)m_pCurStruct->Id,      eBoth);
-        SetUnitProperty(pUnit, PRP_STRUCT_NAME, eCharPtr, m_pCurStruct->Name.GetData(), eBoth);
+        SetUnitProperty(pUnit, PRP_STRUCT_NAME, eCharPtr, m_pCurStruct->Name.c_str(), eBoth);
         if (0==m_pCurStruct->OwnerUnitId)
         {
             m_pCurStruct->OwnerUnitId = pUnit->Id;
@@ -2102,9 +2103,9 @@ int CAtlaParser::ParseUnit(CStr & FirstLine, BOOL Join)
         while (p > src && *(p-1) != ',')
             p--; // position to the start of faction name
 
-        p  = S1.GetToken(p, '(');
-        p  = N1.GetToken(p, ')');
-        n1 = atol(N1.GetData());
+        p  = GetToken(S1, p, '(');
+        p  = GetToken(N1, p, ')');
+        n1 = atol(N1.c_str());
 //        if (n1<=0)
 //            return ERR_INV_UNIT;
         if (n1>0)
@@ -2150,21 +2151,21 @@ int CAtlaParser::ParseUnit(CStr & FirstLine, BOOL Join)
         src++;
     while (src && *src)
     {
-        src  = SkipSpaces(Line.GetToken(src, STRUCT_LIMIT, Delimiter, TRIM_ALL));
+        src  = SkipSpaces(GetToken(Line, src, STRUCT_LIMIT, Delimiter, TRIM_ALL));
 
         if (DOT == LastDelimiter)
         {
             // New section. Find out the section name,
-            p = SkipSpaces(Section.GetToken(Line.GetData(), ':'));
+            p = SkipSpaces(GetToken(Section, Line.c_str(), ':'));
             if (p)
             {
                 // remove section name from the structure
-                Line.DelSubStr(0, p-Line.GetData());
+                DelSubStr(Line, 0, p-Line.c_str());
             }
             else
             {
                 // section has no name.
-                if (!SkillsFound && 0!=stricmp(SECT_SKILLS, Section.GetData()))
+                if (!SkillsFound && 0!=stricmp(SECT_SKILLS, Section.c_str()))
                     Section = SECT_ITEMS;
             }
         }
@@ -2174,13 +2175,13 @@ int CAtlaParser::ParseUnit(CStr & FirstLine, BOOL Join)
         taxing, 84 high elves [HELF], vodka [VODK], spear [SPEA], 2578
         silver [SILV]. Skills: combat [COMB] 2 (90).
 */
-        if      (0==stricmp(SECT_ITEMS, Section.GetData()))
+        if      (0==stricmp(SECT_ITEMS, Section.c_str()))
         {
             const void * data = NULL;
             if (pUnit)
             {
-                Line.Normalize();
-                auto flagIt = m_UnitFlagsHash.find(Line.GetData());
+                Normalize(Line);
+                auto flagIt = m_UnitFlagsHash.find(Line.c_str());
                 if (flagIt != m_UnitFlagsHash.end())
                 {
                     pUnit->Flags    |= (unsigned long)flagIt->second;
@@ -2195,41 +2196,41 @@ int CAtlaParser::ParseUnit(CStr & FirstLine, BOOL Join)
             // S1 [S2]
 
             // '[' can be present in the unit or faction name, so give '(' precedence.
-            p = Buf.GetToken(Line.GetData(), "(", ch);
+            p = GetToken(Buf, Line.c_str(), "(", ch);
             if (!p)
-                p = Buf.GetToken(Line.GetData(), "[", ch);
+                p = GetToken(Buf, Line.c_str(), "[", ch);
             switch (ch)
             {
                 case '(':     // it is faction name again
-                    p  = N1.GetToken(p, ')');
+                    p  = GetToken(N1, p, ')');
                     break;
 
             case '[':
-                p = N1.GetInteger(Line.GetData(), Valid);
-                if (N1.IsEmpty())
+                p = GetInteger(N1, Line.c_str(), Valid);
+                if (N1.empty())
                     n1 = 1;
                 else
-                    n1 = atol(N1.GetData());
+                    n1 = atol(N1.c_str());
 
-                    p = S1.GetToken(p, '[', TRIM_ALL);
-                    p = S2.GetToken(p, ']', TRIM_ALL);
+                    p = GetToken(S1, p, '[', TRIM_ALL);
+                    p = GetToken(S2, p, ']', TRIM_ALL);
 
-                    if (!p || S2.IsEmpty() || !pUnit)
+                    if (!p || S2.empty() || !pUnit)
                     {
                     // there is no shortname
-                        Buf.Format("Unit description - flag/item error at line %d", m_nCurLine);
-                        LOG_ERR(ERR_DESIGN, Buf.GetData());
+                        Format(Buf, "Unit description - flag/item error at line %d", m_nCurLine);
+                        LOG_ERR(ERR_DESIGN, Buf.c_str());
                     }
                     else
                     {
-                        SetUnitProperty(pUnit, S2.GetData(), eLong, (void*)n1, eBoth);
+                        SetUnitProperty(pUnit, S2.c_str(), eLong, (void*)n1, eBoth);
                     // is this a man property?
-                        if (gpDataHelper->IsMan(S2.GetData()))
+                        if (gpDataHelper->IsMan(S2.c_str()))
                         {
                         //So, is it a leader?
-                            if (S1.FindSubStr(SZ_LEADER) >=0 )
+                            if (FindSubStr(S1, SZ_LEADER) >=0 )
                                 SetUnitProperty(pUnit, PRP_LEADER, eCharPtr, SZ_LEADER, eBoth);
-                            if (S1.FindSubStr(SZ_HERO) >=0 )
+                            if (FindSubStr(S1, SZ_HERO) >=0 )
                                 SetUnitProperty(pUnit, PRP_LEADER, eCharPtr, SZ_HERO, eBoth);
                         }
 
@@ -2239,40 +2240,40 @@ int CAtlaParser::ParseUnit(CStr & FirstLine, BOOL Join)
             }
         }
 
-        else if (0==stricmp(SECT_SKILLS, Section.GetData()))
+        else if (0==stricmp(SECT_SKILLS, Section.c_str()))
         {
             SkillsFound = TRUE;
 
             // recognize patterns:
             // S1 [S2] N1 (N2)
             // S1 [S2] N1 (N2/N3)
-            p = S1.GetToken(Line.GetData(), '[', TRIM_ALL);
-            p = S2.GetToken(p, ']', TRIM_ALL);
-            p = N1.GetToken(p, '(', TRIM_ALL);
-            p = N2.GetToken(p, ")/", ch, TRIM_ALL);
+            p = GetToken(S1, Line.c_str(), '[', TRIM_ALL);
+            p = GetToken(S2, p, ']', TRIM_ALL);
+            p = GetToken(N1, p, '(', TRIM_ALL);
+            p = GetToken(N2, p, ")/", ch, TRIM_ALL);
             if ('/'==ch)
             {
-                p = N3.GetToken(p, ')', TRIM_ALL);
+                p = GetToken(N3, p, ')', TRIM_ALL);
                 m_ArcadiaSkills = TRUE;
             }
 
 
-            if (0!=stricmp("none", S1.GetData()))
+            if (0!=stricmp("none", S1.c_str()))
                 if (!p || !pUnit)
             {
-                Buf.Format("Unit description - skills error at line %d", m_nCurLine);
-                LOG_ERR(ERR_DESIGN, Buf.GetData());
+                Format(Buf, "Unit description - skills error at line %d", m_nCurLine);
+                LOG_ERR(ERR_DESIGN, Buf.c_str());
             }
             else
             {
                     // classic skills
                 Buf = S2;
                 Buf << PRP_SKILL_POSTFIX; // That is a skill!
-                SetUnitProperty(pUnit, Buf.GetData(), eLong, (void*)atol(N1.GetData()), eBoth);
+                SetUnitProperty(pUnit, Buf.c_str(), eLong, (void*)atol(N1.c_str()), eBoth);
 
                 Buf = S2;
                 Buf << PRP_SKILL_DAYS_POSTFIX;
-                SetUnitProperty(pUnit, Buf.GetData(), eLong, (void*)atol(N2.GetData()), eBoth);
+                SetUnitProperty(pUnit, Buf.c_str(), eLong, (void*)atol(N2.c_str()), eBoth);
 
                 if (m_ArcadiaSkills)
                 {
@@ -2280,38 +2281,38 @@ int CAtlaParser::ParseUnit(CStr & FirstLine, BOOL Join)
                     long             n;
                     unsigned long    i;
 
-                    n = atol(N2.GetData());
+                    n = atol(N2.c_str());
                     i = SkillDaysToLevel(n);
 
                     Buf = S2;
                     Buf << PRP_SKILL_STUDY_POSTFIX;
-                    SetUnitProperty(pUnit, Buf.GetData(), eLong, (void*)i, eBoth);
+                    SetUnitProperty(pUnit, Buf.c_str(), eLong, (void*)i, eBoth);
 
-                    n = atol(N3.GetData());
+                    n = atol(N3.c_str());
                     i = SkillDaysToLevel(n);
                     Buf = S2;
                     Buf << PRP_SKILL_EXPERIENCE_POSTFIX;
-                    SetUnitProperty(pUnit, Buf.GetData(), eLong, (void*)i, eBoth);
+                    SetUnitProperty(pUnit, Buf.c_str(), eLong, (void*)i, eBoth);
 
                     Buf = S2;
                     Buf << PRP_SKILL_DAYS_EXPERIENCE_POSTFIX;
-                    SetUnitProperty(pUnit, Buf.GetData(), eLong, (void*)n, eBoth);
+                    SetUnitProperty(pUnit, Buf.c_str(), eLong, (void*)n, eBoth);
                 }
             }
 
         }
 
 
-        else if (0 == SafeCmpNoSpaces(SECT_COMBAT, Section.GetData())) // looks like combat, but need to ignore spaces....
+        else if (0 == SafeCmpNoSpaces(SECT_COMBAT, Section.c_str())) // looks like combat, but need to ignore spaces....
         {
             // recognize pattern:
             // S1 [S2]
-            p = S1.GetToken(Line.GetData(), '[', TRIM_ALL);
+            p = GetToken(S1, Line.c_str(), '[', TRIM_ALL);
             if (p)
-                p = S2.GetToken(p, ']', TRIM_ALL);
+                p = GetToken(S2, p, ']', TRIM_ALL);
             else
                 S2 = Line;
-            SetUnitProperty(pUnit, PRP_COMBAT, eCharPtr, S2.GetData(), eBoth);
+            SetUnitProperty(pUnit, PRP_COMBAT, eCharPtr, S2.c_str(), eBoth);
         }
 
 
@@ -2336,7 +2337,7 @@ int CAtlaParser::ParseUnit(CStr & FirstLine, BOOL Join)
 //----------------------------------------------------------------------
 
 
-int CAtlaParser::ParseStructure(CStr & FirstLine)
+int CAtlaParser::ParseStructure(std::string & FirstLine)
 {
     //+ Ruin [1] : Ruin, closed to player units.
     //+ Ship [100] : Longboat, needs 10.
@@ -2345,33 +2346,33 @@ int CAtlaParser::ParseStructure(CStr & FirstLine)
 
     // Description is terminated by a unit or an empty line
 
-    CStr         S;
-    CStr         Name;
+    std::string         S;
+    std::string         Name;
     const char * p;
     long         id;
     CStruct    * pStruct;
     char         ch;
-    CStr         CurLine(64);
-    CStr         TmpDescr(64);
-    CStr         Kind;
+    std::string CurLine;
+    std::string TmpDescr;
+    std::string         Kind;
     int          Location = NO_LOCATION;
     int          i;
 
     if (!m_pCurLand)
         goto Exit;
 
-    p  = FirstLine.GetData();
-    p  = Name.GetToken(p, '[');
-    p  = S.GetToken(p, ']');
-    id = atol(S.GetData());
+    p  = FirstLine.c_str();
+    p  = GetToken(Name, p, '[');
+    p  = GetToken(S, p, ']');
+    id = atol(S.c_str());
     if (0==id)
         goto Exit;
 
     TmpDescr = FirstLine;
-    TmpDescr.TrimRight(TRIM_ALL);
+    TrimRight(TmpDescr, TRIM_ALL);
     while (ReadNextLine(CurLine))
     {
-        const char * s = SkipSpaces(CurLine.GetData());
+        const char * s = SkipSpaces(CurLine.c_str());
         if (!s || !*s)
             break;
 
@@ -2381,43 +2382,43 @@ int CAtlaParser::ParseStructure(CStr & FirstLine)
             break;
         }
 
-        CurLine.TrimRight(TRIM_ALL);
+        TrimRight(CurLine, TRIM_ALL);
         TmpDescr << EOL_SCR << CurLine;
     }
 
-    p  = S.GetToken(TmpDescr.GetData(), ':');
-    p  = Kind.GetToken(p, ",.;", ch);
+    p  = GetToken(S, TmpDescr.c_str(), ':');
+    p  = GetToken(Kind, p, ",.;", ch);
 
     Name << " [" << id << "]";
 
     // check for Arcadia III ships at the hex edges
     // + Ship [104] : Galley (Northern hexside).
-    p = strchr(Kind.GetData(), '(');
+    p = strchr(Kind.c_str(), '(');
     if (p && *p)
     {
-        S.GetToken(p+1, ')');
-        S.Normalize();
+        GetToken(S, p+1, ')');
+        Normalize(S);
         for (i=0; i<(int)sizeof(LocationsShipsArcadia)/(int)sizeof(const char*); i++)
-            if (0==stricmp(S.GetData(), LocationsShipsArcadia[i]))
+            if (0==stricmp(S.c_str(), LocationsShipsArcadia[i]))
             {
                 Location = i;
                 break;
             }
-        i = p - Kind.GetData();
-        Kind.DelSubStr(i, Kind.GetLength()-i);
-        Kind.TrimRight(TRIM_ALL);
+        i = p - Kind.c_str();
+        DelSubStr(Kind, i, Kind.size()-i);
+        TrimRight(Kind, TRIM_ALL);
     }
 
 
     pStruct              = new CStruct;
     pStruct->Id          = id;
-    pStruct->Name        = &Name.GetData()[sizeof(HDR_STRUCTURE)-1];
+    pStruct->Name        = &Name.c_str()[sizeof(HDR_STRUCTURE)-1];
     pStruct->Description = TmpDescr;
     pStruct->Kind        = Kind;
-    pStruct->Attr        = gpDataHelper->GetStructAttr(pStruct->Kind.GetData(), pStruct->MaxLoad, pStruct->MinSailingPower);
+    pStruct->Attr        = gpDataHelper->GetStructAttr(pStruct->Kind.c_str(), pStruct->MaxLoad, pStruct->MinSailingPower);
     pStruct->Location    = Location;
     if (pStruct->Attr & (SA_ROAD_N | SA_ROAD_NE | SA_ROAD_SE | SA_ROAD_S | SA_ROAD_SW | SA_ROAD_NW ))
-        if (pStruct->Description.FindSubStr("needs") > 0 || pStruct->Description.FindSubStr("decay") > 0 )
+        if (FindSubStr(pStruct->Description, "needs") > 0 || FindSubStr(pStruct->Description, "decay") > 0 )
             pStruct->Attr |= SA_ROAD_BAD;
 
     m_pCurStruct         = m_pCurLand->AddNewStruct(pStruct);
@@ -2437,7 +2438,7 @@ void CAtlaParser::SetShaftLinks()
     int          i,j,n;
     EValueType   type;
     const void * value;
-    CStr         S, T;
+    std::string         S, T;
     const char * p;
 
     for (i=0; i<m_LandsToBeLinked.Count(); i++)
@@ -2453,18 +2454,18 @@ void CAtlaParser::SetShaftLinks()
             if (pStruct->Attr & SA_SHAFT  )
             {
                 pLandDest = GetLand((long)value);
-                if (pLandDest && pStruct->Description.FindSubStr("links")<0)
+                if (pLandDest && FindSubStr(pStruct->Description, "links")<0)
                 {
                     ComposeLandStrCoord(pLandDest, S);
-                    if ('.' ==  pStruct->Description.GetData()[ pStruct->Description.GetLength()-1])
-                         pStruct->Description.DelCh( pStruct->Description.GetLength()-1);
+                    if ('.' ==  pStruct->Description.c_str()[ pStruct->Description.size()-1])
+                         DelCh(pStruct->Description,  pStruct->Description.size()-1);
 
-                    p = strrchr( pStruct->Description.GetData(), '\n');
-                    n = p ? ( pStruct->Description.GetData()-p) : 0;
+                    p = strrchr( pStruct->Description.c_str(), '\n');
+                    n = p ? ( pStruct->Description.c_str()-p) : 0;
 
-                    T.Empty();
+                    T.clear();
                     T << "; links to (" << S << ").";
-                    if (n+T.GetLength() > 64)
+                    if (n+T.size() > 64)
                          pStruct->Description << EOL_SCR << "  ";
                      pStruct->Description << T;
                 }
@@ -2541,7 +2542,7 @@ Unit (1769), behind, leader [LEAD], winged horse [WING], magic
   crossbow [MXBO], combat 1, crossbow 5.
 Unit (2530), Two Beers (23), behind, 10 nomads [NOMA], winged horse
   [WING], horse [HORS].
-Balrog (4423), Creatures (2), balrog [BALR] (Combat 6/6, Attacks 200,
+Balrog (4423), Creatures, balrog [BALR] (Combat 6/6, Attacks 200,
   Hits 200, Tactics 5).
 
 Defenders:
@@ -2559,7 +2560,7 @@ City Guard (4429) loses 0.
 
 const char * CAtlaParser::AnalyzeBattle_ParseUnit(const char * src, CUnit *& pUnit, BOOL & InFrontLine)
 {
-    CStr         Item, S, N1, S1, S2;
+    std::string         Item, S, N1, S1, S2;
     char         ch, ch1;
     const char * p;
     long         n;
@@ -2569,16 +2570,16 @@ const char * CAtlaParser::AnalyzeBattle_ParseUnit(const char * src, CUnit *& pUn
 
     while (src && *src)
     {
-        src = Item.GetToken(src, ",.(", ch, TRIM_ALL );
-        if (Item.IsEmpty())
+        src = GetToken(Item, src, ",.(", ch, TRIM_ALL );
+        if (Item.empty())
             return src;
         if (!pUnit)
             pUnit = new CUnit;
         if ('('==ch)
         {
             // It is unit id, faction id or balrog. We do not give a shit about what exactly!
-            src = S.GetToken(src, ')', TRIM_ALL);
-            src = S.GetToken(src, ",.", ch, TRIM_ALL );
+            src = GetToken(S, src, ')', TRIM_ALL);
+            src = GetToken(S, src, ",.", ch, TRIM_ALL );
         }
 
         // now it can be one of the following which we are interested in:
@@ -2586,44 +2587,44 @@ const char * CAtlaParser::AnalyzeBattle_ParseUnit(const char * src, CUnit *& pUn
         //    leader [LEAD]
         //    4 leaders [LEAD]
         //    crossbow 5
-        if (0==stricmp(Item.GetData(), "behind"))
+        if (0==stricmp(Item.c_str(), "behind"))
             InFrontLine = FALSE;
         else
         {
-            p = Item.GetData();
-            p = N1.GetToken(p, " \n", ch1, TRIM_ALL);
-            p = S1.GetToken(p, '[', TRIM_ALL);
-            p = S2.GetToken(p, ']', TRIM_ALL);
+            p = Item.c_str();
+            p = GetToken(N1, p, " \n", ch1, TRIM_ALL);
+            p = GetToken(S1, p, '[', TRIM_ALL);
+            p = GetToken(S2, p, ']', TRIM_ALL);
 
-            if (!S2.IsEmpty())  // it is item
+            if (!S2.empty())  // it is item
             {
                 n = 1;
-                if (N1.IsInteger())
-                    n = atol(N1.GetData());
-                SetUnitProperty(pUnit, S2.GetData(), eLong, (void*)n, eBoth);
+                if (IsInteger(N1))
+                    n = atol(N1.c_str());
+                SetUnitProperty(pUnit, S2.c_str(), eLong, (void*)n, eBoth);
             }
             else     // it is skill
             {
-                S1.Empty();
-                N1.Empty();
-                p = Item.GetData();
+                S1.clear();
+                N1.clear();
+                p = Item.c_str();
                 while (p && *p)
                 {
-                    p = N1.GetToken(p, " \n", ch1, TRIM_ALL);
+                    p = GetToken(N1, p, " \n", ch1, TRIM_ALL);
                     if (p && *p)
                     {
-                        if (!S1.IsEmpty())
+                        if (!S1.empty())
                             S1 << ' ';
                         S1 << N1;
                     }
                 }
 
-                if (N1.IsInteger() && !S1.IsEmpty())
+                if (IsInteger(N1) && !S1.empty())
                 {
-                    S2 = gpDataHelper->ResolveAlias(S1.GetData()); 
+                    S2 = gpDataHelper->ResolveAlias(S1.c_str()); 
                     S2 << PRP_SKILL_POSTFIX; // That is a skill!
-                    n = atol(N1.GetData());
-                    SetUnitProperty(pUnit, S2.GetData(), eLong, (void*)n, eBoth);
+                    n = atol(N1.c_str());
+                    SetUnitProperty(pUnit, S2.c_str(), eLong, (void*)n, eBoth);
                 }
             }
         }
@@ -2637,9 +2638,9 @@ const char * CAtlaParser::AnalyzeBattle_ParseUnit(const char * src, CUnit *& pUn
 
 //----------------------------------------------------------------------
 
-void CAtlaParser::AnalyzeBattle_SummarizeUnits(CBaseColl & Units, CStr & Details)
+void CAtlaParser::AnalyzeBattle_SummarizeUnits(CBaseColl & Units, std::string & Details)
 {
-    CStr            propname;
+    std::string            propname;
     int             i, propidx;
     CUnit         * pUnit;
     CBaseObject     Faction;
@@ -2656,37 +2657,37 @@ void CAtlaParser::AnalyzeBattle_SummarizeUnits(CBaseColl & Units, CStr & Details
         for (const auto& propnameStr : m_UnitPropertyNames)
         {
             propname = propnameStr.c_str();
-            if (!pUnit->GetProperty(propname.GetData(), type, value, eOriginal) || eLong!=type )
+            if (!pUnit->GetProperty(propname.c_str(), type, value, eOriginal) || eLong!=type )
                 continue;
-            if (propname.FindSubStrR(PRP_SKILL_POSTFIX) == propname.GetLength()-skilllen)
+            if (FindSubStrR(propname, PRP_SKILL_POSTFIX) == propname.size()-skilllen)
             {
                 // it is a skill
                 propname << (long)value;
                 if (!pUnit->GetProperty(PRP_MEN, type, value, eOriginal) || eLong!=type )
                     continue;
             }
-            if (!Faction.GetProperty(propname.GetData(), type, valuetot, eNormal))
+            if (!Faction.GetProperty(propname.c_str(), type, valuetot, eNormal))
                 valuetot = (void*)0;
 
             if (-1==(long)valuetot || 0x7fffffff - (long)value < (long)valuetot )
                 valuetot = (void*)(long)-1; // overflow protection
             else
                 valuetot = (void*)((long)valuetot + (long)value);
-            Faction.SetProperty(propname.GetData(), eLong, valuetot, eNormal);
-            if (propname.GetLength() > maxproplen)
-                maxproplen = propname.GetLength();
+            Faction.SetProperty(propname.c_str(), eLong, valuetot, eNormal);
+            if (propname.size() > maxproplen)
+                maxproplen = propname.size();
         }
     }
 
     propidx  = 0;
     propname = Faction.GetPropertyName(propidx);
-    while (!propname.IsEmpty())
+    while (!propname.empty())
     {
-        if (Faction.GetProperty(propname.GetData(), type, value, eNormal) &&
+        if (Faction.GetProperty(propname.c_str(), type, value, eNormal) &&
             (eLong==type) )
         {
-            while (propname.GetLength() < maxproplen)
-                propname.AddCh(' ');
+            while (propname.size() < maxproplen)
+                AddCh(propname, ' ');
             Details << "   " << propname << "  " << (long)value << EOL_SCR;
         }
 
@@ -2699,12 +2700,12 @@ void CAtlaParser::AnalyzeBattle_SummarizeUnits(CBaseColl & Units, CStr & Details
 
 //----------------------------------------------------------------------
 
-void CAtlaParser::AnalyzeBattle_OneSide(const char * src, CStr & Details)
+void CAtlaParser::AnalyzeBattle_OneSide(const char * src, std::string & Details)
 {
-    CBaseColl   Frontline(64), Backline(64);
+    CBaseColl   Frontline(64), Backline;
     CUnit     * pUnit;
     BOOL        InFrontLine;
-    CStr        S1(64), S2(64);
+    std::string S1, S2;
 
     while (src && *src)
     {
@@ -2729,26 +2730,26 @@ void CAtlaParser::AnalyzeBattle_OneSide(const char * src, CStr & Details)
 
 //----------------------------------------------------------------------
 
-void CAtlaParser::AnalyzeBattle(const char * src, CStr & Details)
+void CAtlaParser::AnalyzeBattle(const char * src, std::string & Details)
 {
-    CStr         Line(64), Attackers(64), Defenders(64);
-    CStr         S1, N1, S2;
+    std::string Line, Attackers, Defenders;
+    std::string         S1, N1, S2;
     const char * p;
 
-    Details.Empty();
+    Details.clear();
 
     // skip start
     while (src && *src)
     {
-        src = Line.GetToken(src, '\n', TRIM_ALL);
-        if (0==strnicmp(Line.GetData(), HDR_ATTACKERS, sizeof(HDR_ATTACKERS)-1))
+        src = GetToken(Line, src, '\n', TRIM_ALL);
+        if (0==strnicmp(Line.c_str(), HDR_ATTACKERS, sizeof(HDR_ATTACKERS)-1))
             break;
     }
     // read attackers
     while (src && *src)
     {
-        src = Line.GetToken(src, '\n', TRIM_ALL);
-        if (0==strnicmp(Line.GetData(), HDR_DEFENDERS, sizeof(HDR_ATTACKERS)-1))
+        src = GetToken(Line, src, '\n', TRIM_ALL);
+        if (0==strnicmp(Line.c_str(), HDR_DEFENDERS, sizeof(HDR_ATTACKERS)-1))
             break;
         Attackers << Line << EOL_SCR;
     }
@@ -2756,21 +2757,21 @@ void CAtlaParser::AnalyzeBattle(const char * src, CStr & Details)
     // read defenders
     while (src && *src)
     {
-        src = Line.GetToken(src, '\n', TRIM_ALL);
+        src = GetToken(Line, src, '\n', TRIM_ALL);
 
         // Unit (3732) gets a free round of attacks.
-        p = Line.GetData();
-        p = S1.GetToken(p, '(', TRIM_ALL);
-        p = N1.GetToken(p, ')', TRIM_ALL);
-        p = S2.GetToken(p, '.', TRIM_ALL);
-        if (!S1.IsEmpty() && N1.IsInteger() && 0==stricmp(S2.GetData(), "gets a free round of attacks"))
+        p = Line.c_str();
+        p = GetToken(S1, p, '(', TRIM_ALL);
+        p = GetToken(N1, p, ')', TRIM_ALL);
+        p = GetToken(S2, p, '.', TRIM_ALL);
+        if (!S1.empty() && IsInteger(N1) && 0==stricmp(S2.c_str(), "gets a free round of attacks"))
             break;
 
         //Round 1:
-        p = Line.GetData();
-        p = S1.GetToken(p, ' ', TRIM_ALL);
-        p = N1.GetToken(p, ':', TRIM_ALL);
-        if (0==stricmp(S1.GetData(), "Round") && N1.IsInteger())
+        p = Line.c_str();
+        p = GetToken(S1, p, ' ', TRIM_ALL);
+        p = GetToken(N1, p, ':', TRIM_ALL);
+        if (0==stricmp(S1.c_str(), "Round") && IsInteger(N1))
             break;
 
         Defenders << Line << EOL_SCR;
@@ -2779,81 +2780,81 @@ void CAtlaParser::AnalyzeBattle(const char * src, CStr & Details)
     Details << EOL_SCR << EOL_SCR << "----------------------------------------------" 
             << EOL_SCR << "Statistics for the battle:" << EOL_SCR << EOL_SCR;
     Details << HDR_ATTACKERS << EOL_SCR;
-    AnalyzeBattle_OneSide(Attackers.GetData(), Details);
+    AnalyzeBattle_OneSide(Attackers.c_str(), Details);
 
     Details << EOL_SCR;
     Details << HDR_DEFENDERS << EOL_SCR;
-    AnalyzeBattle_OneSide(Defenders.GetData(), Details);
+    AnalyzeBattle_OneSide(Defenders.c_str(), Details);
 }
 
 //----------------------------------------------------------------------
 
-void CAtlaParser::StoreBattle(CStr & Source)
+void CAtlaParser::StoreBattle(std::string & Source)
 {
-    CStr          S1, S2, S3;
-    CStr          N1, N2, N3;
+    std::string          S1, S2, S3;
+    std::string          N1, N2, N3;
     CBattle     * pBattle;
     const char  * p;
     int           i;
     BOOL          Ok = FALSE;
     BOOL          RegularBattle = FALSE;
 
-    Source.TrimRight(TRIM_ALL);
-    if (Source.IsEmpty())
+    TrimRight(Source, TRIM_ALL);
+    if (Source.empty())
         return;
-    //Source.Normalize();
+    //Normalize(Source);
 
     // Captain (15166) is assassinated in forest (83,129) in Imyld!
-    p = Source.GetData();
-    p = SkipSpaces(N1.GetToken(p, '(', TRIM_ALL));
-    p = SkipSpaces(N1.GetToken(p, ')', TRIM_ALL));
-    p = SkipSpaces(S1.GetToken(p, ' ', TRIM_ALL));
-    p = SkipSpaces(S2.GetToken(p, ' ', TRIM_ALL));
+    p = Source.c_str();
+    p = SkipSpaces(GetToken(N1, p, '(', TRIM_ALL));
+    p = SkipSpaces(GetToken(N1, p, ')', TRIM_ALL));
+    p = SkipSpaces(GetToken(S1, p, ' ', TRIM_ALL));
+    p = SkipSpaces(GetToken(S2, p, ' ', TRIM_ALL));
 
-    if ( IsInteger(N1.GetData()) &&
-         0 == stricmp("is"          , S1.GetData()) &&
-         0 == stricmp("assassinated", S2.GetData())
+    if ( IsInteger(N1.c_str()) &&
+         0 == stricmp("is"          , S1.c_str()) &&
+         0 == stricmp("assassinated", S2.c_str())
        )
     {
-        p  = S3.GetToken(p, '(', TRIM_ALL);
-        p  = N3.GetToken(p, ',', TRIM_ALL);
+        p  = GetToken(S3, p, '(', TRIM_ALL);
+        p  = GetToken(N3, p, ',', TRIM_ALL);
         Ok = TRUE;
     }
     else
     {
         //Xbowmen (591) attacks City Guard (24) in swamp (13,33) in Salen!
-        p  = Source.GetData();
-        p  = S1.GetToken(p, '(', TRIM_ALL);
-        p  = N1.GetToken(p, ')', TRIM_ALL);
-        p  = S2.GetToken(p, '(', TRIM_ALL);
-        p  = N2.GetToken(p, ')', TRIM_ALL);
-        p  = S3.GetToken(p, '(', TRIM_ALL);
-        p  = N3.GetToken(p, ',', TRIM_ALL);
-        Ok = (  IsInteger(N1.GetData()) &&
-                IsInteger(N2.GetData()) &&
-                IsInteger(N3.GetData()) &&
-                (0==strnicmp(S3.GetData(), "in", 2)) );
+        p  = Source.c_str();
+        p  = GetToken(S1, p, '(', TRIM_ALL);
+        p  = GetToken(N1, p, ')', TRIM_ALL);
+        p  = GetToken(S2, p, '(', TRIM_ALL);
+        p  = GetToken(N2, p, ')', TRIM_ALL);
+        p  = GetToken(S3, p, '(', TRIM_ALL);
+        p  = GetToken(N3, p, ',', TRIM_ALL);
+        Ok = (  IsInteger(N1.c_str()) &&
+                IsInteger(N2.c_str()) &&
+                IsInteger(N3.c_str()) &&
+                (0==strnicmp(S3.c_str(), "in", 2)) );
         RegularBattle = TRUE;
     }
 
     if (Ok)
     {
-        p = S3.GetToken(p, ')', TRIM_ALL);
+        p = GetToken(S3, p, ')', TRIM_ALL);
         N3 << "," << S3;
-        N3.Normalize();
+        Normalize(N3);
 
-        m_BattleLandStrs.insert(N3.GetData());
+        m_BattleLandStrs.insert(N3.c_str());
 
         pBattle              = new CBattle;
         pBattle->LandStrId   = N3;
         pBattle->Description = Source;
-        pBattle->Name.SetStr(Source.GetData(), p-Source.GetData());
-        pBattle->Name.Normalize();
+        SetStr(pBattle->Name, Source.c_str(), p-Source.c_str());
+        Normalize(pBattle->Name);
 
         if (RegularBattle && atol(gpDataHelper->GetConfString(SZ_SECT_COMMON, SZ_KEY_BATTLE_STATISTICS)))
         {
-            CStr Details(64);
-            AnalyzeBattle(Source.GetData(), Details);
+            std::string Details;
+            AnalyzeBattle(Source.c_str(), Details);
             pBattle->Description << EOL_SCR <<  Details;
         }
 
@@ -2864,7 +2865,7 @@ void CAtlaParser::StoreBattle(CStr & Source)
         for (i=0; i<m_Battles.Count(); i++)
         {
             CBattle * pExisting = (CBattle*)m_Battles.At(i);
-            if (0==stricmp(pBattle->Name.GetData(), pExisting->Name.GetData()))
+            if (0==stricmp(pBattle->Name.c_str(), pExisting->Name.c_str()))
             {
                 delete pBattle;
                 pBattle = NULL;
@@ -2882,61 +2883,61 @@ void CAtlaParser::StoreBattle(CStr & Source)
 
 int CAtlaParser::ParseBattles()
 {
-    CStr         CurLine(64);
-    CStr         Battle(128);
-    CStr         Block1(64), Block2(64);
+    std::string CurLine;
+    std::string Battle;
+    std::string Block1, Block2;
     const char * p;
     int          i;
-    CStr         S1, S2, N1;
+    std::string         S1, S2, N1;
 
     while (ReadNextLine(CurLine))
     {
-        CurLine.TrimRight(TRIM_ALL);
+        TrimRight(CurLine, TRIM_ALL);
 
-        if (CurLine.IsEmpty())
+        if (CurLine.empty())
         {
             // Captain (15166) is assassinated in forest (83,129) in Imyld!
-            p = SkipSpaces(Block1.GetData());
-            p = SkipSpaces(N1.GetToken(p, '(', TRIM_ALL));
-            p = SkipSpaces(N1.GetToken(p, ')', TRIM_ALL));
-            p = SkipSpaces(S1.GetToken(p, ' ', TRIM_ALL));
-            p = SkipSpaces(S2.GetToken(p, ' ', TRIM_ALL));
+            p = SkipSpaces(Block1.c_str());
+            p = SkipSpaces(GetToken(N1, p, '(', TRIM_ALL));
+            p = SkipSpaces(GetToken(N1, p, ')', TRIM_ALL));
+            p = SkipSpaces(GetToken(S1, p, ' ', TRIM_ALL));
+            p = SkipSpaces(GetToken(S2, p, ' ', TRIM_ALL));
 
 
-            if (IsInteger(N1.GetData()) &&
-                0 == stricmp("is"          , S1.GetData()) &&
-                0 == stricmp("assassinated", S2.GetData())
+            if (IsInteger(N1.c_str()) &&
+                0 == stricmp("is"          , S1.c_str()) &&
+                0 == stricmp("assassinated", S2.c_str())
                 )
             {
                 // It is an assassination
                 Battle << Block2 << EOL_SCR;
                 StoreBattle(Battle);
-                Battle.Empty();
+                Battle.clear();
                 Block2 = Block1;
-                Block1.Empty();
+                Block1.clear();
             }
             else
             {
                 Battle << Block2 << EOL_SCR;
                 Block2 = Block1;
-                Block1.Empty();
+                Block1.clear();
             }
         }
         else
         {
-            if (0==strnicmp(CurLine.GetData(), HDR_ATTACKERS, sizeof(HDR_ATTACKERS)-1))
+            if (0==strnicmp(CurLine.c_str(), HDR_ATTACKERS, sizeof(HDR_ATTACKERS)-1))
             {
                 // Ho-ho! New battle starting!  Finish the old one first.
                 StoreBattle(Battle);
-                Battle.Empty();
+                Battle.clear();
                 Battle << Block2 << EOL_SCR;
                 Block2 = Block1;
-                Block1.Empty();
+                Block1.clear();
             }
             else
             {
                 // Is the battle list over yet?
-                p = SkipSpaces(CurLine.GetData());
+                p = SkipSpaces(CurLine.c_str());
                 for (i=0; i<(int)sizeof(BattleEndHeader)/(int)sizeof(const char *); i++)
                     if (0==strnicmp(p, BattleEndHeader[i], BattleEndHeaderLen[i] ))
                     {
@@ -2944,7 +2945,7 @@ int CAtlaParser::ParseBattles()
                         PutLineBack(CurLine);
                         Battle << Block2 << Block1 << EOL_SCR;
                         StoreBattle(Battle);
-                        Battle.Empty();
+                        Battle.clear();
                         return 0;
                     }
             }
@@ -2974,50 +2975,50 @@ int CAtlaParser::ParseBattles()
 
 int CAtlaParser::ParseSkills()
 {
-    CStr             CurLine(64);
+    std::string CurLine;
 
-    CStr             OneSkill(128);
-    CStr             S;
+    std::string OneSkill;
+    std::string             S;
     const char     * p;
     CShortNamedObj * pSkill;
 
     while (ReadNextLine(CurLine))
     {
-        CurLine.TrimRight(TRIM_ALL);
-        if (CurLine.IsEmpty())
+        TrimRight(CurLine, TRIM_ALL);
+        if (CurLine.empty())
         {
-            if (!OneSkill.IsEmpty())
+            if (!OneSkill.empty())
             {
                 pSkill = new CShortNamedObj;
 
-                p = OneSkill.GetData();
-                p = S.GetToken(p, '[');     pSkill->Name        = S;
-                p = S.GetToken(p, ']');     pSkill->ShortName   = S;
-                p = S.GetToken(p, ':');     pSkill->Level       = atol(S.GetData());
+                p = OneSkill.c_str();
+                p = GetToken(S, p, '[');     pSkill->Name        = S;
+                p = GetToken(S, p, ']');     pSkill->ShortName   = S;
+                p = GetToken(S, p, ':');     pSkill->Level       = atol(S.c_str());
 
                 pSkill->Description = OneSkill;
 
-                pSkill->Name.GetToken(OneSkill.GetData(), ':');
+                GetToken(pSkill->Name, OneSkill.c_str(), ':');
 
                 m_Skills.Insert(pSkill);
-                OneSkill.Empty();
+                OneSkill.clear();
             }
         }
         else
         {
             // check for invalid format in the first line
-            if (OneSkill.IsEmpty())
+            if (OneSkill.empty())
             {
-                p = S.GetToken(CurLine.GetData(), '[');
+                p = GetToken(S, CurLine.c_str(), '[');
                 if (!p)
                     break;
-                p = S.GetToken(p, ']');
+                p = GetToken(S, p, ']');
                 if (!p)
                     break;
-                p = S.GetToken(p, ':');
+                p = GetToken(S, p, ':');
                 if (!p)
                     break;
-                if (atol(S.GetData()) <= 0)
+                if (atol(S.c_str()) <= 0)
                     break;
             }
 
@@ -3042,47 +3043,47 @@ int CAtlaParser::ParseSkills()
 
 int CAtlaParser::ParseItems()
 {
-    CStr             CurLine(64);
-    CStr             OneItem(128);
-    CStr             S;
+    std::string CurLine;
+    std::string OneItem;
+    std::string             S;
     const char     * p;
     CShortNamedObj * pItem;
 
     while (ReadNextLine(CurLine))
     {
-        CurLine.TrimRight(TRIM_ALL);
-        if (CurLine.IsEmpty())
+        TrimRight(CurLine, TRIM_ALL);
+        if (CurLine.empty())
         {
-            if (!OneItem.IsEmpty())
+            if (!OneItem.empty())
             {
                 pItem = new CShortNamedObj;
 
-                p = OneItem.GetData();
-                p = S.GetToken(p, '[');     pItem->Name        = S;
-                p = S.GetToken(p, ']');     pItem->ShortName   = S;
+                p = OneItem.c_str();
+                p = GetToken(S, p, '[');     pItem->Name        = S;
+                p = GetToken(S, p, ']');     pItem->ShortName   = S;
 
                 pItem->Description = OneItem;
-                pItem->Name.GetToken(OneItem.GetData(), ',');
+                GetToken(pItem->Name, OneItem.c_str(), ',');
 
                 m_Items.Insert(pItem);
-                OneItem.Empty();
+                OneItem.clear();
             }
         }
         else
         {
             // check for invalid format in the first line
-            if (OneItem.IsEmpty())
+            if (OneItem.empty())
             {
-                p = S.GetToken(CurLine.GetData(), '[');
+                p = GetToken(S, CurLine.c_str(), '[');
                 if (!p)
                     break;
-                p = S.GetToken(p, ']');
+                p = GetToken(S, p, ']');
                 if (!p)
                     break;
-                p = S.GetToken(p, ',');
+                p = GetToken(S, p, ',');
                 if (!p)
                     break;
-                if (!S.IsEmpty())
+                if (!S.empty())
                     break;
             }
 
@@ -3110,45 +3111,45 @@ int CAtlaParser::ParseItems()
 
 int CAtlaParser::ParseObjects()
 {
-    CStr             CurLine(64);
-    CStr             OneItem(128);
-    CStr             S;
+    std::string CurLine;
+    std::string OneItem;
+    std::string             S;
     const char     * p;
     CShortNamedObj * pItem;
     char             ch;
 
     while (ReadNextLine(CurLine))
     {
-        CurLine.TrimRight(TRIM_ALL);
-        if (CurLine.IsEmpty())
+        TrimRight(CurLine, TRIM_ALL);
+        if (CurLine.empty())
         {
-            if (!OneItem.IsEmpty())
+            if (!OneItem.empty())
             {
                 pItem = new CShortNamedObj;
 
-                p = OneItem.GetData();
-                p = S.GetToken(p, ':');
+                p = OneItem.c_str();
+                p = GetToken(S, p, ':');
                 pItem->Name        = S;
                 pItem->ShortName   = S;
                 pItem->Description = OneItem;
 
                 m_Objects.Insert(pItem);
-                OneItem.Empty();
+                OneItem.clear();
             }
         }
         else
         {
             // check for invalid format in the first line
-            if (OneItem.IsEmpty())
+            if (OneItem.empty())
             {
-                p = SkipSpaces(S.GetToken(CurLine.GetData(), ':'));
+                p = SkipSpaces(GetToken(S, CurLine.c_str(), ':'));
                 if (!p)
                     break;
-                p = SkipSpaces(S.GetToken(p, " \t", ch));
-                if (0!=stricmp(S.GetData(), "This"))
+                p = SkipSpaces(GetToken(S, p, " \t", ch));
+                if (0!=stricmp(S.c_str(), "This"))
                     break;
-                p = SkipSpaces(S.GetToken(p, " \t", ch));
-                if (0!=stricmp(S.GetData(), "is"))
+                p = SkipSpaces(GetToken(S, p, " \t", ch));
+                if (0!=stricmp(S.c_str(), "is"))
                     break;
             }
 
@@ -3167,15 +3168,15 @@ int CAtlaParser::ParseObjects()
 int CAtlaParser::ParseLines(BOOL Join)
 {
     int        err      = ERR_OK;
-    CStr       CurLine(64);
-    CStr       sErr;
+    std::string CurLine;
+    std::string       sErr;
     const char * p;
 
     while (ReadNextLine(CurLine))
     {
         // recognize header line and then call specific handler
 
-        p = SkipSpaces(CurLine.GetData());
+        p = SkipSpaces(CurLine.c_str());
 
         if      (0==strnicmp(p, HDR_FACTION           , sizeof(HDR_FACTION)-1 ))
             err = ParseFactionInfo(TRUE, Join);
@@ -3229,14 +3230,14 @@ int CAtlaParser::ParseLines(BOOL Join)
 
         if (ERR_OK!=err)
         {
-            sErr.Empty();
+            sErr.clear();
             sErr << "Error parsing report related to line " << (long)m_nCurLine  << EOL_SCR 
                  << "\"" << CurLine << "\"" << "." << EOL_SCR;
                  
             if (ERR_INV_TURN==err) 
                 sErr << EOL_SCR << "Joined reports must be for the same turn. This is intended for joining your ally reports.";
                  
-            LOG_ERR(ERR_PARSE, sErr.GetData());
+            LOG_ERR(ERR_PARSE, sErr.c_str());
             
             if (ERR_INV_TURN==err) 
                 break;
@@ -3257,7 +3258,7 @@ int CAtlaParser::ParseRep(const char * FNameIn, BOOL Join, BOOL IsHistory)
     m_JoiningRep = Join;
     m_IsHistory  = IsHistory;
     m_CrntFactionId = 0;
-    m_CrntFactionPwd.Empty();
+    m_CrntFactionPwd.clear();
     m_IsHistory  = IsHistory;
     m_nCurLine   = 0;
 
@@ -3311,7 +3312,7 @@ void CAtlaParser::SetExitFlagsAndTropicZone()
 
         //tropic zone
         if (!m_IsHistory && m_CurYearMon>0 && pPlane->TropicZoneMin <= pPlane->TropicZoneMax)
-            gpDataHelper->SetTropicZone(pPlane->Name.GetData(), pPlane->TropicZoneMin, pPlane->TropicZoneMax);
+            gpDataHelper->SetTropicZone(pPlane->Name.c_str(), pPlane->TropicZoneMin, pPlane->TropicZoneMax);
 
         // exit flags
         SetAllExits = ( (pPlane->ExitsCount<2) && (pPlane->Lands.Count()>2) );
@@ -3357,16 +3358,16 @@ void CAtlaParser::SetExitFlagsAndTropicZone()
 //----------------------------------------------------------------------
 
 
-void AddTabbed(CStr & Dest, const char * Src, int Offs)
+void AddTabbed(std::string & Dest, const char * Src, int Offs)
 {
 #define SPC "  "
     int  i;
     int  n;
-    CStr Spc;
+    std::string Spc;
 
     for (i=0; i<Offs; i++)
         Spc << SPC;
-    n = Spc.GetLength();
+    n = Spc.size();
     Dest << Spc;
 
     while (Src && *Src)
@@ -3374,7 +3375,7 @@ void AddTabbed(CStr & Dest, const char * Src, int Offs)
         if ( (n>=64) && (' '==*Src) )
         {
             Dest << EOL_SCR << Spc << SPC;
-            n = Spc.GetLength() + sizeof(SPC) - 1;
+            n = Spc.size() + sizeof(SPC) - 1;
         }
         Dest << *Src;
         Src++;
@@ -3452,12 +3453,12 @@ CLand * CAtlaParser::GetLand(long LandId)
 
 //-------------------------------------------------------------
 
-void CAtlaParser::ComposeLandStrCoord(CLand * pLand, CStr & LandStr)
+void CAtlaParser::ComposeLandStrCoord(CLand * pLand, std::string & LandStr)
 {
     int      x, y, z;
     CPlane * pPlane;
 
-    LandStr.Empty();
+    LandStr.clear();
     if (!pLand)
         return;
 
@@ -3467,31 +3468,31 @@ void CAtlaParser::ComposeLandStrCoord(CLand * pLand, CStr & LandStr)
         return;
 
     LandStr << (long)x << "," << (long)y;
-    if (0!=SafeCmp(pPlane->Name.GetData(), DEFAULT_PLANE))
-        LandStr << "," << pPlane->Name.GetData();
+    if (0!=SafeCmp(pPlane->Name.c_str(), DEFAULT_PLANE))
+        LandStr << "," << pPlane->Name.c_str();
 }
 
 //-------------------------------------------------------------
 
 BOOL CAtlaParser::LandStrCoordToId(const char * landcoords, long & id)
 {
-    CStr                 S;
+    std::string                 S;
     long                 x, y;
     CPlane             * pPlane;
     CBaseObject          Dummy;
     int                  i;
 
     // xxx,yyy[,somewhere]
-    landcoords = S.GetToken(landcoords, ',');
-    if (!IsInteger(S.GetData()))
+    landcoords = GetToken(S, landcoords, ',');
+    if (!IsInteger(S.c_str()))
         return FALSE;
-    x = atol(S.GetData());
+    x = atol(S.c_str());
 
     // yyy[,somewhere]
-    landcoords = S.GetToken(landcoords, ',');
-    if (!IsInteger(S.GetData()))
+    landcoords = GetToken(S, landcoords, ',');
+    if (!IsInteger(S.c_str()))
         return FALSE;
-    y = atol(S.GetData());
+    y = atol(S.c_str());
 
 
     if ( (NULL==landcoords) || (0==*landcoords) )
@@ -3525,29 +3526,29 @@ CLand * CAtlaParser::GetLand(const char * landcoords) //  "48,52[,somewhere]"
 //----------------------------------------------------------------------
 
 #define CHECK_REP_LEN        \
-if (S.GetLength() - n > 65)  \
+if (S.size() - n > 65)  \
 {                            \
     S << eol << "    ";      \
-    n = S.GetLength()-4;     \
+    n = S.size()-4;     \
 }                            \
 
 #define APPEND_SPACE_WRAP    \
-if (S.GetLength() - n > 65)  \
+if (S.size() - n > 65)  \
 {                            \
     S << eol << "    ";      \
-    n = S.GetLength()-4;     \
+    n = S.size()-4;     \
 }                            \
 else                         \
     S << " ";                \
 
 
-void CAtlaParser::ComposeProductsLine(CLand * pLand, const char * eol, CStr & S)
+void CAtlaParser::ComposeProductsLine(CLand * pLand, const char * eol, std::string & S)
 {
-    CStr       Line(64);
+    std::string Line;
     int        i;
 
     CProduct * pProd;
-    int        n = S.GetLength();
+    int        n = S.size();
 
 
     if (pLand->Products.Count() > 0)
@@ -3589,8 +3590,8 @@ BOOL CAtlaParser::SaveOneHex(CFileWriter & Dest, CLand * pLand, CPlane * pPlane,
     int                x, y, z, x0, y0;
     int                g;
 
-    CStr               sLine (128);
-    CStr               sExits(128);
+    std::string sLine;
+    std::string sExits;
     CStruct          * pStruct;
     const char       * p;
     BOOL               IsLinked;
@@ -3602,7 +3603,7 @@ BOOL CAtlaParser::SaveOneHex(CFileWriter & Dest, CLand * pLand, CPlane * pPlane,
     CStruct          * pEdge;
 
     IsLinked = FALSE;
-    sExits.Empty();
+    sExits.clear();
     LandIdToCoord(pLand->Id, x0, y0, z);
     for (i=0; i<6; i++)
     {
@@ -3624,7 +3625,7 @@ BOOL CAtlaParser::SaveOneHex(CFileWriter & Dest, CLand * pLand, CPlane * pPlane,
             pLandExit = GetLand(x, y, z, TRUE);
             if ( pLandExit && (pLandExit->ExitBits&EntryFlags[i]))
             {
-                CStr sCoord;
+                std::string sCoord;
 
                 if (pLandExit->Flags&LAND_VISITED)
                     IsLinked = TRUE;
@@ -3636,7 +3637,7 @@ BOOL CAtlaParser::SaveOneHex(CFileWriter & Dest, CLand * pLand, CPlane * pPlane,
                 ComposeLandStrCoord(pLandExit, sCoord);
                 sExits << "  " << Directions[i] << " : "
                       << pLandExit->TerrainType << " (" << sCoord << ") in " << pLandExit->Name;
-                if (!pLandExit->CityName.IsEmpty())
+                if (!pLandExit->CityName.empty())
                     sExits << ", contains " << pLandExit->CityName << " [" << pLandExit->CityType << "]";
 
                 // save edge structs
@@ -3656,18 +3657,18 @@ BOOL CAtlaParser::SaveOneHex(CFileWriter & Dest, CLand * pLand, CPlane * pPlane,
         return FALSE;
 
 
-    p = pLand->Description.GetData();
+    p = pLand->Description.c_str();
     while (p)
     {
-        p = sLine.GetToken(p, '\n', TRIM_NONE);
-        sLine.TrimRight(TRIM_ALL);
+        p = GetToken(sLine, p, '\n', TRIM_NONE);
+        TrimRight(sLine, TRIM_ALL);
 
-        if (pOptions->WriteTurnNo > 0 && !TurnNoMarkerWritten && sLine.GetLength() > 20)
+        if (pOptions->WriteTurnNo > 0 && !TurnNoMarkerWritten && sLine.size() > 20)
         {
             BOOL         SkipIt = FALSE;
             const char * p;
 
-            p = sLine.GetData();
+            p = sLine.c_str();
             while (*p)
             {
                 if ('-' != *p)
@@ -3685,21 +3686,21 @@ BOOL CAtlaParser::SaveOneHex(CFileWriter & Dest, CLand * pLand, CPlane * pPlane,
         }
 
         sLine << EOL_FILE;
-        Dest.WriteBuf(sLine.GetData (), sLine.GetLength ());
+        Dest.WriteBuf(sLine.c_str(), sLine.size());
     }
 
-    sLine.Empty();
+    sLine.clear();
 
     if (pOptions->SaveResources)
         ComposeProductsLine(pLand, EOL_FILE, sLine);
 
     sLine << EOL_FILE << "Exits:" << EOL_FILE ;
     sLine << pLand->Exits;
-    sLine.TrimRight(TRIM_ALL);
+    TrimRight(sLine, TRIM_ALL);
     sLine << EOL_FILE << EOL_FILE;
 
-    Dest.WriteBuf(sLine.GetData (), sLine.GetLength());
-    sLine.Empty();
+    Dest.WriteBuf(sLine.c_str(), sLine.size());
+    sLine.clear();
 
     // Units out of structs, not optimized, does not matter
     if (pOptions->SaveUnits)
@@ -3709,7 +3710,7 @@ BOOL CAtlaParser::SaveOneHex(CFileWriter & Dest, CLand * pLand, CPlane * pPlane,
             if (!IS_NEW_UNIT(pUnit) && !pUnit->GetProperty(PRP_STRUCT_ID, type, value, eOriginal) )
             {
                 sLine << pUnit->Description;
-                sLine.TrimRight(TRIM_ALL);
+                TrimRight(sLine, TRIM_ALL);
                 sLine << EOL_FILE;
             }
         }
@@ -3722,8 +3723,8 @@ BOOL CAtlaParser::SaveOneHex(CFileWriter & Dest, CLand * pLand, CPlane * pPlane,
             || pOptions->SaveStructs || pOptions->SaveUnits)
         {
             sLine << EOL_FILE;
-            sLine << pStruct->Description.GetData();
-            sLine.TrimRight(TRIM_ALL);
+            sLine << pStruct->Description.c_str();
+            TrimRight(sLine, TRIM_ALL);
             sLine << EOL_FILE;
 
             // Units inside structs, not optimized, does not matter
@@ -3734,17 +3735,17 @@ BOOL CAtlaParser::SaveOneHex(CFileWriter & Dest, CLand * pLand, CPlane * pPlane,
                     if (!IS_NEW_UNIT(pUnit) && pUnit->GetProperty(PRP_STRUCT_ID, type, value, eOriginal) && eLong==type && (long)value==pStruct->Id)
                     {
                         sLine << pUnit->Description;
-                        sLine.TrimRight(TRIM_ALL);
+                        TrimRight(sLine, TRIM_ALL);
                         sLine << EOL_FILE;
                     }
                 }
-            Dest.WriteBuf(sLine.GetData(), sLine.GetLength());
-            sLine.Empty();
+            Dest.WriteBuf(sLine.c_str(), sLine.size());
+            sLine.clear();
         }
     }
 
     sLine << EOL_FILE << EOL_FILE;
-    Dest.WriteBuf(sLine.GetData (), sLine.GetLength());
+    Dest.WriteBuf(sLine.c_str(), sLine.size());
 
     return TRUE;
 }
@@ -3757,7 +3758,7 @@ int  CAtlaParser::SaveOrders(const char * FNameOut, const char * password, BOOL 
     int           i, n, idx;
     CUnit       * pUnit;
     CFileWriter   Dest;
-    CStr          S(64), S1(64);
+    std::string S, S1;
     int           err = ERR_OK;
     const char  * p;
     long          OldLand = -1;
@@ -3782,7 +3783,7 @@ int  CAtlaParser::SaveOrders(const char * FNameOut, const char * password, BOOL 
 
         // write orders
 
-        S.Empty();
+        S.clear();
         S << "#atlantis " << (long)factid << " \"" << password << '\"' << EOL_FILE << EOL_FILE;
         if (pFaction)
         {
@@ -3795,12 +3796,12 @@ int  CAtlaParser::SaveOrders(const char * FNameOut, const char * password, BOOL 
                 sprintf(buf, "%02ld/%02ld,  %s", m_YearMon%100, m_YearMon/100, asctime(&t));
             S << ORDER_CMNT << pFaction->Name << " orders for " << buf  << EOL_FILE << EOL_FILE;
         }
-        Dest.WriteBuf(S.GetData(), S.GetLength());
+        Dest.WriteBuf(S.c_str(), S.size());
 
         for (i=0; i<Coll.Count(); i++)
         {
             pUnit = (CUnit*)Coll.At(i);
-            if (!pUnit->Orders.IsEmpty() && !IS_NEW_UNIT(pUnit))
+            if (!pUnit->Orders.empty() && !IS_NEW_UNIT(pUnit))
             {
                 // land comment
                 if (decorate && (OldLand!=pUnit->LandId))
@@ -3813,34 +3814,34 @@ int  CAtlaParser::SaveOrders(const char * FNameOut, const char * password, BOOL 
                         if (pPlane->Lands.Search(&DummyLand, idx))
                         {
                             pLand = (CLand*)pPlane->Lands.At(idx);
-                            S1.GetToken(pLand->Description.GetData(), '\n');
-                            S1.TrimRight(TRIM_ALL);
-                            S.Empty();
+                            GetToken(S1, pLand->Description.c_str(), '\n');
+                            TrimRight(S1, TRIM_ALL);
+                            S.clear();
                             S << EOL_FILE << ORDER_CMNT << S1 << EOL_FILE;
-                            Dest.WriteBuf(S.GetData(), S.GetLength());
+                            Dest.WriteBuf(S.c_str(), S.size());
                             break;
                         }
                     }
                 }
 
                 // unit orders
-                S.Empty();
+                S.clear();
                 S << EOL_FILE << "unit " << pUnit->Id << EOL_FILE;
-                Dest.WriteBuf(S.GetData(), S.GetLength());
+                Dest.WriteBuf(S.c_str(), S.size());
 
-                p = pUnit->Orders.GetData();
+                p = pUnit->Orders.c_str();
                 while (p && *p)
                 {
-                    p = S.GetToken(p, '\n', TRIM_NONE);
-                    S.TrimRight(TRIM_ALL);
+                    p = GetToken(S, p, '\n', TRIM_NONE);
+                    TrimRight(S, TRIM_ALL);
                     S << EOL_FILE;
-                    Dest.WriteBuf(S.GetData(), S.GetLength());
+                    Dest.WriteBuf(S.c_str(), S.size());
                 }
             }
         }
-        S.Empty();
+        S.clear();
         S << EOL_FILE << "#end" << EOL_FILE;
-        Dest.WriteBuf(S.GetData(), S.GetLength());
+        Dest.WriteBuf(S.c_str(), S.size());
         Dest.Close();
 
     }
@@ -3896,60 +3897,60 @@ void CAtlaParser::CountMenForTheFaction(int FactionId)
 
 int CAtlaParser::LoadOrders  (CFileReader & F, int FactionId, BOOL GetComments)
 {
-    CStr          Line(64), S(64), No(32);
+    std::string Line, S, No;
     const char  * p;
     CUnit       * pUnit;
     CUnit         Dummy;
     int           idx;
     char          ch;
 
-    m_CrntFactionPwd.Empty();
+    m_CrntFactionPwd.clear();
 
     for (idx=0; idx<m_Units.Count(); idx++)
     {
         pUnit = (CUnit*)m_Units.At(idx);
         if (pUnit->FactionId == FactionId)
-            pUnit->Orders.Empty();
+            pUnit->Orders.clear();
     }
     pUnit = NULL;
 
     while (F.GetNextLine(Line))
     {
-        Line.TrimRight(TRIM_ALL);
-        p = SkipSpaces(Line.GetData());
+        TrimRight(Line, TRIM_ALL);
+        p = SkipSpaces(Line.c_str());
 
         if (0==SafeCmp(p, "#end"))  // that is the end of report
             break;
         if (!p || !*p || (';'==*p && ('*'==*(p+1) || !GetComments)) )
             continue;
 
-        p = S.GetToken(p, " \t", ch, TRIM_ALL);
-        if (0==stricmp(S.GetData(),"unit"))
+        p = GetToken(S, p, " \t", ch, TRIM_ALL);
+        if (0==stricmp(S.c_str(),"unit"))
         {
-            p = No.GetToken(p, " \t", ch);
-            Dummy.Id = atol(No.GetData());
+            p = GetToken(No, p, " \t", ch);
+            Dummy.Id = atol(No.c_str());
             if (m_Units.Search(&Dummy, idx))
                 pUnit = (CUnit*)m_Units.At(idx);
             else
                 pUnit = NULL;
         }
         else
-            if (0==stricmp(S.GetData(),"#atlantis"))
+            if (0==stricmp(S.c_str(),"#atlantis"))
             {
                 // #atlantis NN "password"
-                m_CrntFactionPwd = S.GetToken(p, " \t", ch, TRIM_ALL);
-                if (!m_CrntFactionPwd.IsEmpty() && '\"'==m_CrntFactionPwd.GetData()[0])
+                m_CrntFactionPwd = GetToken(S, p, " \t", ch, TRIM_ALL);
+                if (!m_CrntFactionPwd.empty() && '\"'==m_CrntFactionPwd.c_str()[0])
                 {
-                    m_CrntFactionPwd.DelCh(0);
-                    if (!m_CrntFactionPwd.IsEmpty() && '\"'==m_CrntFactionPwd.GetData()[m_CrntFactionPwd.GetLength()-1])
-                        m_CrntFactionPwd.DelCh(m_CrntFactionPwd.GetLength()-1);
+                    DelCh(m_CrntFactionPwd, 0);
+                    if (!m_CrntFactionPwd.empty() && '\"'==m_CrntFactionPwd.c_str()[m_CrntFactionPwd.size()-1])
+                        DelCh(m_CrntFactionPwd, m_CrntFactionPwd.size()-1);
                 }
             }
             else
                 if (pUnit)
                 {
                     Line << EOL_SCR;
-                    pUnit->Orders.AddStr(Line.GetData(), Line.GetLength());
+                    AddStr(pUnit->Orders, Line.c_str(), Line.size());
                 }
     }
 
@@ -3964,7 +3965,7 @@ int CAtlaParser::LoadOrders  (CFileReader & F, int FactionId, BOOL GetComments)
 int  CAtlaParser::LoadOrders  (const char * FNameIn, int & FactionId)
 {
     CFileReader   F;
-    CStr          Line(64), S(64), No(32);
+    std::string Line, S, No;
     CUnit       * pUnit;
     CUnit         Dummy;
     const char  * p;
@@ -3977,19 +3978,19 @@ int  CAtlaParser::LoadOrders  (const char * FNameIn, int & FactionId)
         FactionId = 0;
         while (F.GetNextLine(Line))
         {
-            Line.TrimRight(TRIM_ALL);
-            p = SkipSpaces(Line.GetData());
+            TrimRight(Line, TRIM_ALL);
+            p = SkipSpaces(Line.c_str());
 
             if (0==SafeCmp(p, "#end"))  // that is the end of report
                 break;
             if (!p || !*p || ';'==*p || '#'==*p)
                 continue;
 
-            p = S.GetToken(p, " \t", ch, TRIM_ALL);
-            if (0==stricmp(S.GetData(),"unit"))
+            p = GetToken(S, p, " \t", ch, TRIM_ALL);
+            if (0==stricmp(S.c_str(),"unit"))
             {
-                p = No.GetToken(p, " \t", ch);
-                Dummy.Id = atol(No.GetData());
+                p = GetToken(No, p, " \t", ch);
+                Dummy.Id = atol(No.c_str());
                 if (m_Units.Search(&Dummy, idx))
                 {
                     pUnit = (CUnit*)m_Units.At(idx);
@@ -4015,22 +4016,22 @@ int  CAtlaParser::LoadOrders  (const char * FNameIn, int & FactionId)
 
 void CAtlaParser::OrderErrFinalize()
 {
-    if (gpDataHelper && !m_sOrderErrors.IsEmpty())
-        gpDataHelper->ReportError(m_sOrderErrors.GetData(), m_sOrderErrors.GetLength(), TRUE);
+    if (gpDataHelper && !m_sOrderErrors.empty())
+        gpDataHelper->ReportError(m_sOrderErrors.c_str(), m_sOrderErrors.size(), TRUE);
 
-    m_sOrderErrors.Empty();
+    m_sOrderErrors.clear();
 }
 
 void CAtlaParser::OrderErr(int Severity, int UnitId, const char * Msg)
 {
     const char * type;
-    CStr         S(32);
+    std::string S;
 
     if (0==Severity)
         type = "Error  ";
     else
         type = "Warning";
-    S.Format("Unit % 5d %s : %s%s", UnitId, type, Msg, EOL_SCR);
+    Format(S, "Unit % 5d %s : %s%s", UnitId, type, Msg, EOL_SCR);
 
     m_sOrderErrors << S;
 }
@@ -4040,7 +4041,7 @@ void CAtlaParser::OrderErr(int Severity, int UnitId, const char * Msg)
 void CAtlaParser::GenericErr(int Severity, const char * Msg)
 {
     const char * type;
-    CStr         S(32);
+    std::string S;
 
     if (!gpDataHelper)
         return;
@@ -4049,9 +4050,9 @@ void CAtlaParser::GenericErr(int Severity, const char * Msg)
         type = "Error  ";
     else
         type = "Warning";
-    S.Format("%s : %s%s", type, Msg, EOL_SCR);
+    Format(S, "%s : %s%s", type, Msg, EOL_SCR);
 
-    gpDataHelper->ReportError(S.GetData(), S.GetLength(), FALSE);
+    gpDataHelper->ReportError(S.c_str(), S.size(), FALSE);
 }
 
 //-------------------------------------------------------------
@@ -4059,7 +4060,7 @@ void CAtlaParser::GenericErr(int Severity, const char * Msg)
 #define GEN_ERR(pUnit, msg)                 \
 {                                           \
     Line << msg;                            \
-    OrderErr(0, pUnit->Id, Line.GetData()); \
+    OrderErr(0, pUnit->Id, Line.c_str()); \
     return Changed;                         \
 }
 
@@ -4073,7 +4074,7 @@ BOOL CAtlaParser::ShareSilver(CUnit * pMainUnit)
     long                mainmoney;
     long                n;
     EValueType          type;
-    CStr                Line(32);
+    std::string Line;
     BOOL                Changed = FALSE;
 
     do
@@ -4126,8 +4127,8 @@ BOOL CAtlaParser::ShareSilver(CUnit * pMainUnit)
             else
                 mainmoney -= n;
 
-            pMainUnit->Orders.TrimRight(TRIM_ALL);
-            if (!pMainUnit->Orders.IsEmpty())
+            TrimRight(pMainUnit->Orders, TRIM_ALL);
+            if (!pMainUnit->Orders.empty())
                 pMainUnit->Orders << EOL_SCR ;
             if (IS_NEW_UNIT(pUnit))
                 pMainUnit->Orders << "GIVE NEW " << (long)REVERSE_NEW_UNIT_ID(pUnit->Id) << " " << n << " SILV";
@@ -4160,7 +4161,7 @@ BOOL CAtlaParser::GenGiveEverything(CUnit * pFrom, const char * To)
     long                amountorg;
     long                x;
     CUnit               Dummy;
-    CStr                S;
+    std::string                S;
     const char        * p;
     long                n1;
 
@@ -4177,21 +4178,21 @@ BOOL CAtlaParser::GenGiveEverything(CUnit * pFrom, const char * To)
         if (!GetTargetUnitId(p, pFrom->FactionId, n1))
         {
             S << "Invalid unit id " << To;
-            OrderErr(0, pFrom->Id, S.GetData());
+            OrderErr(0, pFrom->Id, S.c_str());
             break;
         }
         Dummy.Id = n1;
         if (n1 != 0 && !pLand->Units.Search(&Dummy, i) )
         {
             S << "Can not find unit " << To;
-            OrderErr(0, pFrom->Id, S.GetData());
+            OrderErr(0, pFrom->Id, S.c_str());
             break;
         }
 
         RunLandOrders(pLand); // just in case...
 
-        pFrom->Orders.TrimRight(TRIM_ALL);
-        if (!pFrom->Orders.IsEmpty())
+        TrimRight(pFrom->Orders, TRIM_ALL);
+        if (!pFrom->Orders.empty())
             pFrom->Orders << EOL_SCR ;
 
         no = 0;
@@ -4271,8 +4272,8 @@ BOOL CAtlaParser::GenOrdersTeach(CUnit * pMainUnit)
     int                 idx;
     EValueType          type;
     long                n1, n2;
-    CStr                Line(32);
-    CStr                Skill;
+    std::string Line;
+    std::string                Skill;
     BOOL                Changed  = FALSE;
     BOOL                leader_checked = FALSE;
     const void        * value;
@@ -4298,26 +4299,26 @@ BOOL CAtlaParser::GenOrdersTeach(CUnit * pMainUnit)
         for (idx=0; idx<pLand->UnitsSeq.Count(); idx++)
         {
             pUnit = (CUnit*)pLand->UnitsSeq.At(idx);
-            if (!pUnit->StudyingSkill.IsEmpty())
+            if (!pUnit->StudyingSkill.empty())
             {
                 Skill = pUnit->StudyingSkill;
-                if (!pMainUnit->GetProperty(Skill.GetData(), type, (const void *&)n1, eNormal) )
+                if (!pMainUnit->GetProperty(Skill.c_str(), type, (const void *&)n1, eNormal) )
                     n1 = 0;
-                if (!pUnit->GetProperty(Skill.GetData(), type, (const void *&)n2, eNormal) )
+                if (!pUnit->GetProperty(Skill.c_str(), type, (const void *&)n2, eNormal) )
                     n2 = 0;
 
                 if (n1 <= n2)
                 {
                     // can not teach in the normal game, but try for Arcadia III
 
-                    int  SkillPos = Skill.FindSubStrR(PRP_SKILL_POSTFIX);
+                    int  SkillPos = FindSubStrR(Skill, PRP_SKILL_POSTFIX);
                     if (SkillPos>=0)
-                        Skill.DelSubStr(SkillPos, strlen(PRP_SKILL_POSTFIX));
+                        DelSubStr(Skill, SkillPos, strlen(PRP_SKILL_POSTFIX));
 
                     Skill << PRP_SKILL_STUDY_POSTFIX;
-                    if (!pMainUnit->GetProperty(Skill.GetData(), type, (const void *&)n1, eNormal) )
+                    if (!pMainUnit->GetProperty(Skill.c_str(), type, (const void *&)n1, eNormal) )
                         n1 = 0;
-                    if (!pUnit->GetProperty(Skill.GetData(), type, (const void *&)n2, eNormal) )
+                    if (!pUnit->GetProperty(Skill.c_str(), type, (const void *&)n2, eNormal) )
                         n2 = 0;
                 }
 
@@ -4336,8 +4337,8 @@ BOOL CAtlaParser::GenOrdersTeach(CUnit * pMainUnit)
                     {
                         pMainUnit->Teaching += (double)n2/n1;
 
-                        pMainUnit->Orders.TrimRight(TRIM_ALL);
-                        if (!pMainUnit->Orders.IsEmpty())
+                        TrimRight(pMainUnit->Orders, TRIM_ALL);
+                        if (!pMainUnit->Orders.empty())
                             pMainUnit->Orders << EOL_SCR ;
                         if (IS_NEW_UNIT(pUnit))
                             pMainUnit->Orders << "TEACH " << "NEW " << (long)REVERSE_NEW_UNIT_ID(pUnit->Id);
@@ -4364,7 +4365,7 @@ BOOL CAtlaParser::DiscardJunkItems(CUnit * pUnit, const char * junk)
     CLand             * pLand = NULL;
     EValueType          type;
     long                value;
-    CStr                sJunkItem(32);
+    std::string sJunkItem;
     BOOL                Changed = FALSE;
 
     if (!pUnit || IS_NEW_UNIT(pUnit) || !pUnit->IsOurs )
@@ -4378,12 +4379,12 @@ BOOL CAtlaParser::DiscardJunkItems(CUnit * pUnit, const char * junk)
 
     while (junk && *junk)
     {
-        junk = sJunkItem.GetToken(junk, ',');
-        if (!pUnit->GetProperty(sJunkItem.GetData(), type, (const void *&)value, eNormal) || (eLong!=type))
+        junk = GetToken(sJunkItem, junk, ',');
+        if (!pUnit->GetProperty(sJunkItem.c_str(), type, (const void *&)value, eNormal) || (eLong!=type))
             continue;
 
-        pUnit->Orders.TrimRight(TRIM_ALL);
-        if (!pUnit->Orders.IsEmpty())
+        TrimRight(pUnit->Orders, TRIM_ALL);
+        if (!pUnit->Orders.empty())
             pUnit->Orders << EOL_SCR ;
         pUnit->Orders << "GIVE 0 " << value << " " << sJunkItem;
         Changed = TRUE;
@@ -4422,8 +4423,8 @@ BOOL CAtlaParser::DetectSpies(CUnit * pUnit, long lonum, long hinum, long amount
 
     RunLandOrders(pLand); // just in case...
 
-    pUnit->Orders.TrimRight(TRIM_ALL);
-    if (!pUnit->Orders.IsEmpty())
+    TrimRight(pUnit->Orders, TRIM_ALL);
+    if (!pUnit->Orders.empty())
         pUnit->Orders << EOL_SCR ;
 
     no = lonum;
@@ -4452,33 +4453,33 @@ BOOL CAtlaParser::DetectSpies(CUnit * pUnit, long lonum, long hinum, long amount
 
 //-------------------------------------------------------------
 
-const char * CAtlaParser::ReadPropertyName(const char * src, CStr & Name)
+const char * CAtlaParser::ReadPropertyName(const char * src, std::string & Name)
 {
     char ch;
     int  i;
-    CStr S;
+    std::string S;
 
-    Name.Empty();
-    src = SkipSpaces(S.GetToken(src, " \t;\n", ch, TRIM_ALL)); // SH-EXCPT
+    Name.clear();
+    src = SkipSpaces(GetToken(S, src, " \t;\n", ch, TRIM_ALL)); // SH-EXCPT
 
-    if (!S.IsEmpty())
+    if (!S.empty())
     {
-//        if ('"'==S.GetData()[0])
+//        if ('"'==S.c_str()[0])
 //        {
-//            if ('"'==S.GetData()[S.GetLength()-1])
+//            if ('"'==S.c_str()[S.size()-1])
 //            {
                 // remove quotes, replace spaces with underscores
 
-//                S.DelCh(S.GetLength()-1);
-//                S.DelCh(0);
-                for (i=0; i<S.GetLength(); i++)
-                    if (' '==S.GetData()[i])
-                        S.SetCh(i, '_');
+//                DelCh(S, S.size()-1);
+//                DelCh(S, 0);
+                for (i=0; i<S.size(); i++)
+                    if (' '==S.c_str()[i])
+                        SetCh(S, i, '_');
 //            }
 //            else
 //                return src;
 //        }
-        Name = gpDataHelper->ResolveAlias(S.GetData());
+        Name = gpDataHelper->ResolveAlias(S.c_str());
     }
 
     return src;
@@ -4488,42 +4489,42 @@ const char * CAtlaParser::ReadPropertyName(const char * src, CStr & Name)
 
 BOOL CAtlaParser::GetTargetUnitId(const char *& p, long FactionId, long & nId)
 {
-    CStr                N1(32), N(32), X, Y;
+    std::string N1, N, X, Y;
     char                ch;
 
                                                                           
-    p = SkipSpaces(N1.GetToken(p, " \t", ch, TRIM_ALL));
-    if (0==stricmp("FACTION", N1.GetData()))
+    p = SkipSpaces(GetToken(N1, p, " \t", ch, TRIM_ALL));
+    if (0==stricmp("FACTION", N1.c_str()))
     {
         // FACTION X NEW Y
-        p = SkipSpaces(X.GetToken(p, " \t", ch, TRIM_ALL));  // X
-        if (!X.IsInteger())
+        p = SkipSpaces(GetToken(X, p, " \t", ch, TRIM_ALL));  // X
+        if (!IsInteger(X))
             return FALSE;
-        p = SkipSpaces(N1.GetToken(p, " \t", ch, TRIM_ALL));  // NEW
-        if (0!=stricmp(N1.GetData(), "NEW"))
+        p = SkipSpaces(GetToken(N1, p, " \t", ch, TRIM_ALL));  // NEW
+        if (0!=stricmp(N1.c_str(), "NEW"))
             return FALSE;
-        p = SkipSpaces(Y.GetToken(p, " \t", ch, TRIM_ALL));  // Y
-        if (!Y.IsInteger())
+        p = SkipSpaces(GetToken(Y, p, " \t", ch, TRIM_ALL));  // Y
+        if (!IsInteger(Y))
             return FALSE;
 
         if ( atol(gpDataHelper->GetConfString(SZ_SECT_COMMON, SZ_KEY_CHECK_NEW_UNIT_FACTION)))
-            nId = NEW_UNIT_ID(atol(Y.GetData()), atol(X.GetData()));
+            nId = NEW_UNIT_ID(atol(Y.c_str()), atol(X.c_str()));
         else
             nId = 0;
         return TRUE;
     }
-    if (0==stricmp("NEW", N1.GetData()))
+    if (0==stricmp("NEW", N1.c_str()))
     {
-        p = SkipSpaces(N1.GetToken(p, " \t", ch, TRIM_ALL));
-        if (!N1.IsInteger())
+        p = SkipSpaces(GetToken(N1, p, " \t", ch, TRIM_ALL));
+        if (!IsInteger(N1))
             return FALSE;
-        nId = NEW_UNIT_ID(atol(N1.GetData()), FactionId);
+        nId = NEW_UNIT_ID(atol(N1.c_str()), FactionId);
         return TRUE;
     }
 
-    if (!N1.IsInteger())
+    if (!IsInteger(N1))
         return FALSE;
-    nId = atol(N1.GetData());
+    nId = atol(N1.c_str());
     return TRUE;
 }
 
@@ -4533,9 +4534,9 @@ BOOL CAtlaParser::GetTargetUnitId(const char *& p, long FactionId, long & nId)
 {                                                    \
     if (!skiperror)                                  \
     {                                                \
-        ErrorLine.Empty();                           \
+        ErrorLine.clear();                           \
         ErrorLine << Line << msg;                    \
-        OrderErr(1, pUnit->Id, ErrorLine.GetData()); \
+        OrderErr(1, pUnit->Id, ErrorLine.c_str()); \
         continue;                                    \
     }                                                \
 }
@@ -4544,9 +4545,9 @@ BOOL CAtlaParser::GetTargetUnitId(const char *& p, long FactionId, long & nId)
 {                                                    \
     if (!skiperror)                                  \
     {                                                \
-        ErrorLine.Empty();                           \
+        ErrorLine.clear();                           \
         ErrorLine << Line << msg;                    \
-        OrderErr(1, pUnit->Id, ErrorLine.GetData()); \
+        OrderErr(1, pUnit->Id, ErrorLine.c_str()); \
         break;                                       \
     }                                                \
 }
@@ -4577,12 +4578,12 @@ void CAtlaParser::RunLandOrders(CLand * pLand, const char * sCheckTeach)
     CUnit             * pUnitMaster;
     CUnit             * pUnit2;
     CStruct           * pStruct;
-    CStr                Line(32);
-    CStr                Cmd (32);
-    CStr                S   (32);
-    CStr                S1  (32);
-    CStr                N1  (32);
-    CStr                ErrorLine(32);
+    std::string Line;
+    std::string Cmd;
+    std::string S;
+    std::string S1;
+    std::string N1;
+    std::string ErrorLine;
     const char        * p;
     const char        * src;
     long                n1;
@@ -4624,42 +4625,42 @@ void CAtlaParser::RunLandOrders(CLand * pLand, const char * sCheckTeach)
             LandIdToCoord(pLand->Id, X, Y, Z);
             LocA3 = NO_LOCATION;
 
-            src         = pUnit->Orders.GetData();
+            src         = pUnit->Orders.c_str();
             while (src && *src)
             {
-                src  = Line.GetToken(src, '\n', TRIM_ALL);
+                src  = GetToken(Line, src, '\n', TRIM_ALL);
 
                 // trim all the comments
-                p = strchr(Line.GetData(), ';');
+                p = strchr(Line.c_str(), ';');
                 if (p)
                 {
                     S1 = SkipSpaces(++p);
-                    S1.TrimRight(TRIM_ALL);
-                    skiperror = (0==stricmp(S1.GetData(),"ne") || 0==stricmp(S1.GetData(),"$ne"));
-                    RunPseudoComment(sequence, pLand, pUnit, S1.GetData());
-                    Line.DelSubStr(p-Line.GetData()-1, Line.GetLength() - (p-Line.GetData()-1) );
+                    TrimRight(S1, TRIM_ALL);
+                    skiperror = (0==stricmp(S1.c_str(),"ne") || 0==stricmp(S1.c_str(),"$ne"));
+                    RunPseudoComment(sequence, pLand, pUnit, S1.c_str());
+                    DelSubStr(Line, p-Line.c_str()-1, Line.size() - (p-Line.c_str()-1) );
                 }
                 else
                     skiperror = FALSE;
 
-                p    = SkipSpaces(Cmd.GetToken(Line.GetData(), " \t", ch, TRIM_ALL));
-                if ('@'==Cmd.GetData()[0])
+                p    = SkipSpaces(GetToken(Cmd, Line.c_str(), " \t", ch, TRIM_ALL));
+                if ('@'==Cmd.c_str()[0])
                 {
-                    Cmd.DelCh(0);
-                    if (Cmd.IsEmpty()) // I do not know if putting spaces after '@' is legal... anyway
-                        p    = SkipSpaces(Cmd.GetToken(p, " \t", ch, TRIM_ALL));
+                    DelCh(Cmd, 0);
+                    if (Cmd.empty()) // I do not know if putting spaces after '@' is legal... anyway
+                        p    = SkipSpaces(GetToken(Cmd, p, " \t", ch, TRIM_ALL));
                 }
-                if ('!'==Cmd.GetData()[0])
+                if ('!'==Cmd.c_str()[0])
                 {
-                    Cmd.DelCh(0);
-                    if (Cmd.IsEmpty()) // I do not know if putting spaces after '@' is legal... anyway
-                        p    = SkipSpaces(Cmd.GetToken(p, " \t", ch, TRIM_ALL));
+                    DelCh(Cmd, 0);
+                    if (Cmd.empty()) // I do not know if putting spaces after '@' is legal... anyway
+                        p    = SkipSpaces(GetToken(Cmd, p, " \t", ch, TRIM_ALL));
                     skiperror = TRUE;
                 }
 
-                if (Cmd.IsEmpty())
+                if (Cmd.empty())
                     continue;
-                if (!gpDataHelper->GetOrderId(Cmd.GetData(), order))
+                if (!gpDataHelper->GetOrderId(Cmd.c_str(), order))
                 {
                     if (SQ_MIN+1 == sequence)
                         SHOW_WARN_CONTINUE(" - unknown order")
@@ -4732,8 +4733,8 @@ void CAtlaParser::RunLandOrders(CLand * pLand, const char * sCheckTeach)
                         if (SQ_BUY+1 == sequence)
                         {
                             // do recruiting here
-                            p        = SkipSpaces(N1.GetToken(p, " \t", ch, TRIM_ALL));
-                            Dummy.Id = atol(N1.GetData());
+                            p        = SkipSpaces(GetToken(N1, p, " \t", ch, TRIM_ALL));
+                            Dummy.Id = atol(N1.c_str());
                             if (!pLand->Units.Search(&Dummy, idx))
                                 SHOW_WARN_CONTINUE(" - Can not find unit " << N1);
                         }
@@ -4752,8 +4753,8 @@ void CAtlaParser::RunLandOrders(CLand * pLand, const char * sCheckTeach)
                         break;
 
                     case O_FORM:
-                        p        = SkipSpaces(N1.GetToken(p, " \t", ch, TRIM_ALL));
-                        n1       = NEW_UNIT_ID(atol(N1.GetData()), pUnit->FactionId);
+                        p        = SkipSpaces(GetToken(N1, p, " \t", ch, TRIM_ALL));
+                        n1       = NEW_UNIT_ID(atol(N1.c_str()), pUnit->FactionId);
                         Dummy.Id = n1;
 
                         if (SQ_FORM==sequence)
@@ -4832,9 +4833,9 @@ void CAtlaParser::RunLandOrders(CLand * pLand, const char * sCheckTeach)
                             // and SQ_CLAIM is good enough, no need to introduce a new phase
                             while (p && *p)
                             {
-                                p = SkipSpaces(N1.GetToken(p, " \t", ch, TRIM_ALL));
+                                p = SkipSpaces(GetToken(N1, p, " \t", ch, TRIM_ALL));
 
-                                n1 = atol(N1.GetData());
+                                n1 = atol(N1.c_str());
                                 Dummy.Id = n1;
                                 if (pLand->Units.Search(&Dummy, idx))
                                 {
@@ -4870,9 +4871,9 @@ void CAtlaParser::RunLandOrders(CLand * pLand, const char * sCheckTeach)
                     case O_CLAIM:
                         if (SQ_CLAIM==sequence)
                         {
-                            p        = SkipSpaces(N1.GetToken(p, " \t", ch, TRIM_ALL));
+                            p        = SkipSpaces(GetToken(N1, p, " \t", ch, TRIM_ALL));
 
-                            n1       = atol(N1.GetData());
+                            n1       = atol(N1.c_str());
 
                             if (!pUnit->GetProperty(PRP_SILVER, type, (const void *&)unitmoney, eNormal) )
                             {
@@ -4912,8 +4913,8 @@ void CAtlaParser::RunLandOrders(CLand * pLand, const char * sCheckTeach)
                     case O_ENTER:
                         if (SQ_ENTER==sequence)
                         {
-                            p        = SkipSpaces(N1.GetToken(p, " \t", ch, TRIM_ALL));
-                            n1       = atol(N1.GetData());
+                            p        = SkipSpaces(GetToken(N1, p, " \t", ch, TRIM_ALL));
+                            n1       = atol(N1.c_str());
                             pStruct  = pLand->GetStructById(n1);
                             if (pStruct)
                             {
@@ -4923,12 +4924,12 @@ void CAtlaParser::RunLandOrders(CLand * pLand, const char * sCheckTeach)
                                     S1 = YES;
                                 }
                                 else
-                                    S1.Empty();
+                                    S1.clear();
                                 if ( (PE_OK!=pUnit->SetProperty(PRP_STRUCT_ID,  eLong, 0,                  eNormal)) ||
                                     (PE_OK!=pUnit->SetProperty(PRP_STRUCT_ID,  eLong, (void*)pStruct->Id, eNormal)) ||
                                     (PE_OK!=pUnit->SetProperty(PRP_STRUCT_NAME,  eCharPtr, "",                      eNormal)) ||
-                                    (PE_OK!=pUnit->SetProperty(PRP_STRUCT_NAME,  eCharPtr, pStruct->Name.GetData(), eNormal)) ||
-                                    (PE_OK!=pUnit->SetProperty(PRP_STRUCT_OWNER, eCharPtr, S1.GetData(), eNormal)) )
+                                    (PE_OK!=pUnit->SetProperty(PRP_STRUCT_NAME,  eCharPtr, pStruct->Name.c_str(), eNormal)) ||
+                                    (PE_OK!=pUnit->SetProperty(PRP_STRUCT_OWNER, eCharPtr, S1.c_str(), eNormal)) )
                                     SHOW_WARN_CONTINUE(NOSETUNIT << pUnit->Id << BUG);
                             }
                             else
@@ -4954,10 +4955,10 @@ void CAtlaParser::RunLandOrders(CLand * pLand, const char * sCheckTeach)
                     case O_AUTOTAX:
                         if (SQ_CLAIM==sequence)
                         {
-                            p = SkipSpaces(N1.GetToken(p, " \t", ch, TRIM_ALL));
-                            if (0==stricmp(N1.GetData(), "1"))
+                            p = SkipSpaces(GetToken(N1, p, " \t", ch, TRIM_ALL));
+                            if (0==stricmp(N1.c_str(), "1"))
                                 pUnit->Flags |=  UNIT_FLAG_TAXING;
-                            else if (0==stricmp(N1.GetData(), "0"))
+                            else if (0==stricmp(N1.c_str(), "0"))
                                 pUnit->Flags &= ~UNIT_FLAG_TAXING;
                             else
                                 SHOW_WARN_CONTINUE(" - Invalid parameter");
@@ -4967,10 +4968,10 @@ void CAtlaParser::RunLandOrders(CLand * pLand, const char * sCheckTeach)
                     case O_GUARD:
                         if (SQ_CLAIM==sequence)
                         {
-                            p = SkipSpaces(N1.GetToken(p, " \t", ch, TRIM_ALL));
-                            if (0==stricmp(N1.GetData(), "1"))
+                            p = SkipSpaces(GetToken(N1, p, " \t", ch, TRIM_ALL));
+                            if (0==stricmp(N1.c_str(), "1"))
                                 pUnit->Flags |=  UNIT_FLAG_GUARDING;
-                            else if (0==stricmp(N1.GetData(), "0"))
+                            else if (0==stricmp(N1.c_str(), "0"))
                                 pUnit->Flags &= ~UNIT_FLAG_GUARDING;
                             else
                                 SHOW_WARN_CONTINUE(" - Invalid parameter");
@@ -4980,10 +4981,10 @@ void CAtlaParser::RunLandOrders(CLand * pLand, const char * sCheckTeach)
                     case O_AVOID:
                         if (SQ_CLAIM==sequence)
                         {
-                            p = SkipSpaces(N1.GetToken(p, " \t", ch, TRIM_ALL));
-                            if (0==stricmp(N1.GetData(), "1"))
+                            p = SkipSpaces(GetToken(N1, p, " \t", ch, TRIM_ALL));
+                            if (0==stricmp(N1.c_str(), "1"))
                                 pUnit->Flags |=  UNIT_FLAG_AVOIDING;
-                            else if (0==stricmp(N1.GetData(), "0"))
+                            else if (0==stricmp(N1.c_str(), "0"))
                                 pUnit->Flags &= ~UNIT_FLAG_AVOIDING;
                             else
                                 SHOW_WARN_CONTINUE(" - Invalid parameter");
@@ -4993,10 +4994,10 @@ void CAtlaParser::RunLandOrders(CLand * pLand, const char * sCheckTeach)
                     case O_BEHIND:
                         if (SQ_CLAIM==sequence)
                         {
-                            p = SkipSpaces(N1.GetToken(p, " \t", ch, TRIM_ALL));
-                            if (0==stricmp(N1.GetData(), "1"))
+                            p = SkipSpaces(GetToken(N1, p, " \t", ch, TRIM_ALL));
+                            if (0==stricmp(N1.c_str(), "1"))
                                 pUnit->Flags |=  UNIT_FLAG_BEHIND;
-                            else if (0==stricmp(N1.GetData(), "0"))
+                            else if (0==stricmp(N1.c_str(), "0"))
                                 pUnit->Flags &= ~UNIT_FLAG_BEHIND;
                             else
                                 SHOW_WARN_CONTINUE(" - Invalid parameter");
@@ -5006,10 +5007,10 @@ void CAtlaParser::RunLandOrders(CLand * pLand, const char * sCheckTeach)
                     case O_HOLD:
                         if (SQ_CLAIM==sequence)
                         {
-                            p = SkipSpaces(N1.GetToken(p, " \t", ch, TRIM_ALL));
-                            if (0==stricmp(N1.GetData(), "1"))
+                            p = SkipSpaces(GetToken(N1, p, " \t", ch, TRIM_ALL));
+                            if (0==stricmp(N1.c_str(), "1"))
                                 pUnit->Flags |=  UNIT_FLAG_HOLDING;
-                            else if (0==stricmp(N1.GetData(), "0"))
+                            else if (0==stricmp(N1.c_str(), "0"))
                                 pUnit->Flags &= ~UNIT_FLAG_HOLDING;
                             else
                                 SHOW_WARN_CONTINUE(" - Invalid parameter");
@@ -5019,10 +5020,10 @@ void CAtlaParser::RunLandOrders(CLand * pLand, const char * sCheckTeach)
                     case O_NOAID:
                         if (SQ_CLAIM==sequence)
                         {
-                            p = SkipSpaces(N1.GetToken(p, " \t", ch, TRIM_ALL));
-                            if (0==stricmp(N1.GetData(), "1"))
+                            p = SkipSpaces(GetToken(N1, p, " \t", ch, TRIM_ALL));
+                            if (0==stricmp(N1.c_str(), "1"))
                                 pUnit->Flags |=  UNIT_FLAG_RECEIVING_NO_AID;
-                            else if (0==stricmp(N1.GetData(), "0"))
+                            else if (0==stricmp(N1.c_str(), "0"))
                                 pUnit->Flags &= ~UNIT_FLAG_RECEIVING_NO_AID;
                             else
                                 SHOW_WARN_CONTINUE(" - Invalid parameter");
@@ -5032,10 +5033,10 @@ void CAtlaParser::RunLandOrders(CLand * pLand, const char * sCheckTeach)
                     case O_NOCROSS:
                         if (SQ_CLAIM==sequence)
                         {
-                            p = SkipSpaces(N1.GetToken(p, " \t", ch, TRIM_ALL));
-                            if (0==stricmp(N1.GetData(), "1"))
+                            p = SkipSpaces(GetToken(N1, p, " \t", ch, TRIM_ALL));
+                            if (0==stricmp(N1.c_str(), "1"))
                                 pUnit->Flags |=  UNIT_FLAG_NO_CROSS_WATER;
-                            else if (0==stricmp(N1.GetData(), "0"))
+                            else if (0==stricmp(N1.c_str(), "0"))
                                 pUnit->Flags &= ~UNIT_FLAG_NO_CROSS_WATER;
                             else
                                 SHOW_WARN_CONTINUE(" - Invalid parameter");
@@ -5045,8 +5046,8 @@ void CAtlaParser::RunLandOrders(CLand * pLand, const char * sCheckTeach)
                     case O_SPOILS:
                         if (SQ_CLAIM==sequence)
                         {
-                            p = SkipSpaces(N1.GetToken(p, " \t", ch, TRIM_ALL));
-                            if (N1.IsEmpty() || 0==stricmp(N1.GetData(), "ALL"))
+                            p = SkipSpaces(GetToken(N1, p, " \t", ch, TRIM_ALL));
+                            if (N1.empty() || 0==stricmp(N1.c_str(), "ALL"))
                                 pUnit->Flags &= ~UNIT_FLAG_SPOILS;
                             else
                                 pUnit->Flags |=  UNIT_FLAG_SPOILS;
@@ -5057,10 +5058,10 @@ void CAtlaParser::RunLandOrders(CLand * pLand, const char * sCheckTeach)
                     case O_SHARE:
                         if (SQ_CLAIM==sequence)
                         {
-                            p = SkipSpaces(N1.GetToken(p, " \t", ch, TRIM_ALL));
-                            if (0==stricmp(N1.GetData(), "1"))
+                            p = SkipSpaces(GetToken(N1, p, " \t", ch, TRIM_ALL));
+                            if (0==stricmp(N1.c_str(), "1"))
                                 pUnit->Flags |=  UNIT_FLAG_SHARING;
-                            else if (0==stricmp(N1.GetData(), "0"))
+                            else if (0==stricmp(N1.c_str(), "0"))
                                 pUnit->Flags &= ~UNIT_FLAG_SHARING;
                             else
                                 SHOW_WARN_CONTINUE(" - Invalid parameter");
@@ -5071,18 +5072,18 @@ void CAtlaParser::RunLandOrders(CLand * pLand, const char * sCheckTeach)
                         if (SQ_CLAIM==sequence)
                         {
 
-                            p = SkipSpaces(N1.GetToken(p, " \t", ch, TRIM_ALL));
-                            if (0==stricmp(N1.GetData(), "UNIT"))
+                            p = SkipSpaces(GetToken(N1, p, " \t", ch, TRIM_ALL));
+                            if (0==stricmp(N1.c_str(), "UNIT"))
                             {
                                 pUnit->Flags |=  UNIT_FLAG_REVEALING_UNIT;
                                 pUnit->Flags &= ~UNIT_FLAG_REVEALING_FACTION;
                             }
-                            else if (0==stricmp(N1.GetData(), "FACTION"))
+                            else if (0==stricmp(N1.c_str(), "FACTION"))
                             {
                                 pUnit->Flags |=  UNIT_FLAG_REVEALING_FACTION;
                                 pUnit->Flags &= ~UNIT_FLAG_REVEALING_UNIT;
                             }
-                            else if (N1.IsEmpty())
+                            else if (N1.empty())
                             {
                                 pUnit->Flags &= ~UNIT_FLAG_REVEALING_FACTION;
                                 pUnit->Flags &= ~UNIT_FLAG_REVEALING_UNIT;
@@ -5096,18 +5097,18 @@ void CAtlaParser::RunLandOrders(CLand * pLand, const char * sCheckTeach)
                         if (SQ_CLAIM==sequence)
                         {
 
-                            p = SkipSpaces(N1.GetToken(p, " \t", ch, TRIM_ALL));
-                            if (0==stricmp(N1.GetData(), "UNIT"))
+                            p = SkipSpaces(GetToken(N1, p, " \t", ch, TRIM_ALL));
+                            if (0==stricmp(N1.c_str(), "UNIT"))
                             {
                                 pUnit->Flags |=  UNIT_FLAG_CONSUMING_UNIT;
                                 pUnit->Flags &= ~UNIT_FLAG_CONSUMING_FACTION;
                             }
-                            else if (0==stricmp(N1.GetData(), "FACTION"))
+                            else if (0==stricmp(N1.c_str(), "FACTION"))
                             {
                                 pUnit->Flags |=  UNIT_FLAG_CONSUMING_FACTION;
                                 pUnit->Flags &= ~UNIT_FLAG_CONSUMING_UNIT;
                             }
-                            else if (N1.IsEmpty())
+                            else if (N1.empty())
                             {
                                 pUnit->Flags &= ~UNIT_FLAG_CONSUMING_FACTION;
                                 pUnit->Flags &= ~UNIT_FLAG_CONSUMING_UNIT;
@@ -5169,13 +5170,13 @@ void CAtlaParser::RunLandOrders(CLand * pLand, const char * sCheckTeach)
 
 //-------------------------------------------------------------
 
-void CAtlaParser::RunOrder_Study(CStr & Line, CStr & ErrorLine, BOOL skiperror, CUnit * pUnit, CLand * pLand, const char * params)
+void CAtlaParser::RunOrder_Study(std::string & Line, std::string & ErrorLine, BOOL skiperror, CUnit * pUnit, CLand * pLand, const char * params)
 {
     EValueType          type;
     long                n, n1, n2;
     long                unitmoney;
-    CStr                S   (32);
-    CStr                SkillNaked  (32);
+    std::string S;
+    std::string SkillNaked;
     long                minlevel = -1;
     long                level;
     long                no, propval;
@@ -5187,7 +5188,7 @@ void CAtlaParser::RunOrder_Study(CStr & Line, CStr & ErrorLine, BOOL skiperror, 
     {
         params = ReadPropertyName(params, SkillNaked);
 
-        n1 = gpDataHelper->GetStudyCost(SkillNaked.GetData());
+        n1 = gpDataHelper->GetStudyCost(SkillNaked.c_str());
         if (n1<=0)
             SHOW_WARN_CONTINUE(" - Can not study that!");
 
@@ -5211,7 +5212,7 @@ void CAtlaParser::RunOrder_Study(CStr & Line, CStr & ErrorLine, BOOL skiperror, 
                     eLong==type && propval>0) // 0 welf does not affect anything
                 {
                     pUnit->GetProperty(PRP_LEADER, type, (const void *&)lead, eNormal);
-                    level = gpDataHelper->MaxSkillLevel(racename, SkillNaked.GetData(), lead, m_ArcadiaSkills);
+                    level = gpDataHelper->MaxSkillLevel(racename, SkillNaked.c_str(), lead, m_ArcadiaSkills);
                     if (-1==minlevel)
                         minlevel = level;
                     else
@@ -5226,7 +5227,7 @@ void CAtlaParser::RunOrder_Study(CStr & Line, CStr & ErrorLine, BOOL skiperror, 
         // now, can we still study?
         S = SkillNaked;
         S << PRP_SKILL_POSTFIX;
-        if (pUnit->GetProperty(S.GetData(), type, (const void *&)n, eNormal) && eLong==type && n>=minlevel)
+        if (pUnit->GetProperty(S.c_str(), type, (const void *&)n, eNormal) && eLong==type && n>=minlevel)
             SHOW_WARN_CONTINUE(" - Already knows the skill!");
 
         if (!pUnit->GetProperty(PRP_SILVER, type, (const void *&)unitmoney, eNormal) )
@@ -5251,9 +5252,9 @@ void CAtlaParser::RunOrder_Study(CStr & Line, CStr & ErrorLine, BOOL skiperror, 
 
 //-------------------------------------------------------------
 
-void CAtlaParser::RunOrder_Name(CStr & Line, CStr & ErrorLine, BOOL skiperror, CUnit * pUnit, CLand * pLand, const char * params)
+void CAtlaParser::RunOrder_Name(std::string & Line, std::string & ErrorLine, BOOL skiperror, CUnit * pUnit, CLand * pLand, const char * params)
 {
-    CStr                What, Name, NewName;
+    std::string                What, Name, NewName;
 //     long                id;
 //     EValueType          type;
 //     const char        * isowner;
@@ -5261,19 +5262,19 @@ void CAtlaParser::RunOrder_Name(CStr & Line, CStr & ErrorLine, BOOL skiperror, C
 
     do
     {
-        params = SkipSpaces(What.GetToken(params, ' ', TRIM_ALL));
-        params = Name.GetToken(params, ' ', TRIM_ALL);
+        params = SkipSpaces(GetToken(What, params, ' ', TRIM_ALL));
+        params = GetToken(Name, params, ' ', TRIM_ALL);
 
-        if (0==stricmp(What.GetData(), "unit"))
+        if (0==stricmp(What.c_str(), "unit"))
         {
             if (IS_NEW_UNIT(pUnit))
             {
                 NewName << "NEW " << (long)REVERSE_NEW_UNIT_ID(pUnit->Id) << " - " << Name;
                 Name = NewName;
             }
-            pUnit->SetName(Name.GetData());
+            pUnit->SetName(Name.c_str());
         }
-//         else if (0==stricmp(What.GetData(), "object"))
+//         else if (0==stricmp(What.c_str(), "object"))
 //         {
 //             if (!pUnit->GetProperty(PRP_STRUCT_ID, type, (const void *&)id) || eLong!=type)
 //                 SHOW_WARN_CONTINUE(" - Is not inside an object!");
@@ -5283,8 +5284,8 @@ void CAtlaParser::RunOrder_Name(CStr & Line, CStr & ErrorLine, BOOL skiperror, C
 //             pStruct  = pLand->GetStructById(id);
 //             if (!pStruct)
 //                 SHOW_WARN_CONTINUE(" - Can not locate structure!" << BUG);
-//             pStruct->SetName(Name.GetData());
-//             pUnit->SetProperty(PRP_STRUCT_NAME,  eCharPtr, pStruct->Name.GetData(), eNormal);
+//             pStruct->SetName(Name.c_str());
+//             pUnit->SetProperty(PRP_STRUCT_NAME,  eCharPtr, pStruct->Name.c_str(), eNormal);
 //         }
 
     } while (FALSE);
@@ -5293,7 +5294,7 @@ void CAtlaParser::RunOrder_Name(CStr & Line, CStr & ErrorLine, BOOL skiperror, C
 
 //-------------------------------------------------------------
 
-BOOL CAtlaParser::CheckResourcesForProduction(CUnit * pUnit, CLand * pLand, CStr & Error)
+BOOL CAtlaParser::CheckResourcesForProduction(CUnit * pUnit, CLand * pLand, std::string & Error)
 {
     BOOL                Ok = TRUE;
     unsigned int        x;
@@ -5311,12 +5312,12 @@ BOOL CAtlaParser::CheckResourcesForProduction(CUnit * pUnit, CLand * pLand, CStr
     long                nrequired = 0;
     long                nmen  = 0;
     int                 no;
-    CStr                S;
+    std::string                S;
 
-    Error.Empty();
-    if ((pUnit->Flags & UNIT_FLAG_PRODUCING) && !pUnit->ProducingItem.IsEmpty())
+    Error.clear();
+    if ((pUnit->Flags & UNIT_FLAG_PRODUCING) && !pUnit->ProducingItem.empty())
     {
-        gpDataHelper->GetProdDetails (pUnit->ProducingItem.GetData(), details);
+        gpDataHelper->GetProdDetails (pUnit->ProducingItem.c_str(), details);
 
         if (!pUnit->GetProperty(PRP_MEN, type, (const void *&)nmen, eNormal)  || (nmen<=0))
         {
@@ -5324,7 +5325,7 @@ BOOL CAtlaParser::CheckResourcesForProduction(CUnit * pUnit, CLand * pLand, CStr
             Ok = FALSE;
         }
 
-        if (details.skillname.IsEmpty() || details.months<=0)
+        if (details.skillname.empty() || details.months<=0)
         {
             Error << " - Production requirements for item '" << pUnit->ProducingItem << "' are not configured! ";
             Ok = FALSE;
@@ -5332,7 +5333,7 @@ BOOL CAtlaParser::CheckResourcesForProduction(CUnit * pUnit, CLand * pLand, CStr
 
         // check skill level
         S << details.skillname << PRP_SKILL_POSTFIX;
-        if (pUnit->GetProperty(S.GetData(), type, value, eNormal) && (eLong==type) )
+        if (pUnit->GetProperty(S.c_str(), type, value, eNormal) && (eLong==type) )
         {
             nlvl = (long)value;
             if (nlvl < details.skilllevel)
@@ -5348,8 +5349,8 @@ BOOL CAtlaParser::CheckResourcesForProduction(CUnit * pUnit, CLand * pLand, CStr
         }
 
 
-        if (!details.toolname.IsEmpty())
-            if (!pUnit->GetProperty(details.toolname.GetData(), type, (const void *&)ntool, eNormal) || eLong!=type )
+        if (!details.toolname.empty())
+            if (!pUnit->GetProperty(details.toolname.c_str(), type, (const void *&)ntool, eNormal) || eLong!=type )
                 ntool = 0;
         if (ntool > nmen)
             ntool = nmen;
@@ -5360,9 +5361,9 @@ BOOL CAtlaParser::CheckResourcesForProduction(CUnit * pUnit, CLand * pLand, CStr
         for (x=0; x<sizeof(details.resname)/sizeof(*details.resname); x++)
         {
             SharerFound = FALSE;
-            if (!details.resname[x].IsEmpty())
+            if (!details.resname[x].empty())
             {
-                if (!pUnit->GetProperty(details.resname[x].GetData(), type, (const void *&)nres, eNormal) || eLong!=type )
+                if (!pUnit->GetProperty(details.resname[x].c_str(), type, (const void *&)nres, eNormal) || eLong!=type )
                     nres = 0;
 
                 // how many do we need?
@@ -5382,7 +5383,7 @@ BOOL CAtlaParser::CheckResourcesForProduction(CUnit * pUnit, CLand * pLand, CStr
                             propname = pSharer->GetPropertyName(no);
                             while (propname)
                             {
-                                if (0==stricmp(propname, details.resname[x].GetData()))
+                                if (0==stricmp(propname, details.resname[x].c_str()))
                                 {
                                     SharerFound = TRUE;
                                     break;
@@ -5411,32 +5412,32 @@ BOOL CAtlaParser::CheckResourcesForProduction(CUnit * pUnit, CLand * pLand, CStr
 
 //-------------------------------------------------------------
 
-void CAtlaParser::RunOrder_Produce(CStr & Line, CStr & ErrorLine, BOOL skiperror, CUnit * pUnit, CLand * pLand, const char * params)
+void CAtlaParser::RunOrder_Produce(std::string & Line, std::string & ErrorLine, BOOL skiperror, CUnit * pUnit, CLand * pLand, const char * params)
 {
     TProdDetails        details;
     const void        * value;
     EValueType          type;
     long                nlvl  = 0;
     long                nmen  = 0;
-    CStr                S(32), Product(32), Error;
+    std::string S, Product, Error;
 
     do
     {
         params  = ReadPropertyName(params, Product);
         pUnit->Flags        |= UNIT_FLAG_PRODUCING;
-        pUnit->ProducingItem = gpDataHelper->ResolveAlias(Product.GetData());
+        pUnit->ProducingItem = gpDataHelper->ResolveAlias(Product.c_str());
         Product = pUnit->ProducingItem;
-        gpDataHelper->GetProdDetails (Product.GetData(), details);
+        gpDataHelper->GetProdDetails (Product.c_str(), details);
 
         if (!pUnit->GetProperty(PRP_MEN, type, (const void *&)nmen, eNormal)  || (nmen<=0))
             SHOW_WARN_CONTINUE(" - There are no men in the unit!");
 
-        if (details.skillname.IsEmpty() || details.months<=0)
+        if (details.skillname.empty() || details.months<=0)
             SHOW_WARN_CONTINUE(" - Production requirements for item '" << Product << "' are not configured! ");
 
         // check skill level
         S << details.skillname << PRP_SKILL_POSTFIX;
-        if (pUnit->GetProperty(S.GetData(), type, value, eNormal) && (eLong==type) )
+        if (pUnit->GetProperty(S.c_str(), type, value, eNormal) && (eLong==type) )
         {
             nlvl = (long)value;
             if (nlvl < details.skilllevel)
@@ -5448,7 +5449,7 @@ void CAtlaParser::RunOrder_Produce(CStr & Line, CStr & ErrorLine, BOOL skiperror
         // check required resources
         if (gpDataHelper->ImmediateProdCheck())
             if (!CheckResourcesForProduction(pUnit, pLand, Error))
-                SHOW_WARN_CONTINUE(Error.GetData());
+                SHOW_WARN_CONTINUE(Error.c_str());
 
     } while (FALSE);
 }
@@ -5456,10 +5457,10 @@ void CAtlaParser::RunOrder_Produce(CStr & Line, CStr & ErrorLine, BOOL skiperror
 
 //-------------------------------------------------------------
 
-BOOL CAtlaParser::GetItemAndAmountForGive(CStr & Line, CStr & ErrorLine, BOOL skiperror, CUnit * pUnit, CLand * pLand, const char * params, CStr & Item, int & amount, const char * command, CUnit * pUnit2)
+BOOL CAtlaParser::GetItemAndAmountForGive(std::string & Line, std::string & ErrorLine, BOOL skiperror, CUnit * pUnit, CLand * pLand, const char * params, std::string & Item, int & amount, const char * command, CUnit * pUnit2)
 {
     BOOL                Ok = FALSE;
-    CStr                S1  (32);
+    std::string S1;
     char                ch;
     long                item_avail=0;
     EValueType          type;
@@ -5470,47 +5471,47 @@ BOOL CAtlaParser::GetItemAndAmountForGive(CStr & Line, CStr & ErrorLine, BOOL sk
     // ALL SILV EXCEPT 15
     do
     {
-        Item.Empty();
+        Item.clear();
         amount = 0;
 
-        params = SkipSpaces(S1.GetToken(params, " \t", ch, TRIM_ALL));
-        params = SkipSpaces(Item.GetToken(params, " \t", ch, TRIM_ALL));
+        params = SkipSpaces(GetToken(S1, params, " \t", ch, TRIM_ALL));
+        params = SkipSpaces(GetToken(Item, params, " \t", ch, TRIM_ALL));
 
-        if (0 != stricmp("UNIT", S1.GetData()))
+        if (0 != stricmp("UNIT", S1.c_str()))
             if (0 == stricmp("TAKE", command))
             {
-                pUnit2->GetProperty(Item.GetData(), type, (const void*&)item_avail, eNormal);
+                pUnit2->GetProperty(Item.c_str(), type, (const void*&)item_avail, eNormal);
                 if (eLong!=type)
                     SHOW_WARN_CONTINUE(" - Can not take that!");
             }
             else
             {
-                if ( !pUnit->GetProperty(Item.GetData(), type, (const void*&)item_avail, eNormal) || (eLong!=type))
+                if ( !pUnit->GetProperty(Item.c_str(), type, (const void*&)item_avail, eNormal) || (eLong!=type))
                 {
                     SHOW_WARN_CONTINUE(" - Can not " << command << " that!");
                     break;
                 }
             }
 
-        if (0 == stricmp("UNIT", S1.GetData()))
+        if (0 == stricmp("UNIT", S1.c_str()))
             Item = S1;
-        else if (0 == stricmp("ALL", S1.GetData()))
+        else if (0 == stricmp("ALL", S1.c_str()))
         {
             amount = item_avail;
-            params = SkipSpaces(S1.GetToken(params, " \t", ch, TRIM_ALL));
-            if (0==stricmp("EXCEPT", S1.GetData()))
+            params = SkipSpaces(GetToken(S1, params, " \t", ch, TRIM_ALL));
+            if (0==stricmp("EXCEPT", S1.c_str()))
             {
-                params = SkipSpaces(S1.GetToken(params, " \t", ch, TRIM_ALL));
-                if (item_avail < atol(S1.GetData()))
+                params = SkipSpaces(GetToken(S1, params, " \t", ch, TRIM_ALL));
+                if (item_avail < atol(S1.c_str()))
                 {
                     SHOW_WARN_CONTINUE(" - EXCEPT is too big. Use no more than " << item_avail << ".");
                     break;
                 }
-                amount -= atol(S1.GetData());
+                amount -= atol(S1.c_str());
             }
         }
         else
-            amount = atol(S1.GetData());
+            amount = atol(S1.c_str());
 
         if (amount < 0)
         {
@@ -5532,7 +5533,7 @@ BOOL CAtlaParser::GetItemAndAmountForGive(CStr & Line, CStr & ErrorLine, BOOL sk
 
 //-------------------------------------------------------------
 
-void CAtlaParser::RunOrder_Withdraw(CStr & Line, CStr & ErrorLine, BOOL skiperror, CUnit * pUnit, CLand * pLand, const char * params)
+void CAtlaParser::RunOrder_Withdraw(std::string & Line, std::string & ErrorLine, BOOL skiperror, CUnit * pUnit, CLand * pLand, const char * params)
 {
     EValueType          type;
     const void        * value;
@@ -5541,32 +5542,32 @@ void CAtlaParser::RunOrder_Withdraw(CStr & Line, CStr & ErrorLine, BOOL skiperro
 //    const char       ** movenames;
 //    int                 movecount;
 
-    CStr                Item, N;
+    std::string                Item, N;
     int                 amount;
     char                ch;
 
     do
     {
         // WITHDRAW 100 SILV
-        params = N.GetToken(SkipSpaces(params), " \t", ch, TRIM_ALL);
-        params = Item.GetToken(params, " \t", ch, TRIM_ALL);
+        params = GetToken(N, SkipSpaces(params), " \t", ch, TRIM_ALL);
+        params = GetToken(Item, params, " \t", ch, TRIM_ALL);
 
-        amount = atol(N.GetData()); // we allow negative amounts!
+        amount = atol(N.c_str()); // we allow negative amounts!
 
-//        if ( gpDataHelper->(Item.GetData(), weights, movenames, movecount) )
+//        if ( gpDataHelper->(Item.c_str(), weights, movenames, movecount) )
 //        {
-            if (!pUnit->GetProperty(Item.GetData(), type, value, eNormal) )
+            if (!pUnit->GetProperty(Item.c_str(), type, value, eNormal) )
             {
                 type  = eLong;
                 value = (const void*)0L;
                     // set original value to 0!
-                if (PE_OK!=pUnit->SetProperty(Item.GetData(), type, value, eNormal))
+                if (PE_OK!=pUnit->SetProperty(Item.c_str(), type, value, eNormal))
                     SHOW_WARN_CONTINUE(NOSETUNIT << BUG);
             }
             else if (eLong!=type)
                 SHOW_WARN_CONTINUE(NOTNUMERIC << BUG);
 
-            if (PE_OK!=pUnit->SetProperty(Item.GetData(), type, (const void*)((long)value+amount), eNormal))
+            if (PE_OK!=pUnit->SetProperty(Item.c_str(), type, (const void*)((long)value+amount), eNormal))
                 SHOW_WARN_CONTINUE(NOSETUNIT << BUG);
 
             pUnit->CalcWeightsAndMovement();
@@ -5579,7 +5580,7 @@ void CAtlaParser::RunOrder_Withdraw(CStr & Line, CStr & ErrorLine, BOOL skiperro
 
 //-------------------------------------------------------------
 
-void CAtlaParser::RunOrder_Give(CStr & Line, CStr & ErrorLine, BOOL skiperror, CUnit * pUnit, CLand * pLand, const char * params, BOOL IgnoreMissingTarget)
+void CAtlaParser::RunOrder_Give(std::string & Line, std::string & ErrorLine, BOOL skiperror, CUnit * pUnit, CLand * pLand, const char * params, BOOL IgnoreMissingTarget)
 {
     EValueType          type;
     long                n1;
@@ -5593,7 +5594,7 @@ void CAtlaParser::RunOrder_Give(CStr & Line, CStr & ErrorLine, BOOL skiperror, C
 //    const char       ** movenames;
 //    int                 movecount;
 
-    CStr                Item;
+    std::string                Item;
     int                 amount;
 
     do
@@ -5622,41 +5623,41 @@ void CAtlaParser::RunOrder_Give(CStr & Line, CStr & ErrorLine, BOOL skiperror, C
         {
             // NULL==pUnit2 is normal, always check!
 
-            if (0==stricmp("UNIT", Item.GetData()))
+            if (0==stricmp("UNIT", Item.c_str()))
             {
                 if (pUnit2 && pUnit->FactionId==pUnit2->FactionId)
                     SHOW_WARN_CONTINUE(" - Target unit belongs to the same faction");
                 break;
             }
 
-            if (!pUnit->GetProperty(Item.GetData(), type, value, eNormal) || (eLong!=type))
+            if (!pUnit->GetProperty(Item.c_str(), type, value, eNormal) || (eLong!=type))
                 SHOW_WARN_CONTINUE(" - Can not give " << Item);
 
-            if (PE_OK!=pUnit->SetProperty(Item.GetData(), type, (const void*)((long)value-amount), eNormal))
+            if (PE_OK!=pUnit->SetProperty(Item.c_str(), type, (const void*)((long)value-amount), eNormal))
                 SHOW_WARN_CONTINUE(NOSET << BUG);
 
             if (pUnit2)
             {
-                if (!pUnit2->GetProperty(Item.GetData(), type, value2, eNormal) )
+                if (!pUnit2->GetProperty(Item.c_str(), type, value2, eNormal) )
                 {
                     value2 = (const void*)0L;
                     // set original value to 0!
-                    if (PE_OK!=pUnit2->SetProperty(Item.GetData(), type, value2, eNormal))
+                    if (PE_OK!=pUnit2->SetProperty(Item.c_str(), type, value2, eNormal))
                         SHOW_WARN_CONTINUE(NOSETUNIT << n1 << BUG);
                 }
                 else if (eLong!=type)
                     SHOW_WARN_CONTINUE(NOTNUMERIC << n1 << BUG);
 
-                if (PE_OK!=pUnit2->SetProperty(Item.GetData(), type, (const void*)((long)value2+amount), eNormal))
+                if (PE_OK!=pUnit2->SetProperty(Item.c_str(), type, (const void*)((long)value2+amount), eNormal))
                     SHOW_WARN_CONTINUE(NOSET << BUG);
-                if (0==stricmp(PRP_SILVER, Item.GetData()))
+                if (0==stricmp(PRP_SILVER, Item.c_str()))
                     pUnit2->SilvRcvd += amount;
 
                 // check how giving men affects skills
                 AdjustSkillsAfterGivingMen(pUnit, pUnit2, Item, amount);
             }
 
-//            if ( gpDataHelper->GetItemWeights(Item.GetData(), weights, movenames, movecount) )
+//            if ( gpDataHelper->GetItemWeights(Item.c_str(), weights, movenames, movecount) )
 //            {
 //                pUnit ->AddWeight(-amount, weights, movenames, movecount);
 //                if (pUnit2)
@@ -5674,7 +5675,7 @@ void CAtlaParser::RunOrder_Give(CStr & Line, CStr & ErrorLine, BOOL skiperror, C
 
 //-------------------------------------------------------------
 
-BOOL CAtlaParser::FindTargetsForSend(CStr & Line, CStr & ErrorLine, BOOL skiperror, CUnit * pUnit, CLand * pLand, const char *& params, CUnit *& pUnit2, CLand *& pLand2)
+BOOL CAtlaParser::FindTargetsForSend(std::string & Line, std::string & ErrorLine, BOOL skiperror, CUnit * pUnit, CLand * pLand, const char *& params, CUnit *& pUnit2, CLand *& pLand2)
 {
     BOOL                Ok = FALSE;
     CBaseObject         Dummy;
@@ -5682,7 +5683,7 @@ BOOL CAtlaParser::FindTargetsForSend(CStr & Line, CStr & ErrorLine, BOOL skiperr
     long                target_id;
     int                 X, Y, Z, X2, Y2, Z2, ID;
     int                 i;
-    CStr                S1  (32);
+    std::string S1;
     char                ch;
 
     /*
@@ -5695,15 +5696,15 @@ BOOL CAtlaParser::FindTargetsForSend(CStr & Line, CStr & ErrorLine, BOOL skiperr
     */
     do
     {
-        params = SkipSpaces(S1.GetToken(params, " \t", ch, TRIM_ALL));
-        if (0==stricmp("DIRECTION", S1.GetData()))
+        params = SkipSpaces(GetToken(S1, params, " \t", ch, TRIM_ALL));
+        if (0==stricmp("DIRECTION", S1.c_str()))
         {
             pUnit2 = NULL;
-            params = SkipSpaces(S1.GetToken(params, " \t", ch, TRIM_ALL));
+            params = SkipSpaces(GetToken(S1, params, " \t", ch, TRIM_ALL));
             LandIdToCoord(pLand->Id, X, Y, Z);
 
             for (i=0; i<(int)sizeof(Directions)/(int)sizeof(const char*); i++)
-                if (0==stricmp(S1.GetData(), Directions[i]))
+                if (0==stricmp(S1.c_str(), Directions[i]))
                 {
                     switch (i%6)
                     {
@@ -5732,7 +5733,7 @@ BOOL CAtlaParser::FindTargetsForSend(CStr & Line, CStr & ErrorLine, BOOL skiperr
 
             if (0==strnicmp("UNIT", params, 4))
             {
-                params = SkipSpaces(S1.GetToken(params, " \t", ch, TRIM_ALL));
+                params = SkipSpaces(GetToken(S1, params, " \t", ch, TRIM_ALL));
                 if (!GetTargetUnitId(params, pUnit->FactionId, target_id))
                     SHOW_WARN_CONTINUE(" - Invalid unit Id");
                 if (target_id==pUnit->Id)
@@ -5746,7 +5747,7 @@ BOOL CAtlaParser::FindTargetsForSend(CStr & Line, CStr & ErrorLine, BOOL skiperr
                     SHOW_WARN_CONTINUE(" - Invalid target unit");
             }
         }
-        else if (0==stricmp("UNIT", S1.GetData()))
+        else if (0==stricmp("UNIT", S1.c_str()))
         {
             if (!GetTargetUnitId(params, pUnit->FactionId, target_id))
                 SHOW_WARN_CONTINUE(" - Invalid unit Id");
@@ -5803,7 +5804,7 @@ BOOL CAtlaParser::FindTargetsForSend(CStr & Line, CStr & ErrorLine, BOOL skiperr
 
 //-------------------------------------------------------------
 
-void CAtlaParser::RunOrder_Take(CStr & Line, CStr & ErrorLine, BOOL skiperror, CUnit * pUnit, CLand * pLand, const char * params, BOOL IgnoreMissingTarget)
+void CAtlaParser::RunOrder_Take(std::string & Line, std::string & ErrorLine, BOOL skiperror, CUnit * pUnit, CLand * pLand, const char * params, BOOL IgnoreMissingTarget)
 {
     EValueType          type;
     long                n1;
@@ -5817,7 +5818,7 @@ void CAtlaParser::RunOrder_Take(CStr & Line, CStr & ErrorLine, BOOL skiperror, C
 //    const char       ** movenames;
 //    int                 movecount;
 
-    CStr                Item;
+    std::string                Item;
     int                 amount;
     char                ch;
 
@@ -5831,9 +5832,9 @@ void CAtlaParser::RunOrder_Take(CStr & Line, CStr & ErrorLine, BOOL skiperror, C
         //     FACTION <FACTION ID> NEW <UNIT ID> other faction new unit
 
         // Remove FROM token from the params
-        params = SkipSpaces(Item.GetToken(params, " \t", ch, TRIM_ALL));
+        params = SkipSpaces(GetToken(Item, params, " \t", ch, TRIM_ALL));
 
-        if (0!=stricmp("FROM", Item.GetData()))
+        if (0!=stricmp("FROM", Item.c_str()))
             SHOW_WARN_CONTINUE(" - Invalid TARGET command");
 
         if (!GetTargetUnitId(params, pUnit->FactionId, n1))
@@ -5858,28 +5859,28 @@ void CAtlaParser::RunOrder_Take(CStr & Line, CStr & ErrorLine, BOOL skiperror, C
         {
             if (GetItemAndAmountForGive(Line, ErrorLine, skiperror, pUnit, pLand, params, Item, amount, "take", pUnit2) )
             {
-                if (0==stricmp("UNIT", Item.GetData()))
+                if (0==stricmp("UNIT", Item.c_str()))
                     SHOW_WARN_CONTINUE(" - Taking unit is not allowed");
 
-                if (!pUnit2->GetProperty(Item.GetData(), type, value, eNormal) || (eLong!=type))
+                if (!pUnit2->GetProperty(Item.c_str(), type, value, eNormal) || (eLong!=type))
                     SHOW_WARN_CONTINUE(" - Can not take " << Item);
 
-                if (PE_OK!=pUnit2->SetProperty(Item.GetData(), type, (const void*)((long)value-amount), eNormal))
+                if (PE_OK!=pUnit2->SetProperty(Item.c_str(), type, (const void*)((long)value-amount), eNormal))
                     SHOW_WARN_CONTINUE(NOSET << BUG);
 
-                if (!pUnit->GetProperty(Item.GetData(), type, value2, eNormal) )
+                if (!pUnit->GetProperty(Item.c_str(), type, value2, eNormal) )
                 {
                     value2 = (const void*)0L;
                     // set original value to 0!
-                    if (PE_OK!=pUnit->SetProperty(Item.GetData(), type, value2, eNormal))
+                    if (PE_OK!=pUnit->SetProperty(Item.c_str(), type, value2, eNormal))
                         SHOW_WARN_CONTINUE(NOSETUNIT << n1 << BUG);
                 }
                 else if (eLong!=type)
                     SHOW_WARN_CONTINUE(NOTNUMERIC << n1 << BUG);
 
-                if (PE_OK!=pUnit->SetProperty(Item.GetData(), type, (const void*)((long)value2+amount), eNormal))
+                if (PE_OK!=pUnit->SetProperty(Item.c_str(), type, (const void*)((long)value2+amount), eNormal))
                     SHOW_WARN_CONTINUE(NOSET << BUG);
-                if (0==stricmp(PRP_SILVER, Item.GetData()))
+                if (0==stricmp(PRP_SILVER, Item.c_str()))
                     pUnit->SilvRcvd += amount;
 
                 // check how giving men affects skills
@@ -5895,11 +5896,11 @@ void CAtlaParser::RunOrder_Take(CStr & Line, CStr & ErrorLine, BOOL skiperror, C
 
 //-------------------------------------------------------------
 
-void CAtlaParser::RunOrder_Send(CStr & Line, CStr & ErrorLine, BOOL skiperror, CUnit * pUnit, CLand * pLand, const char * params)
+void CAtlaParser::RunOrder_Send(std::string & Line, std::string & ErrorLine, BOOL skiperror, CUnit * pUnit, CLand * pLand, const char * params)
 {
     CUnit             * pUnit2 = NULL;
     CLand             * pLand2 = NULL;
-    CStr                Item;
+    std::string                Item;
     int                 amount, effweight;
     int                 price = 0;
     int                 WeatherMultiplier;
@@ -5933,13 +5934,13 @@ void CAtlaParser::RunOrder_Send(CStr & Line, CStr & ErrorLine, BOOL skiperror, C
 
         if (GetItemAndAmountForGive(Line, ErrorLine, skiperror, pUnit, pLand, params, Item, amount, "send", NULL) )
         {
-            if (!pUnit->GetProperty(Item.GetData(), type, value, eNormal) || (eLong!=type))
+            if (!pUnit->GetProperty(Item.c_str(), type, value, eNormal) || (eLong!=type))
                 SHOW_WARN_CONTINUE(" - Can not send " << Item);
 
-            if (PE_OK!=pUnit->SetProperty(Item.GetData(), type, (const void*)((long)value-amount), eNormal))
+            if (PE_OK!=pUnit->SetProperty(Item.c_str(), type, (const void*)((long)value-amount), eNormal))
                 SHOW_WARN_CONTINUE(NOSET << BUG);
 
-            if ( gpDataHelper->GetItemWeights(Item.GetData(), weights, movenames, movecount) )
+            if ( gpDataHelper->GetItemWeights(Item.c_str(), weights, movenames, movecount) )
             {
 
                 // now we must pay the terrible price!
@@ -5975,13 +5976,13 @@ void CAtlaParser::RunOrder_Send(CStr & Line, CStr & ErrorLine, BOOL skiperror, C
 
 //-------------------------------------------------------------
 
-void CAtlaParser::AdjustSkillsAfterGivingMen(CUnit * pUnitGive, CUnit * pUnitTake, CStr & item, long AmountGiven)
+void CAtlaParser::AdjustSkillsAfterGivingMen(CUnit * pUnitGive, CUnit * pUnitTake, std::string & item, long AmountGiven)
 {
     int                 idx;
     const char        * propname_days;
     std::set<std::string, CaseInsensitiveLess> SkillNames;
     int                 postlen;
-    CStr                S, BasePropName, Prop, PropDays, PropStudy;
+    std::string                S, BasePropName, Prop, PropDays, PropStudy;
     CUnit             * tmpunits[2] = {pUnitGive, pUnitTake};
     int                 i;
     char              * p;
@@ -5991,7 +5992,7 @@ void CAtlaParser::AdjustSkillsAfterGivingMen(CUnit * pUnitGive, CUnit * pUnitTak
     const void        * valueGive = NULL;
     const void        * valueTake = NULL;
 
-    if (!gpDataHelper->IsMan(item.GetData()))
+    if (!gpDataHelper->IsMan(item.c_str()))
         return;
 
     if ( !pUnitTake->GetProperty(PRP_MEN, type, (const void*&)mentarg, eNormal) || eLong!=type || mentarg <= 0)
@@ -6005,7 +6006,7 @@ void CAtlaParser::AdjustSkillsAfterGivingMen(CUnit * pUnitGive, CUnit * pUnitTak
     if (pUnitGive->GetProperty(PRP_LEADER, type, valueGive, eNormal) && eCharPtr!=type)
     {
         S = "Wrong property type ";  S << BUG;
-        OrderErr(1, pUnitGive->Id,  S.GetData());
+        OrderErr(1, pUnitGive->Id,  S.c_str());
         return;
     }
     if (!pUnitTake->GetProperty(PRP_LEADER, type, valueTake, eNormal))
@@ -6015,7 +6016,7 @@ void CAtlaParser::AdjustSkillsAfterGivingMen(CUnit * pUnitGive, CUnit * pUnitTak
     else if (eCharPtr!=type)
     {
         S = "Wrong property type ";  S << BUG;
-        OrderErr(1, pUnitTake->Id,  S.GetData());
+        OrderErr(1, pUnitTake->Id,  S.c_str());
         return;
     }
 
@@ -6038,7 +6039,7 @@ void CAtlaParser::AdjustSkillsAfterGivingMen(CUnit * pUnitGive, CUnit * pUnitTak
         while (propname_days)
         {
             S = propname_days;
-            if (S.FindSubStrR(PRP_SKILL_DAYS_POSTFIX) == S.GetLength()-postlen)
+            if (FindSubStrR(S, PRP_SKILL_DAYS_POSTFIX) == S.size()-postlen)
             {
                 SkillNames.insert(propname_days);
             }
@@ -6051,27 +6052,27 @@ void CAtlaParser::AdjustSkillsAfterGivingMen(CUnit * pUnitGive, CUnit * pUnitTak
     {
         propname_days = skillNameStr.c_str();
         BasePropName = propname_days;
-        BasePropName.DelSubStr(BasePropName.GetLength()-postlen, postlen);
+        DelSubStr(BasePropName, BasePropName.size()-postlen, postlen);
 
 
         // Generic skill properties
 
         Prop     = BasePropName;  Prop     << PRP_SKILL_POSTFIX;
         PropDays = BasePropName;  PropDays << PRP_SKILL_DAYS_POSTFIX;
-        if ( !pUnitGive->GetProperty(PropDays.GetData(), type, (const void*&)dayssrc, eNormal) )
+        if ( !pUnitGive->GetProperty(PropDays.c_str(), type, (const void*&)dayssrc, eNormal) )
             dayssrc = 0;
-        if ( !pUnitTake->GetProperty(PropDays.GetData(), type, (const void*&)daystarg, eNormal) )
+        if ( !pUnitTake->GetProperty(PropDays.c_str(), type, (const void*&)daystarg, eNormal) )
         {
-            pUnitTake->SetProperty(PropDays.GetData(), eLong, (const void*)0L, eNormal);
-            pUnitTake->SetProperty(Prop.GetData()    , eLong, (const void*)0L, eNormal);
+            pUnitTake->SetProperty(PropDays.c_str(), eLong, (const void*)0L, eNormal);
+            pUnitTake->SetProperty(Prop.c_str()    , eLong, (const void*)0L, eNormal);
             daystarg = 0;
         }
 
         newdays  = (daystarg*(mentarg-AmountGiven) + dayssrc*AmountGiven)/mentarg;
         newskill = SkillDaysToLevel(newdays);
 
-        pUnitTake->SetProperty(PropDays.GetData() , eLong, (const void*)newdays , eNormal);
-        pUnitTake->SetProperty(Prop.GetData()     , eLong, (const void*)newskill, eNormal);
+        pUnitTake->SetProperty(PropDays.c_str() , eLong, (const void*)newdays , eNormal);
+        pUnitTake->SetProperty(Prop.c_str()     , eLong, (const void*)newskill, eNormal);
 
         // Arcadia skill properties
 
@@ -6079,8 +6080,8 @@ void CAtlaParser::AdjustSkillsAfterGivingMen(CUnit * pUnitGive, CUnit * pUnitTak
         PropDays  = BasePropName;  PropDays  << PRP_SKILL_DAYS_EXPERIENCE_POSTFIX;
         PropStudy = BasePropName;  PropStudy << PRP_SKILL_STUDY_POSTFIX;
 
-        bWasSetGive = pUnitGive->GetProperty(PropDays.GetData(), type, (const void*&)dayssrc, eNormal);
-        bWasSetTake = pUnitTake->GetProperty(PropDays.GetData(), type, (const void*&)daystarg, eNormal);
+        bWasSetGive = pUnitGive->GetProperty(PropDays.c_str(), type, (const void*&)dayssrc, eNormal);
+        bWasSetTake = pUnitTake->GetProperty(PropDays.c_str(), type, (const void*&)daystarg, eNormal);
 
         if (bWasSetGive || bWasSetTake)
         {
@@ -6092,22 +6093,22 @@ void CAtlaParser::AdjustSkillsAfterGivingMen(CUnit * pUnitGive, CUnit * pUnitTak
                 dayssrc = 0;
             if ( !bWasSetTake )
             {
-                pUnitTake->SetProperty(PropDays.GetData() , eLong, (const void*)0L, eNormal);
-                pUnitTake->SetProperty(Prop.GetData()     , eLong, (const void*)0L, eNormal);
-                pUnitTake->SetProperty(PropStudy.GetData(), eLong, (const void*)0L, eNormal);
+                pUnitTake->SetProperty(PropDays.c_str() , eLong, (const void*)0L, eNormal);
+                pUnitTake->SetProperty(Prop.c_str()     , eLong, (const void*)0L, eNormal);
+                pUnitTake->SetProperty(PropStudy.c_str(), eLong, (const void*)0L, eNormal);
                 daystarg = 0;
             }
-            pUnitTake->SetProperty(PropStudy.GetData(), eLong, (const void*)newskill, eNormal);  //PRP_SKILL_STUDY_POSTFIX;
+            pUnitTake->SetProperty(PropStudy.c_str(), eLong, (const void*)newskill, eNormal);  //PRP_SKILL_STUDY_POSTFIX;
 
             newdaysexp  = (daystarg*(mentarg-AmountGiven) + dayssrc*AmountGiven)/mentarg;
             newskillexp = SkillDaysToLevel(newdaysexp);
 
-            pUnitTake->SetProperty(PropDays.GetData() , eLong, (const void*)newdaysexp , eNormal);  //PRP_SKILL_DAYS_EXPERIENCE_POSTFIX
-            pUnitTake->SetProperty(Prop.GetData()     , eLong, (const void*)newskillexp, eNormal);  //PRP_SKILL_EXPERIENCE_POSTFIX
+            pUnitTake->SetProperty(PropDays.c_str() , eLong, (const void*)newdaysexp , eNormal);  //PRP_SKILL_DAYS_EXPERIENCE_POSTFIX
+            pUnitTake->SetProperty(Prop.c_str()     , eLong, (const void*)newskillexp, eNormal);  //PRP_SKILL_EXPERIENCE_POSTFIX
 
             newskill = newskill + newskillexp;
             Prop     = BasePropName;  Prop     << PRP_SKILL_POSTFIX;
-            pUnitTake->SetProperty(Prop.GetData()     , eLong, (const void*)newskill, eNormal);  //PRP_SKILL_POSTFIX
+            pUnitTake->SetProperty(Prop.c_str()     , eLong, (const void*)newskill, eNormal);  //PRP_SKILL_POSTFIX
         }
     }
 
@@ -6117,17 +6118,17 @@ void CAtlaParser::AdjustSkillsAfterGivingMen(CUnit * pUnitGive, CUnit * pUnitTak
 
 //-------------------------------------------------------------
 
-void CAtlaParser::RunOrder_Buy(CStr & Line, CStr & ErrorLine, BOOL skiperror, CUnit * pUnit, CLand * pLand, const char * params)
+void CAtlaParser::RunOrder_Buy(std::string & Line, std::string & ErrorLine, BOOL skiperror, CUnit * pUnit, CLand * pLand, const char * params)
 {
     EValueType          type;
-    CStr                S1  (32);
-    CStr                N1  (32);
+    std::string S1;
+    std::string N1;
     char                ch;
     long                n1;
     long                peritem;
     long                unitmoney;
     long                unitprop;
-    CStr                LandProp(32);
+    std::string LandProp;
     long                landprop; // Shar1 Extrict SELL/BUY check
     CUnit               DummyGiver;
 
@@ -6139,33 +6140,33 @@ void CAtlaParser::RunOrder_Buy(CStr & Line, CStr & ErrorLine, BOOL skiperror, CU
     {
         // BUY 33 VIKI
         //     n1 S1
-        params = SkipSpaces(N1.GetToken(params, " \t", ch, TRIM_ALL));
-        //params = SkipSpaces(S1.GetToken(params, " \t", ch, TRIM_ALL));
+        params = SkipSpaces(GetToken(N1, params, " \t", ch, TRIM_ALL));
+        //params = SkipSpaces(GetToken(S1, params, " \t", ch, TRIM_ALL));
         params = ReadPropertyName(params, S1);
-        n1= atol(N1.GetData());
-        if (S1.IsEmpty() || (n1<=0 && 0!=stricmp(N1.GetData(), "ALL")) )
+        n1= atol(N1.c_str());
+        if (S1.empty() || (n1<=0 && 0!=stricmp(N1.c_str(), "ALL")) )
             SHOW_WARN_CONTINUE(" - Invalid BUY command");
 
         // buying peasants requires substituting the alias by the real type of men.
-        if (0==stricmp(S1.GetData(), "peas") || 0==stricmp(S1.GetData(), "peasant")
-            || 0==stricmp(S1.GetData(), "peasants"))
-            if (!pLand->PeasantRace.IsEmpty())
-                ReadPropertyName(pLand->PeasantRace.GetData(), S1);
+        if (0==stricmp(S1.c_str(), "peas") || 0==stricmp(S1.c_str(), "peasant")
+            || 0==stricmp(S1.c_str(), "peasants"))
+            if (!pLand->PeasantRace.empty())
+                ReadPropertyName(pLand->PeasantRace.c_str(), S1);
 
-        MakeQualifiedPropertyName(PRP_SALE_PRICE_PREFIX, S1.GetData(), LandProp);
-        if ( pLand->GetProperty(LandProp.GetData(), type, (const void *&)peritem, eNormal) && (eLong==type))
+        MakeQualifiedPropertyName(PRP_SALE_PRICE_PREFIX, S1.c_str(), LandProp);
+        if ( pLand->GetProperty(LandProp.c_str(), type, (const void *&)peritem, eNormal) && (eLong==type))
         {
-            if (0==stricmp(N1.GetData(), "ALL"))
+            if (0==stricmp(N1.c_str(), "ALL"))
             {
-                MakeQualifiedPropertyName(PRP_SALE_AMOUNT_PREFIX, S1.GetData(), LandProp);
-                if ( !pLand->GetProperty(LandProp.GetData(), type, (const void *&)n1, eNormal) || (eLong!=type))
+                MakeQualifiedPropertyName(PRP_SALE_AMOUNT_PREFIX, S1.c_str(), LandProp);
+                if ( !pLand->GetProperty(LandProp.c_str(), type, (const void *&)n1, eNormal) || (eLong!=type))
                     n1=0;
             }
 
-            if (!pUnit->GetProperty(S1.GetData(), type, (const void *&)unitprop, eNormal) )
+            if (!pUnit->GetProperty(S1.c_str(), type, (const void *&)unitprop, eNormal) )
             {
                 unitprop = 0;
-                if (PE_OK!=pUnit->SetProperty(S1.GetData(), type, (const void *)unitprop, eBoth))
+                if (PE_OK!=pUnit->SetProperty(S1.c_str(), type, (const void *)unitprop, eBoth))
                     SHOW_WARN_CONTINUE(NOSETUNIT << pUnit->Id << BUG);
             }
             else if (eLong!=type)
@@ -6183,8 +6184,8 @@ void CAtlaParser::RunOrder_Buy(CStr & Line, CStr & ErrorLine, BOOL skiperror, CU
             // Shar1 Extrict SELL/BUY check. Start
 
             // Checking amount
-            MakeQualifiedPropertyName(PRP_SALE_AMOUNT_PREFIX, S1.GetData(), LandProp);
-            if (!pLand->GetProperty(LandProp.GetData(), type, (const void *&) landprop, eNormal) || (eLong!=type))
+            MakeQualifiedPropertyName(PRP_SALE_AMOUNT_PREFIX, S1.c_str(), LandProp);
+            if (!pLand->GetProperty(LandProp.c_str(), type, (const void *&) landprop, eNormal) || (eLong!=type))
                 landprop = 0;
             if (n1 > landprop)
             {
@@ -6195,17 +6196,17 @@ void CAtlaParser::RunOrder_Buy(CStr & Line, CStr & ErrorLine, BOOL skiperror, CU
             unitprop  += n1;         // This is the old code
             landprop  -= n1;
 
-            if ( (PE_OK!=pUnit->SetProperty(S1.GetData(), type, (const void *)unitprop,  eNormal)) || // This is the old code
+            if ( (PE_OK!=pUnit->SetProperty(S1.c_str(), type, (const void *)unitprop,  eNormal)) || // This is the old code
                  (PE_OK!=pUnit->SetProperty(PRP_SILVER,   type, (const void *)unitmoney, eNormal)) || // This is ALMOST the old code
-                 (PE_OK!=pLand->SetProperty(LandProp.GetData(), type, (const void *)landprop,  eNormal)))
+                 (PE_OK!=pLand->SetProperty(LandProp.c_str(), type, (const void *)landprop,  eNormal)))
             // Shar1 End
                 SHOW_WARN_CONTINUE(NOSET << BUG);
 
-            if (gpDataHelper->IsTradeItem(S1.GetData()))
+            if (gpDataHelper->IsTradeItem(S1.c_str()))
                 pUnit->Flags |= UNIT_FLAG_PRODUCING;
 
             // adjust weight
-//            if (gpDataHelper->GetItemWeights(S1.GetData(), weights, movenames, movecount))
+//            if (gpDataHelper->GetItemWeights(S1.c_str(), weights, movenames, movecount))
 //                pUnit ->AddWeight(n1, weights, movenames, movecount);
             pUnit->CalcWeightsAndMovement();
 
@@ -6219,18 +6220,18 @@ void CAtlaParser::RunOrder_Buy(CStr & Line, CStr & ErrorLine, BOOL skiperror, CU
 
 //-------------------------------------------------------------
 
-void CAtlaParser::RunOrder_Sell(CStr & Line, CStr & ErrorLine, BOOL skiperror, CUnit * pUnit, CLand * pLand, const char * params)
+void CAtlaParser::RunOrder_Sell(std::string & Line, std::string & ErrorLine, BOOL skiperror, CUnit * pUnit, CLand * pLand, const char * params)
 {
     EValueType          type;
     EValueType          type1;
-    CStr                S1  (32);
-    CStr                N1  (32);
+    std::string S1;
+    std::string N1;
     char                ch;
     long                n1 = 0;
     long                peritem = 0;
     long                unitmoney = 0;
     long                unitprop = 0;
-    CStr                LandProp(32);
+    std::string LandProp;
     long                landprop = 0; // Shar1 Extrict SELL/BUY check
 
 //    int               * weights;    // calculate weight change while giving
@@ -6241,20 +6242,20 @@ void CAtlaParser::RunOrder_Sell(CStr & Line, CStr & ErrorLine, BOOL skiperror, C
     {
          // BUY 33 VIKI
          //     n1 S1
-         params = SkipSpaces(N1.GetToken(params, " \t", ch, TRIM_ALL));
-         //params = SkipSpaces(S1.GetToken(params, " \t", ch, TRIM_ALL));
+         params = SkipSpaces(GetToken(N1, params, " \t", ch, TRIM_ALL));
+         //params = SkipSpaces(GetToken(S1, params, " \t", ch, TRIM_ALL));
          params = ReadPropertyName(params, S1);
-         n1= atol(N1.GetData());
-         if (S1.IsEmpty() || (n1<=0 && 0!=stricmp(N1.GetData(), "ALL")) )
+         n1= atol(N1.c_str());
+         if (S1.empty() || (n1<=0 && 0!=stricmp(N1.c_str(), "ALL")) )
              SHOW_WARN_CONTINUE(" - Invalid SELL command");
 
-         MakeQualifiedPropertyName(PRP_WANTED_PRICE_PREFIX, S1.GetData(), LandProp);
-         if ( !pLand->GetProperty(LandProp.GetData(), type,  (const void *&)peritem,  eNormal) ||
-              !pUnit->GetProperty(S1.GetData(),       type1, (const void *&)unitprop, eNormal) ||
+         MakeQualifiedPropertyName(PRP_WANTED_PRICE_PREFIX, S1.c_str(), LandProp);
+         if ( !pLand->GetProperty(LandProp.c_str(), type,  (const void *&)peritem,  eNormal) ||
+              !pUnit->GetProperty(S1.c_str(),       type1, (const void *&)unitprop, eNormal) ||
               (eLong!=type) || (eLong!=type1)
               )
              SHOW_WARN_CONTINUE(" - Can not SELL that!");
-         if (0==stricmp(N1.GetData(), "ALL"))
+         if (0==stricmp(N1.c_str(), "ALL"))
              n1=unitprop;
          if (!pUnit->GetProperty(PRP_SILVER, type, (const void *&)unitmoney, eNormal) )
          {
@@ -6267,8 +6268,8 @@ void CAtlaParser::RunOrder_Sell(CStr & Line, CStr & ErrorLine, BOOL skiperror, C
 
          // Shar1 Extrict SELL/BUY check. Start
          // Check amount wanted by market
-         MakeQualifiedPropertyName(PRP_WANTED_AMOUNT_PREFIX, S1.GetData(), LandProp);
-         if (!pLand->GetProperty(LandProp.GetData(), type,  (const void *&) landprop,  eNormal) || (eLong!=type))
+         MakeQualifiedPropertyName(PRP_WANTED_AMOUNT_PREFIX, S1.c_str(), LandProp);
+         if (!pLand->GetProperty(LandProp.c_str(), type,  (const void *&) landprop,  eNormal) || (eLong!=type))
          {
              SHOW_WARN_CONTINUE(" - Can not SELL that!");
              landprop = 0;
@@ -6289,16 +6290,16 @@ void CAtlaParser::RunOrder_Sell(CStr & Line, CStr & ErrorLine, BOOL skiperror, C
          unitprop  -= n1; // This is the old code
          landprop  -= n1;
 
-         if ( (PE_OK!=pUnit->SetProperty(S1.GetData(), type, (const void *)unitprop,  eNormal)) || // This is the old code
+         if ( (PE_OK!=pUnit->SetProperty(S1.c_str(), type, (const void *)unitprop,  eNormal)) || // This is the old code
               (PE_OK!=pUnit->SetProperty(PRP_SILVER,   type, (const void *)unitmoney, eNormal)) || // This is ALMOST the old code
-              (PE_OK!=pLand->SetProperty(LandProp.GetData()  ,   type, (const void *)landprop,  eNormal)))
+              (PE_OK!=pLand->SetProperty(LandProp.c_str()  ,   type, (const void *)landprop,  eNormal)))
          // Shar1. End
              SHOW_WARN_CONTINUE(NOSET << BUG);
 
          pUnit->SilvRcvd += n1*peritem;
 
          // adjust weight
-//         if (gpDataHelper->GetItemWeights(S1.GetData(), weights, movenames, movecount))
+//         if (gpDataHelper->GetItemWeights(S1.c_str(), weights, movenames, movecount))
 //             pUnit ->AddWeight(-n1, weights, movenames, movecount);
          pUnit->CalcWeightsAndMovement(); 
     } while (FALSE);
@@ -6307,7 +6308,7 @@ void CAtlaParser::RunOrder_Sell(CStr & Line, CStr & ErrorLine, BOOL skiperror, C
 
 //-------------------------------------------------------------
 
-void CAtlaParser::RunOrder_Promote(CStr & Line, CStr & ErrorLine, BOOL skiperror, CUnit * pUnit, CLand * pLand, const char * params)
+void CAtlaParser::RunOrder_Promote(std::string & Line, std::string & ErrorLine, BOOL skiperror, CUnit * pUnit, CLand * pLand, const char * params)
 {
     long                n1;
     long                id1=0, id2=0;
@@ -6361,16 +6362,16 @@ void CAtlaParser::RunOrder_Promote(CStr & Line, CStr & ErrorLine, BOOL skiperror
 
 //-------------------------------------------------------------
 
-void CAtlaParser::RunOrder_Move(CStr & Line, CStr & ErrorLine, BOOL skiperror, CUnit * pUnit, CLand * pLand, const char * params, int & X, int & Y, int & LocA3, long order)
+void CAtlaParser::RunOrder_Move(std::string & Line, std::string & ErrorLine, BOOL skiperror, CUnit * pUnit, CLand * pLand, const char * params, int & X, int & Y, int & LocA3, long order)
 {
     int                 ID;
     int                 i, idx=0;
-    CStr                S1;
+    std::string                S1;
     char                ch;
     EValueType          type;
     long                n1;
     CStruct           * pStruct;
-    CStr                sErr(32), S;
+    std::string sErr, S;
     CBaseObject         Dummy;
     long                skill, nmen, structid;
 
@@ -6394,9 +6395,9 @@ void CAtlaParser::RunOrder_Move(CStr & Line, CStr & ErrorLine, BOOL skiperror, C
 
         while (params)
         {
-            params        = SkipSpaces(S1.GetToken(params, " \t", ch, TRIM_ALL));
+            params        = SkipSpaces(GetToken(S1, params, " \t", ch, TRIM_ALL));
             for (i=0; i<(int)sizeof(Directions)/(int)sizeof(const char*); i++)
-                if (0==stricmp(S1.GetData(), Directions[i]))
+                if (0==stricmp(S1.c_str(), Directions[i]))
                 {
                     switch (i%6)
                     {
@@ -6435,7 +6436,7 @@ void CAtlaParser::RunOrder_Move(CStr & Line, CStr & ErrorLine, BOOL skiperror, C
                 SHOW_WARN_CONTINUE(" - There are no men in the unit!");
 
             S = "SAIL"; S << PRP_SKILL_POSTFIX;
-            if (!pUnit->GetProperty(S.GetData(), type, (const void *&)skill, eNormal) || (eLong!=type) || (skill<=0))
+            if (!pUnit->GetProperty(S.c_str(), type, (const void *&)skill, eNormal) || (eLong!=type) || (skill<=0))
                 SHOW_WARN_CONTINUE(" - Needs SAIL skill!");
 
             Dummy.Id = structid;
@@ -6451,9 +6452,9 @@ void CAtlaParser::RunOrder_Move(CStr & Line, CStr & ErrorLine, BOOL skiperror, C
             if (gpDataHelper->ShowMoveWarnings())
             {
                 pUnit->CheckWeight(sErr);
-                if (!sErr.IsEmpty())
+                if (!sErr.empty())
                     SHOW_WARN_CONTINUE(sErr);
-                    //OrderErr(1, pUnit->Id, sErr.GetData());
+                    //OrderErr(1, pUnit->Id, sErr.c_str());
             }
         }
     } while (FALSE);
@@ -6518,15 +6519,15 @@ void CAtlaParser::RunOrder_Move(CStr & Line, CStr & ErrorLine, BOOL skiperror, C
 
 // Special SAILing for Arcadia III.
 
-void CAtlaParser::RunOrder_SailAIII(CStr & Line, CStr & ErrorLine, BOOL skiperror, CUnit * pUnit, CLand * pLand, const char * params, int & X, int & Y, int & LocA3)
+void CAtlaParser::RunOrder_SailAIII(std::string & Line, std::string & ErrorLine, BOOL skiperror, CUnit * pUnit, CLand * pLand, const char * params, int & X, int & Y, int & LocA3)
 {
     int                 ID;
     int                 i, j;
-    CStr                S1;
+    std::string                S1;
     char                ch;
     eDirection          Dir;
     BOOL                GoodSail;
-    CStr                SailPassed;
+    std::string                SailPassed;
     CLand             * pNewLand;
 
 
@@ -6534,9 +6535,9 @@ void CAtlaParser::RunOrder_SailAIII(CStr & Line, CStr & ErrorLine, BOOL skiperro
     {
         GoodSail = FALSE;
 
-        params        = SkipSpaces(S1.GetToken(params, " \t", ch, TRIM_ALL));
+        params        = SkipSpaces(GetToken(S1, params, " \t", ch, TRIM_ALL));
         for (i=0; i<(int)sizeof(Directions)/(int)sizeof(const char*); i++)
-            if (0==stricmp(S1.GetData(), Directions[i]))
+            if (0==stricmp(S1.c_str(), Directions[i]))
             {
                 Dir = (eDirection)(i%6);
 
@@ -6564,8 +6565,8 @@ void CAtlaParser::RunOrder_SailAIII(CStr & Line, CStr & ErrorLine, BOOL skiperro
                 ID = LandCoordToId(X,Y, pLand->pPlane->Id);
 
                 pNewLand = GetLand(ID);
-                if (!pNewLand || (pNewLand && 0 == stricmp("Ocean", pNewLand->TerrainType.GetData()) ||
-             0 == stricmp("Lake", pNewLand->TerrainType.GetData()) ) )
+                if (!pNewLand || (pNewLand && 0 == stricmp("Ocean", pNewLand->TerrainType.c_str()) ||
+             0 == stricmp("Lake", pNewLand->TerrainType.c_str()) ) )
                     LocA3 = Center;
 
                 if (!pUnit->pMovement)
@@ -6587,7 +6588,7 @@ void CAtlaParser::RunOrder_SailAIII(CStr & Line, CStr & ErrorLine, BOOL skiperro
 
 //-------------------------------------------------------------
 
-void CAtlaParser::RunOrder_Teach(CStr & Line, CStr & ErrorLine, BOOL skiperror, CUnit * pUnit, CLand * pLand, const char * params, BOOL TeachCheckGlb)
+void CAtlaParser::RunOrder_Teach(std::string & Line, std::string & ErrorLine, BOOL skiperror, CUnit * pUnit, CLand * pLand, const char * params, BOOL TeachCheckGlb)
 {
     EValueType          type;
     long                n1, n2;
@@ -6595,7 +6596,7 @@ void CAtlaParser::RunOrder_Teach(CStr & Line, CStr & ErrorLine, BOOL skiperror, 
     CUnit             * pUnit2;
     CBaseObject         Dummy;
     BOOL                our_unit;
-    CStr                Skill;
+    std::string                Skill;
     const void        * value;
     BOOL                leader_checked = FALSE;
 
@@ -6621,7 +6622,7 @@ void CAtlaParser::RunOrder_Teach(CStr & Line, CStr & ErrorLine, BOOL skiperror, 
 
             our_unit = pUnit2->IsOurs;
 
-            if (pUnit2->StudyingSkill.IsEmpty() && our_unit)
+            if (pUnit2->StudyingSkill.empty() && our_unit)
             {
                 SHOW_WARN_CONTINUE(" - Unit " << pUnit2->Id << " is not studying");
             }
@@ -6631,7 +6632,7 @@ void CAtlaParser::RunOrder_Teach(CStr & Line, CStr & ErrorLine, BOOL skiperror, 
                 {
                     // are the levels ok?
                     Skill = pUnit2->StudyingSkill;
-                    if (!pUnit2->GetProperty(Skill.GetData(), type, (const void *&)n2, eNormal) )
+                    if (!pUnit2->GetProperty(Skill.c_str(), type, (const void *&)n2, eNormal) )
                     {
                         n2 = 0;
                         type = eLong;
@@ -6639,7 +6640,7 @@ void CAtlaParser::RunOrder_Teach(CStr & Line, CStr & ErrorLine, BOOL skiperror, 
                     if (eLong!=type)
                         SHOW_WARN_CONTINUE(NOTNUMERIC << n2 << BUG);
 
-                    if (!pUnit->GetProperty(Skill.GetData(), type, (const void *&)n1, eNormal))
+                    if (!pUnit->GetProperty(Skill.c_str(), type, (const void *&)n1, eNormal))
                     {
                         n1 = 0;
                         type = eLong;
@@ -6650,14 +6651,14 @@ void CAtlaParser::RunOrder_Teach(CStr & Line, CStr & ErrorLine, BOOL skiperror, 
                     if (n1<=n2)
                     {
                         // can not teach in the normal game, but try for Arcadia III
-                        int  SkillPos = Skill.FindSubStrR(PRP_SKILL_POSTFIX);
+                        int  SkillPos = FindSubStrR(Skill, PRP_SKILL_POSTFIX);
                         if (SkillPos>=0)
-                            Skill.DelSubStr(SkillPos, strlen(PRP_SKILL_POSTFIX));
+                            DelSubStr(Skill, SkillPos, strlen(PRP_SKILL_POSTFIX));
 
                         Skill << PRP_SKILL_STUDY_POSTFIX;
-                        if (!pUnit->GetProperty(Skill.GetData(), type, (const void *&)n1, eNormal) )
+                        if (!pUnit->GetProperty(Skill.c_str(), type, (const void *&)n1, eNormal) )
                             n1 = 0;
-                        if (!pUnit2->GetProperty(Skill.GetData(), type, (const void *&)n2, eNormal) )
+                        if (!pUnit2->GetProperty(Skill.c_str(), type, (const void *&)n2, eNormal) )
                             n2 = 0;
 
                     }
@@ -6696,8 +6697,8 @@ void CAtlaParser::OrderProcess_Teach(BOOL skiperror, CUnit * pUnit)
     long          n1, n2;
     CUnit       * pUnit2;
     double        teach;
-    CStr          ErrorLine(32);
-    CStr          Line;
+    std::string ErrorLine;
+    std::string          Line;
     EValueType    type;
     int           i;
     const char  * leadership;
@@ -6707,7 +6708,7 @@ void CAtlaParser::OrderProcess_Teach(BOOL skiperror, CUnit * pUnit)
     {
         if ( pUnit->pStudents && (pUnit->pStudents->Count() > 0)  )
         {
-            if (!pUnit->StudyingSkill.IsEmpty())
+            if (!pUnit->StudyingSkill.empty())
             {
                 BOOL ItsOk = FALSE;
                 // is it a freaking hero?
@@ -6755,18 +6756,18 @@ void CAtlaParser::OrderProcess_Teach(BOOL skiperror, CUnit * pUnit)
 
 void CAtlaParser::RunPseudoComment(int sequence, CLand * pLand, CUnit * pUnit, const char * src)
 {
-    CStr            Command;
-    CStr            S;
+    std::string            Command;
+    std::string            S;
     char            ch;
     const char    * p;
     do
     {
         // just one damn pseudo comment please!
-        p = Command.GetToken(SkipSpaces(src), " \t", ch, TRIM_ALL);
+        p = GetToken(Command, SkipSpaces(src), " \t", ch, TRIM_ALL);
 
         // it must be sequenced just like the real commands!
         if (SQ_CLAIM == sequence)
-            if (0==stricmp(Command.GetData(), "$GET"))  // do it in CLAIM so it will affect new units too
+            if (0==stricmp(Command.c_str(), "$GET"))  // do it in CLAIM so it will affect new units too
             {
                 // GET 100 silv
 
@@ -6811,8 +6812,8 @@ BOOL CAtlaParser::ApplyDefaultOrders(BOOL EmptyOnly)
 {
     int           i;
     CUnit       * pUnit;
-    CStr          NewOrder(32);
-    CStr          OldOrder(32);
+    std::string NewOrder;
+    std::string OldOrder;
     const char  * pNew;
     const char  * pOld;
     BOOL          Exists;
@@ -6825,16 +6826,16 @@ BOOL CAtlaParser::ApplyDefaultOrders(BOOL EmptyOnly)
         {
             if (EmptyOnly)
             {
-                pUnit->Orders.TrimRight(TRIM_ALL);
-                if (pUnit->Orders.IsEmpty())
+                TrimRight(pUnit->Orders, TRIM_ALL);
+                if (pUnit->Orders.empty())
                 {
-                    pNew  = pUnit->DefOrders.GetData();
+                    pNew  = pUnit->DefOrders.c_str();
                     while (pNew)
                     {
-                        pNew = NewOrder.GetToken(pNew, '\n', TRIM_ALL);
-                        if ( (!NewOrder.IsEmpty()) && (';'!=NewOrder.GetData()[0]) )
+                        pNew = GetToken(NewOrder, pNew, '\n', TRIM_ALL);
+                        if ( (!NewOrder.empty()) && (';'!=NewOrder.c_str()[0]) )
                         {
-                            if (!pUnit->Orders.IsEmpty())
+                            if (!pUnit->Orders.empty())
                                 pUnit->Orders << EOL_SCR;
                             pUnit->Orders << NewOrder;
                             Changed = TRUE;
@@ -6844,18 +6845,18 @@ BOOL CAtlaParser::ApplyDefaultOrders(BOOL EmptyOnly)
             }
             else
             {
-                pNew  = pUnit->DefOrders.GetData();
+                pNew  = pUnit->DefOrders.c_str();
                 while (pNew)
                 {
-                    pNew = NewOrder.GetToken(pNew, '\n', TRIM_ALL);
-                    if ( (!NewOrder.IsEmpty()) && (';'!=NewOrder.GetData()[0]) )
+                    pNew = GetToken(NewOrder, pNew, '\n', TRIM_ALL);
+                    if ( (!NewOrder.empty()) && (';'!=NewOrder.c_str()[0]) )
                     {
                         Exists = FALSE;
-                        pOld   = pUnit->Orders.GetData();
+                        pOld   = pUnit->Orders.c_str();
                         while (pOld)
                         {
-                            pOld = OldOrder.GetToken(pOld, '\n', TRIM_ALL);
-                            if (0==stricmp(OldOrder.GetData(), NewOrder.GetData()))
+                            pOld = GetToken(OldOrder, pOld, '\n', TRIM_ALL);
+                            if (0==stricmp(OldOrder.c_str(), NewOrder.c_str()))
                             {
                                 Exists = TRUE;
                                 break;
@@ -6863,7 +6864,7 @@ BOOL CAtlaParser::ApplyDefaultOrders(BOOL EmptyOnly)
                         }
                         if (!Exists)
                         {
-                            if (!pUnit->Orders.IsEmpty())
+                            if (!pUnit->Orders.empty())
                                 pUnit->Orders << EOL_SCR;
                             pUnit->Orders << NewOrder;
                             Changed = TRUE;
@@ -6903,9 +6904,9 @@ int  CAtlaParser::SetLandProperty(CLand * pLand, const char * name, EValueType t
 
 //-------------------------------------------------------------
 
-void WriteOneMageSkill(CStr & Line, const char * skill, CUnit * pUnit, const char * separator, int format)
+void WriteOneMageSkill(std::string & Line, const char * skill, CUnit * pUnit, const char * separator, int format)
 {
-    CStr                S;
+    std::string                S;
     EValueType          type;
     const void        * value;
     long                nlvl=0, ndays=0;
@@ -6915,12 +6916,12 @@ void WriteOneMageSkill(CStr & Line, const char * skill, CUnit * pUnit, const cha
 
 
     S << skill << PRP_SKILL_POSTFIX;
-    if (pUnit->GetProperty(S.GetData(), type, value, eNormal) && (eLong==type) )
+    if (pUnit->GetProperty(S.c_str(), type, value, eNormal) && (eLong==type) )
         nlvl = (long)value;
 
-    S.Empty();
+    S.clear();
     S << skill << PRP_SKILL_DAYS_POSTFIX;
-    if (pUnit->GetProperty(S.GetData(), type, value, eNormal) && (eLong==type) )
+    if (pUnit->GetProperty(S.c_str(), type, value, eNormal) && (eLong==type) )
         ndays = (long)value;
 
     switch (format)
@@ -6965,7 +6966,7 @@ void CAtlaParser::WriteMagesCSV(const char * FName, BOOL vertical, const char * 
     std::set<std::string, CaseInsensitiveLess> Skills;
     const char        * propname;
     int                 i, n, postlen;
-    CStr                S, Line(64);
+    std::string                S, Line;
     CFileWriter         Dest;
     BOOL                IsMage;
 
@@ -6998,10 +6999,10 @@ void CAtlaParser::WriteMagesCSV(const char * FName, BOOL vertical, const char * 
                 if (pUnit->GetProperty(propname, type, value, eNormal) && (eLong==type) )
                 {
                     S = propname;
-                    if (S.FindSubStrR(PRP_SKILL_POSTFIX) == S.GetLength()-postlen)
+                    if (FindSubStrR(S, PRP_SKILL_POSTFIX) == S.size()-postlen)
                     {
-                        S.DelSubStr(S.GetLength()-postlen, postlen);
-                        Skills.insert(S.GetData());
+                        DelSubStr(S, S.size()-postlen, postlen);
+                        Skills.insert(S.c_str());
                     }
                 }
 
@@ -7014,7 +7015,7 @@ void CAtlaParser::WriteMagesCSV(const char * FName, BOOL vertical, const char * 
 
     if (Dest.Open(FName))
     {
-        Line.Empty();
+        Line.clear();
         if (vertical)
         {
             Line << "Skill";
@@ -7024,11 +7025,11 @@ void CAtlaParser::WriteMagesCSV(const char * FName, BOOL vertical, const char * 
                 Line << separator << pUnit->Id << " " << pUnit->Name;
             }
             Line << EOL_FILE;
-            Dest.WriteBuf(Line.GetData(), Line.GetLength());
+            Dest.WriteBuf(Line.c_str(), Line.size());
 
             for (const auto& skillName : Skills)
             {
-                Line.Empty();
+                Line.clear();
                 Line << skillName.c_str();
                 for (idx=0; idx<Mages.Count(); idx++)
                 {
@@ -7036,7 +7037,7 @@ void CAtlaParser::WriteMagesCSV(const char * FName, BOOL vertical, const char * 
                     WriteOneMageSkill(Line, skillName.c_str(), pUnit, separator, format);
                 }
                 Line << EOL_FILE;
-                Dest.WriteBuf(Line.GetData(), Line.GetLength());
+                Dest.WriteBuf(Line.c_str(), Line.size());
             }
         }
         else
@@ -7045,19 +7046,19 @@ void CAtlaParser::WriteMagesCSV(const char * FName, BOOL vertical, const char * 
             for (const auto& skillName : Skills)
                 Line << separator << skillName.c_str();
             Line << EOL_FILE;
-            Dest.WriteBuf(Line.GetData(), Line.GetLength());
+            Dest.WriteBuf(Line.c_str(), Line.size());
 
 
             for (idx=0; idx<Mages.Count(); idx++)
             {
                 pUnit = (CUnit*)Mages.At(idx);
-                Line.Empty();
+                Line.clear();
                 Line << pUnit->Id << separator << pUnit->Name;
                 for (const auto& skillName : Skills)
                     WriteOneMageSkill(Line, skillName.c_str(), pUnit, separator, format);
 
                 Line << EOL_FILE;
-                Dest.WriteBuf(Line.GetData(), Line.GetLength());
+                Dest.WriteBuf(Line.c_str(), Line.size());
             }
         }
         Dest.Close();
@@ -7077,7 +7078,7 @@ void CAtlaParser::LookupAdvancedResourceVisibility(CUnit * pUnit, CLand * pLand)
     const char        * propname;
     EValueType          type;
     const void        * value;
-    CStr                S;
+    std::string                S;
     int                 propidx, postlen;
     std::vector<long>        Levels;
     std::vector<std::string> Resources;
@@ -7094,10 +7095,10 @@ void CAtlaParser::LookupAdvancedResourceVisibility(CUnit * pUnit, CLand * pLand)
         if (pUnit->GetProperty(propname, type, value, eNormal) && (eLong==type) )
         {
             S = propname;
-            if (S.FindSubStrR(PRP_SKILL_POSTFIX) == S.GetLength()-postlen)
+            if (FindSubStrR(S, PRP_SKILL_POSTFIX) == S.size()-postlen)
             {
-                S.DelSubStr(S.GetLength()-postlen, postlen);
-                if (gpDataHelper->CanSeeAdvResources(S.GetData(), pLand->TerrainType.GetData(), Levels, Resources))
+                DelSubStr(S, S.size()-postlen, postlen);
+                if (gpDataHelper->CanSeeAdvResources(S.c_str(), pLand->TerrainType.c_str(), Levels, Resources))
                 {
                     level = (long)value;
                     for (i=0; i<(int)Levels.size(); i++)

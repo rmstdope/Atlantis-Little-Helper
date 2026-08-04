@@ -20,7 +20,7 @@
 /*
 #include <wx/wx.h>
 #include "ah25.h"
-#include "cstr.h"
+#include "string_utils.h"
 
 BEGIN_EVENT_TABLE( ah25Frame, wxFrame )
 	EVT_MENU( Menu_File_Quit, ah25Frame::OnQuit )
@@ -67,12 +67,12 @@ ah25Frame::OnQuit( wxCommandEvent& WXUNUSED( event ) )
 void 
 ah25Frame::OnAbout( wxCommandEvent& WXUNUSED( event ) )
 {
-    CStr S;
+    std::string S;
     int  x;
     
     S = "Hi there";
     x = 1;
-    S.Format("%d", x);
+    Format(S, "%d", x);
     
 	wxMessageBox( wxT( "This is a wxWidgets Hello world sample" ),
 			wxT( "About Hello World" ), wxOK | wxICON_INFORMATION, this );

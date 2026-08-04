@@ -22,7 +22,7 @@
 #include "string.h"
 #include <stdarg.h>
 #include <cstdint>
-#include "cstr.h"
+#include "string_utils.h"
 #include "objs.h"
 #include "compat.h"
 
@@ -31,7 +31,7 @@
 
 TProperty::TProperty()
 {
-    m_name      = NULL;
+    m_name.clear();
     m_type      = eLong;
     m_value     = (void*)0;
     m_valueorg  = (void*)0;
@@ -41,12 +41,14 @@ TProperty::TProperty()
 
 TProperty::TProperty(const char * name, EValueType type, const void * value)
 {
-    m_name      = name?strdup(name):NULL;
+    m_name      = name ? name : "";
     m_type      = type;
     if (eCharPtr==type)
     {
-        m_value     = value?strdup((const char *)value):NULL;
-        m_valueorg  = value?strdup((const char *)value):NULL;
+        m_strValue    = value ? (const char*)value : "";
+        m_strValueOrg = m_strValue;
+        m_value       = (void*)m_strValue.c_str();
+        m_valueorg    = (void*)m_strValueOrg.c_str();
     }
     else
     {
@@ -59,15 +61,7 @@ TProperty::TProperty(const char * name, EValueType type, const void * value)
 
 TProperty::~TProperty()
 {
-    if (m_name)
-        free((void*)m_name);
-    if (eCharPtr==m_type) 
-    {
-        if (m_value)
-            free(m_value);
-        if (m_valueorg)
-            free(m_valueorg);
-    }
+    // eCharPtr payload is stored in std::string members.
 }
 
 //-------------------------------------------------------------------
@@ -77,31 +71,39 @@ int TProperty::SetValue(EValueType     type,
                         EPropertyType  proptype
                         )
 {
-    void     ** pvalue;
-
     if (type!=m_type)
         return PE_INV_VALUE_TYPE;
 
-    switch (proptype)
-    {
-    case eNormal:
-        pvalue = &m_value;
-        break;
-    case eOriginal:
-        pvalue = &m_valueorg;
-        break;
-    default:
-        return PE_INV_PROP_TYPE;
-    }
-
     if (eCharPtr==type)
     {
-        if (*pvalue)
-            free(*pvalue);
-        *pvalue     = value?strdup((const char *)value):NULL;
+        switch (proptype)
+        {
+        case eNormal:
+            m_strValue = value ? (const char*)value : "";
+            m_value = (void*)m_strValue.c_str();
+            break;
+        case eOriginal:
+            m_strValueOrg = value ? (const char*)value : "";
+            m_valueorg = (void*)m_strValueOrg.c_str();
+            break;
+        default:
+            return PE_INV_PROP_TYPE;
+        }
     }
     else
-        *pvalue     = (void*)value;
+    {
+        switch (proptype)
+        {
+        case eNormal:
+            m_value = (void*)value;
+            break;
+        case eOriginal:
+            m_valueorg = (void*)value;
+            break;
+        default:
+            return PE_INV_PROP_TYPE;
+        }
+    }
 
     return PE_OK;
 }
@@ -121,7 +123,7 @@ TProperty * TPropertyColl::find(const char * name) const
 
 void TPropertyColl::insert(TProperty * p)
 {
-    if (!p || !p->m_name) return;
+    if (!p || p->m_name.empty()) return;
     m_map[p->m_name] = p;
 }
 
@@ -178,8 +180,12 @@ BOOL TPropertyHolder::GetJustProperty(const char    *  name,
     valuetype = pProp->m_type;
     switch (proptype)
     {
-    case eNormal:   value = pProp->m_value;    break;
-    case eOriginal: value = pProp->m_valueorg; break;
+    case eNormal:
+        value = (valuetype == eCharPtr) ? (const void*)pProp->m_strValue.c_str() : pProp->m_value;
+        break;
+    case eOriginal:
+        value = (valuetype == eCharPtr) ? (const void*)pProp->m_strValueOrg.c_str() : pProp->m_valueorg;
+        break;
     default:        value = NULL; return FALSE;
     }
     return TRUE;
@@ -190,7 +196,7 @@ BOOL TPropertyHolder::GetJustProperty(const char    *  name,
 const char * TPropertyHolder::GetPropertyName(int no)
 {
     TProperty * pProp = m_Properties.at(no);
-    return pProp ? pProp->m_name : NULL;
+    return pProp ? pProp->m_name.c_str() : NULL;
 }
 
 //-------------------------------------------------------------------
@@ -287,7 +293,12 @@ void TPropertyHolder::ResetNormalProperties()
     {
         TProperty * pProp = m_Properties.at(i);
         if (pProp)
-            pProp->SetValue(pProp->m_type, pProp->m_valueorg, eNormal);
+        {
+            const void * resetValue = (pProp->m_type == eCharPtr)
+                ? (const void*)pProp->m_strValueOrg.c_str()
+                : pProp->m_valueorg;
+            pProp->SetValue(pProp->m_type, resetValue, eNormal);
+        }
     }
 }
 
@@ -298,7 +309,7 @@ void TPropertyHolder::ResetNormalProperties()
 void TPropertyHolderColl::ClearKeys()
 {
     for (int i = 0; i < min(m_KeyCount, MAX_PROP_COLL_KEYS); i++)
-        if (m_Key[i]) { free(m_Key[i]); m_Key[i] = NULL; }
+        m_Key[i].clear();
     m_KeyCount = 0;
 }
 
@@ -309,7 +320,7 @@ void TPropertyHolderColl::SetSortMode(const char ** keys, int keycount)
     ClearKeys();
     for (int i = 0; i < min(keycount, MAX_PROP_COLL_KEYS); i++)
         if (keys[i] && *keys[i])
-            m_Key[m_KeyCount++] = strdup(keys[i]);
+            m_Key[m_KeyCount++] = keys[i];
 
     std::stable_sort(m_items.begin(), m_items.end(),
         [this](TPropertyHolder * a, TPropertyHolder * b) { return Compare(a, b) < 0; });
@@ -329,8 +340,8 @@ int TPropertyHolderColl::Compare(TPropertyHolder * pItem1, TPropertyHolder * pIt
 
     for (n = 0; n < min(m_KeyCount, MAX_PROP_COLL_KEYS); n++)
     {
-        Ok1 = ((TPropertyHolder*)pItem1)->GetProperty(m_Key[n], t1, p1);
-        Ok2 = ((TPropertyHolder*)pItem2)->GetProperty(m_Key[n], t2, p2);
+        Ok1 = ((TPropertyHolder*)pItem1)->GetProperty(m_Key[n].c_str(), t1, p1);
+        Ok2 = ((TPropertyHolder*)pItem2)->GetProperty(m_Key[n].c_str(), t2, p2);
 
         if (!Ok1) { if (!Ok2) continue; else return -1; }
         else       { if (!Ok2) return 1; }
@@ -357,4 +368,3 @@ int TPropertyHolderColl::Compare(TPropertyHolder * pItem1, TPropertyHolder * pIt
 }
 
 //===================================================================
-

@@ -52,8 +52,8 @@ protected:
     CAhFrame            * m_pFrame;
     //CCollection         * m_pFactions;
 
-    CStr                  m_sConfigSection;
-    CStr                  m_sConfigSectionHdr;
+    std::string                  m_sConfigSection;
+    std::string                  m_sConfigSectionHdr;
 
     int                   m_ColClicked;
 

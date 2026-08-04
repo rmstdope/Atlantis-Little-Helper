@@ -22,7 +22,7 @@
 #include "wx/fontdlg.h"
 #include "wx/colordlg.h"
 
-#include "cstr.h"
+#include "string_utils.h"
 #include "cfgfile.h"
 #include "files.h"
 #include "atlaparser.h"

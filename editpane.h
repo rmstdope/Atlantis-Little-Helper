@@ -20,8 +20,7 @@
 #ifndef __AH_EDIT_PANE_INCL__
 #define __AH_EDIT_PANE_INCL__
 
-
-class CStr;
+#include <string>
 
 class CEditPane : public wxPanel
 {
@@ -31,13 +30,13 @@ public:
     
     virtual void Update();
     virtual void Init();
-    void         SetSource(CStr * pSource, BOOL * pChanged);
+    void         SetSource(std::string * pSource, BOOL * pChanged);
     virtual void ApplyFonts();
     BOOL         SaveModifications();
     void         OnKillFocus();
     void         OnMouseDClick();
     void         SetReadOnly(BOOL ReadOnly);
-    void         GetValue(CStr & value);
+    void         GetValue(std::string & value);
 
     wxTextCtrl   * m_pEditor;
 
@@ -45,7 +44,7 @@ public:
 protected :
     void         OnSize      (wxSizeEvent & event);
 
-    CStr         * m_pSource;
+    std::string         * m_pSource;
     BOOL         * m_pChanged;
     wxStaticText * m_pHeader;
     int            m_HdrHeight;

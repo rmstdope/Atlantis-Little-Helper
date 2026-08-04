@@ -21,7 +21,7 @@
 
 #include "wx/listctrl.h"
 
-#include "cstr.h"
+#include "string_utils.h"
 #include "cfgfile.h"
 #include <set>
 #include <vector>
@@ -63,8 +63,7 @@ END_EVENT_TABLE()
 //--------------------------------------------------------------------------
 
 CUnitPaneFltr::CUnitPaneFltr(wxWindow *parent, wxWindowID id)
-              :CUnitPane(parent, id),
-               m_NewUnits(32)
+              :CUnitPane(parent, id), m_NewUnits(32)
 {
     m_ColClickedFltr = -1;
     m_IsUpdating     = FALSE;
@@ -90,24 +89,24 @@ void CUnitPaneFltr::Done()
 
 void CUnitPaneFltr::Update(CUnitFilterDlg * pFilter)
 {
-    CStr             Property[UNIT_SIMPLE_FLTR_COUNT];
-    CStr             Compare [UNIT_SIMPLE_FLTR_COUNT];
-    CStr             sValue  [UNIT_SIMPLE_FLTR_COUNT];
+    std::string             Property[UNIT_SIMPLE_FLTR_COUNT];
+    std::string             Compare [UNIT_SIMPLE_FLTR_COUNT];
+    std::string             sValue  [UNIT_SIMPLE_FLTR_COUNT];
     long             lValue  [UNIT_SIMPLE_FLTR_COUNT];
     int              i,k;
-    CStr             ConfigKey;
+    std::string             ConfigKey;
     eCompareOp       CompareOp[UNIT_SIMPLE_FLTR_COUNT];
     CUnit          * pUnit, * pPrevUnit;
     BOOL             ok;
-    CStr             TrackingGroup;
+    std::string             TrackingGroup;
     std::set<long>   Tracking;
     const char     * p;
-    CStr             S;
+    std::string             S;
     BOOL             bUsePython = FALSE;
     CPythonEmbedder  Python(gpApp->m_pAtlantis.get());
     eEErr            rcPy = E_OK;
-    CStr             sPythonText, sRealPythonText;
-    CStr             sConfSect;
+    std::string             sPythonText, sRealPythonText;
+    std::string             sConfSect;
     CBaseColl        Hexes(64);
     CLand          * pLand, * pPrevLand;
     int              unitidx;
@@ -118,7 +117,7 @@ void CUnitPaneFltr::Update(CUnitFilterDlg * pFilter)
     BOOL             ShowGoneUnits = FALSE;
     CAtlaParser    * pPrevTurn = NULL;
 
-    sConfSect = gpApp->GetConfig(m_sConfigSection.GetData(), SZ_KEY_FLTR_SET);
+    sConfSect = gpApp->GetConfig(m_sConfigSection.c_str(), SZ_KEY_FLTR_SET);
     if (pFilter)
     {
         ShowOnMap     = pFilter->m_chDisplayOnMap->IsChecked();
@@ -137,62 +136,62 @@ void CUnitPaneFltr::Update(CUnitFilterDlg * pFilter)
         }
         else
         {
-            ConfigKey.Format("%s%d", SZ_KEY_UNIT_FLTR_PROPERTY, i);  Property[i] = gpApp->GetConfig(sConfSect.GetData(), ConfigKey.GetData());
-            ConfigKey.Format("%s%d", SZ_KEY_UNIT_FLTR_COMPARE , i);  Compare [i] = gpApp->GetConfig(sConfSect.GetData(), ConfigKey.GetData());
-            ConfigKey.Format("%s%d", SZ_KEY_UNIT_FLTR_VALUE   , i);  sValue  [i] = gpApp->GetConfig(sConfSect.GetData(), ConfigKey.GetData());
+            Format(ConfigKey, "%s%d", SZ_KEY_UNIT_FLTR_PROPERTY, i);  Property[i] = gpApp->GetConfig(sConfSect.c_str(), ConfigKey.c_str());
+            Format(ConfigKey, "%s%d", SZ_KEY_UNIT_FLTR_COMPARE , i);  Compare [i] = gpApp->GetConfig(sConfSect.c_str(), ConfigKey.c_str());
+            Format(ConfigKey, "%s%d", SZ_KEY_UNIT_FLTR_VALUE   , i);  sValue  [i] = gpApp->GetConfig(sConfSect.c_str(), ConfigKey.c_str());
         }
 
-        Property[i].TrimRight(TRIM_ALL);    Property[i].TrimLeft(TRIM_ALL);
-        Compare [i].TrimRight(TRIM_ALL);    Compare [i].TrimLeft(TRIM_ALL);
-        sValue  [i].TrimRight(TRIM_ALL);    sValue  [i].TrimLeft(TRIM_ALL);
+        TrimRight(Property[i], TRIM_ALL);    TrimLeft(Property[i], TRIM_ALL);
+        TrimRight(Compare[i], TRIM_ALL);    TrimLeft(Compare[i], TRIM_ALL);
+        TrimRight(sValue[i], TRIM_ALL);    TrimLeft(sValue[i], TRIM_ALL);
 
         CompareOp[i] = NOP;
         for (k=GT; k<NOP; k++)
-            if (0==stricmp(UNIT_FILTER_OPERATION[k], Compare[i].GetData()))
+            if (0==stricmp(UNIT_FILTER_OPERATION[k], Compare[i].c_str()))
             {
                 CompareOp[i] = (eCompareOp)k;
                 break;
             }
-        lValue[i] = atol(sValue[i].GetData());
+        lValue[i] = atol(sValue[i].c_str());
     }
 
     // prepare tracking group
     if (pFilter)
     {
         TrackingGroup = pFilter->m_TrackingGroup;
-        gpApp->SetConfig(m_sConfigSection.GetData(), SZ_KEY_UNIT_FLTR_TRACKING, TrackingGroup.GetData());
+        gpApp->SetConfig(m_sConfigSection.c_str(), SZ_KEY_UNIT_FLTR_TRACKING, TrackingGroup.c_str());
     }
     else
-        TrackingGroup = gpApp->GetConfig(m_sConfigSection.GetData(), SZ_KEY_UNIT_FLTR_TRACKING);
+        TrackingGroup = gpApp->GetConfig(m_sConfigSection.c_str(), SZ_KEY_UNIT_FLTR_TRACKING);
 
-    TrackingGroup.TrimRight(TRIM_ALL);
-    if (!TrackingGroup.IsEmpty())
+    TrimRight(TrackingGroup, TRIM_ALL);
+    if (!TrackingGroup.empty())
     {
-        p = gpApp->GetConfig(SZ_SECT_UNIT_TRACKING, TrackingGroup.GetData());
+        p = gpApp->GetConfig(SZ_SECT_UNIT_TRACKING, TrackingGroup.c_str());
         while (p && *p)
         {
-            p = S.GetToken(p, ',');
-            Tracking.insert(atol(S.GetData()));
+            p = GetToken(S, p, ',');
+            Tracking.insert(atol(S.c_str()));
         }
     }
 
     // should we run Python?
-    if (!ShowGoneUnits && TrackingGroup.IsEmpty())
+    if (!ShowGoneUnits && TrackingGroup.empty())
         if (pFilter)
         {
-            bUsePython = TrackingGroup.IsEmpty() && pFilter->m_rbUsePython->GetValue();
+            bUsePython = TrackingGroup.empty() && pFilter->m_rbUsePython->GetValue();
             sPythonText= pFilter->m_tcFilterText->GetValue().mb_str();
         }
         else
         {
-            S = gpApp->GetConfig(sConfSect.GetData(), SZ_KEY_UNIT_FLTR_SOURCE);
-            bUsePython = (0==stricmp(S.GetData(), SZ_KEY_UNIT_FLTR_SOURCE_PYTHON));
-            sPythonText= gpApp->GetConfig(sConfSect.GetData(), SZ_KEY_UNIT_FLTR_PYTHON_CODE);
+            S = gpApp->GetConfig(sConfSect.c_str(), SZ_KEY_UNIT_FLTR_SOURCE);
+            bUsePython = (0==stricmp(S.c_str(), SZ_KEY_UNIT_FLTR_SOURCE_PYTHON));
+            sPythonText= gpApp->GetConfig(sConfSect.c_str(), SZ_KEY_UNIT_FLTR_PYTHON_CODE);
         }
 
     if (bUsePython)
     {
-        rcPy = Python.InitUnitFilter(sPythonText.GetData(), sRealPythonText);
+        rcPy = Python.InitUnitFilter(sPythonText.c_str(), sRealPythonText);
         if (E_OK != rcPy)
             goto Failed;
     }
@@ -243,8 +242,8 @@ void CUnitPaneFltr::Update(CUnitFilterDlg * pFilter)
                 {
                     // it is nowhere to be seen!  make new one
                     pUnit = pPrevUnit->AllocSimpleCopy();
-                    pUnit->Name.InsStr("-=DISAPPEARED=- ", 0);
-                    pUnit->Description.InsStr("-=DISAPPEARED=- ", 0);
+                    InsStr(pUnit->Name, "-=DISAPPEARED=- ", 0);
+                    InsStr(pUnit->Description, "-=DISAPPEARED=- ", 0);
                     pUnit->Flags |= UNIT_FLAG_TEMP;
                 }
     
@@ -272,7 +271,7 @@ void CUnitPaneFltr::Update(CUnitFilterDlg * pFilter)
                 pUnit = (CUnit*)pLand->Units.At(unitidx);
                 ok    = TRUE;
     
-                if (!TrackingGroup.IsEmpty())
+                if (!TrackingGroup.empty())
                     ok = (Tracking.count(pUnit->Id) > 0);
                 else if (bUsePython)
                 {
@@ -303,23 +302,23 @@ Failed:
 
     if (bUsePython)
     {
-        CStr sOut, sErr;
+        std::string sOut, sErr;
 
         Python.DoneUnitFilter();
         gpApp->StdRedirectReadMore(FALSE, sErr);
         gpApp->StdRedirectReadMore(TRUE, sOut);
         if (E_OK != rcPy)
         {
-            S.Empty();
+            S.clear();
             S << EOL_SCR << "----------- Python code -------------" << EOL_SCR;
-            gpApp->ShowError(S.GetData(), S.GetLength(), TRUE);
-            gpApp->ShowError(sRealPythonText.GetData(), sRealPythonText.GetLength(), TRUE);
-            S.Empty();
+            gpApp->ShowError(S.c_str(), S.size(), TRUE);
+            gpApp->ShowError(sRealPythonText.c_str(), sRealPythonText.size(), TRUE);
+            S.clear();
             S << EOL_SCR << "------------------------" << EOL_SCR << EOL_SCR;
-            gpApp->ShowError(S.GetData(), S.GetLength(), TRUE);
+            gpApp->ShowError(S.c_str(), S.size(), TRUE);
 
-            gpApp->ShowError(sErr.GetData(), sErr.GetLength(), TRUE);
-            gpApp->ShowError(sOut.GetData(), sOut.GetLength(), TRUE);
+            gpApp->ShowError(sErr.c_str(), sErr.size(), TRUE);
+            gpApp->ShowError(sOut.c_str(), sOut.size(), TRUE);
         }
     }
 }
@@ -442,7 +441,7 @@ void CUnitPaneFltr::OnRClick(wxListEvent& event)
 
 void CUnitPaneFltr::OnPopupMenuFilter  (wxCommandEvent& event)
 {
-    CUnitFilterDlg dlg(m_pParent, m_sConfigSection.GetData());
+    CUnitFilterDlg dlg(m_pParent, m_sConfigSection.c_str());
 
     if (wxID_OK == dlg.ShowModal())
         Update(&dlg);
@@ -469,8 +468,8 @@ void CUnitPaneFltr::OnPopupMenuIssueOrders(wxCommandEvent& event)
 
     if (wxID_OK != dlg.ShowModal())
         return;
-    dlg.m_Text.TrimRight(TRIM_ALL);
-    if (dlg.m_Text.IsEmpty())
+    TrimRight(dlg.m_Text, TRIM_ALL);
+    if (dlg.m_Text.empty())
         return;
 
 
@@ -484,8 +483,8 @@ void CUnitPaneFltr::OnPopupMenuIssueOrders(wxCommandEvent& event)
         pUnit = GetUnit(idx);
         if (pUnit->IsOurs)
         {
-            pUnit->Orders.TrimRight(TRIM_ALL);
-            if (!pUnit->Orders.IsEmpty())
+            TrimRight(pUnit->Orders, TRIM_ALL);
+            if (!pUnit->Orders.empty())
                 pUnit->Orders << EOL_SCR;
             pUnit->Orders << dlg.m_Text;
             LandIds.insert(pUnit->LandId);

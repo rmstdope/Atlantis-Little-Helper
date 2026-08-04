@@ -20,7 +20,7 @@
 #ifndef __OBJS_IS_OBJECTS_FOUNDATION_H_INCL__
 #define __OBJS_IS_OBJECTS_FOUNDATION_H_INCL__
 
-#include "cstr.h"
+#include "string_utils.h"
 #include <map>
 #include <vector>
 #include <string>
@@ -93,10 +93,12 @@ public:
                      EPropertyType  proptype = eNormal
                     );
 
-    const char * m_name;
+    std::string  m_name;
     EValueType   m_type;
     void       * m_value;
     void       * m_valueorg;
+    std::string  m_strValue;
+    std::string  m_strValueOrg;
 };
 
 //-------------------------------------------------------------------
@@ -185,7 +187,7 @@ protected:
 
     std::vector<TPropertyHolder*> m_items;
     int    m_KeyCount = 0;
-    char * m_Key[MAX_PROP_COLL_KEYS] = {};
+    std::string m_Key[MAX_PROP_COLL_KEYS];
 };
 
 //-------------------------------------------------------------------

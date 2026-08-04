@@ -52,7 +52,7 @@ public:
         if (pen)
             delete pen;
     }
-    CStr    name;
+    std::string    name;
     int     shape;
     wxPen * pen;
 };

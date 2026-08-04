@@ -19,7 +19,7 @@
 
 #include "stdhdr.h"
 
-#include "cstr.h"
+#include "string_utils.h"
 #include "cfgfile.h"
 #include "files.h"
 #include "atlaparser.h"
@@ -58,7 +58,7 @@ void   CPythonEmbedder::CheckForPythonError()
 
 //-------------------------------------------------------------------------
 
-eEErr  CPythonEmbedder::InitUnitFilter(const char * userfilter, CStr & sPythonFilter)
+eEErr  CPythonEmbedder::InitUnitFilter(const char * userfilter, std::string & sPythonFilter)
 {
     ShowError(SZ_NO_PYTHON);
     return E_PY_DISABLED;
@@ -79,7 +79,7 @@ eEErr  CPythonEmbedder::RunUnitFilter(CUnit * pUnit, BOOL & success)
 
 //-------------------------------------------------------------------------
 
-void   CPythonEmbedder::GetCommonCode(CStr & code)
+void   CPythonEmbedder::GetCommonCode(std::string & code)
 {
 }
 
