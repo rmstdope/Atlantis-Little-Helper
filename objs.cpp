@@ -21,6 +21,7 @@
 #include "stdlib.h"
 #include "string.h"
 #include <stdarg.h>
+#include <cstdint>
 #include "cstr.h"
 #include "objs.h"
 #include "compat.h"
@@ -221,13 +222,15 @@ BOOL TPropertyHolder::GetProperty(const char    *  name,
                 EValueType   vt;
                 if (GetJustProperty(it->second.c_str(), vt, x, proptype) && (eLong == vt))
                 {
-                    sum      += (long)x;
+                    // TProperty encodes eLong values directly in the pointer (pre-existing convention).
+                    // Use intptr_t as the safe intermediary for pointer<->integer round-trips.
+                    sum      += static_cast<long>(reinterpret_cast<intptr_t>(x));
                     valuetype = eLong;
                     Ok        = TRUE;
                 }
             }
             if (Ok)
-                value = (const void *)sum;
+                value = reinterpret_cast<const void*>(static_cast<intptr_t>(sum));
         }
     }
 

@@ -268,8 +268,8 @@ public:
     void* At(int i)   const { return (i >= 0 && i < (int)m_items.size()) ? m_items[i] : nullptr; }
     BOOL  Insert(void* pItem)             { m_items.push_back((CBaseObject*)pItem); return TRUE; }
     void  AtInsert(int i, void* pItem)    { m_items.insert(m_items.begin()+i, (CBaseObject*)pItem); }
-    void  AtDelete(int i)                 { m_items.erase(m_items.begin()+i); }
-    void  AtFree(int i)                   { FreeItem(m_items[i]); m_items.erase(m_items.begin()+i); }
+    void  AtDelete(int i)                 { if (i >= 0 && i < (int)m_items.size()) m_items.erase(m_items.begin()+i); }
+    void  AtFree(int i)                   { if (i >= 0 && i < (int)m_items.size()) { FreeItem(m_items[i]); m_items.erase(m_items.begin()+i); } }
     void  DeleteAll()                     { m_items.clear(); }
     void  FreeAll()                       { for (auto p : m_items) FreeItem(p); m_items.clear(); }
 
@@ -292,8 +292,8 @@ public:
     BOOL  Insert(void* pItem);
     BOOL  Search(void* pItem, int& nIndex) const;
     void  AtInsert(int i, void* pItem)    { m_items.insert(m_items.begin()+i, (CBaseObject*)pItem); }
-    void  AtDelete(int i)                 { m_items.erase(m_items.begin()+i); }
-    void  AtFree(int i)                   { FreeItem(m_items[i]); m_items.erase(m_items.begin()+i); }
+    void  AtDelete(int i)                 { if (i >= 0 && i < (int)m_items.size()) m_items.erase(m_items.begin()+i); }
+    void  AtFree(int i)                   { if (i >= 0 && i < (int)m_items.size()) { FreeItem(m_items[i]); m_items.erase(m_items.begin()+i); } }
     void  DeleteAll()                     { m_items.clear(); }
     void  FreeAll()                       { for (auto p : m_items) FreeItem(p); m_items.clear(); }
 

@@ -21,6 +21,11 @@
 #define __AH_STL_HELPERS_H__
 
 #include <string>
+#ifdef _WIN32
+#  include <string.h>   // _stricmp
+#else
+#  include <strings.h>  // strcasecmp
+#endif
 
 // Comparator for case-insensitive std::set<std::string>
 struct CaseInsensitiveLess {

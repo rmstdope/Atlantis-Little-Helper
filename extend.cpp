@@ -147,7 +147,7 @@ extern "C" PyObject * unitfltr_getproperty(PyObject *self, PyObject* args)
     const void    * value;
 
     if (!PyArg_ParseTuple(args, "s", &propname) || !gpUnit)
-        return Py_BuildValue("s", NULL);
+        Py_RETURN_NONE;
 
     if (!gpUnit->GetProperty(propname, type, value, eNormal) )
     {
@@ -161,7 +161,7 @@ extern "C" PyObject * unitfltr_getproperty(PyObject *self, PyObject* args)
                 else               value = "";
             }
             else
-                return Py_BuildValue("s", NULL);
+                Py_RETURN_NONE;
         }
     }
 

@@ -35,3 +35,4 @@ ah.stdout
 *.cfg
 *.his
 *.ord
+*.tmp
