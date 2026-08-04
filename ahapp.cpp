@@ -609,29 +609,35 @@ void CAhApp::UpgradeConfigFiles()
     int          fileno, idx, i;
     std::string         ConfigKey;
 
-    // move the sections
-    Ok = m_Config[CONFIG_FILE_CONFIG].GetNextSection("", szNextSection);
-    while (Ok)
+    // move the sections only when we still have old-style unit list headers.
+    // Modern configs already store the current section layout, so scanning the
+    // whole file on every startup just burns CPU and delays the UI.
+    if (m_Config[CONFIG_FILE_CONFIG].GetFirstInSection(SZ_SECT_UNITLIST_HDR, szName, szValue) >= 0 ||
+        m_Config[CONFIG_FILE_CONFIG].GetFirstInSection(SZ_SECT_UNITLIST_HDR_FLTR, szName, szValue) >= 0)
     {
-        Section = szNextSection;
-        fileno    = GetConfigFileNo(Section.c_str());
-
-        if (CONFIG_FILE_CONFIG != fileno)
+        Ok = m_Config[CONFIG_FILE_CONFIG].GetNextSection("", szNextSection);
+        while (Ok)
         {
-            // move to the appropriate file
-            idx = m_Config[CONFIG_FILE_CONFIG].GetFirstInSection(Section.c_str(), szName, szValue);
-            while (idx>=0)
+            Section = szNextSection;
+            fileno    = GetConfigFileNo(Section.c_str());
+
+            if (CONFIG_FILE_CONFIG != fileno)
             {
-                m_Config[fileno].SetByName(Section.c_str(), szName, szValue);
-                idx = m_Config[CONFIG_FILE_CONFIG].GetNextInSection(idx, Section.c_str(), szName, szValue);
+                // move to the appropriate file
+                idx = m_Config[CONFIG_FILE_CONFIG].GetFirstInSection(Section.c_str(), szName, szValue);
+                while (idx>=0)
+                {
+                    m_Config[fileno].SetByName(Section.c_str(), szName, szValue);
+                    idx = m_Config[CONFIG_FILE_CONFIG].GetNextInSection(idx, Section.c_str(), szName, szValue);
+                }
+                m_Config[CONFIG_FILE_CONFIG].RemoveSection(Section.c_str());
+
+                // and it means land flags has to be moved, too
+                m_UpgradeLandFlags = true;
             }
-            m_Config[CONFIG_FILE_CONFIG].RemoveSection(Section.c_str());
 
-            // and it means land flags has to be moved, too
-            m_UpgradeLandFlags = true;
+            Ok = m_Config[CONFIG_FILE_CONFIG].GetNextSection(Section.c_str(), szNextSection);
         }
-
-        Ok = m_Config[CONFIG_FILE_CONFIG].GetNextSection(Section.c_str(), szNextSection);
     }
 
     // unit lists columns

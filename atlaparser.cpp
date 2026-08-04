@@ -2329,7 +2329,7 @@ int CAtlaParser::ParseUnit(std::string & FirstLine, bool Join)
     }
 
     // now check if this guy can see any advanced resources
-    if (pUnit->IsOurs)
+    if (pUnit->IsOurs && m_pCurLand && gpDataHelper)
         LookupAdvancedResourceVisibility(pUnit, m_pCurLand);
 
     return err;
@@ -7088,6 +7088,9 @@ void CAtlaParser::WriteMagesCSV(const char * FName, bool vertical, const char * 
 
 void CAtlaParser::LookupAdvancedResourceVisibility(CUnit * pUnit, CLand * pLand)
 {
+    if (!pUnit || !pLand || !gpDataHelper)
+        return;
+
     const char        * propname;
     EValueType          type;
     const void        * value;
