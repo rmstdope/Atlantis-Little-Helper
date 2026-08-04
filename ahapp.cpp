@@ -2589,6 +2589,21 @@ void CAhApp::PostLoadReport()
 
     if (pUnitPane)
         pUnitPane->m_pCurLand = NULL; // force the unit pane to do full update
+
+    // Restore the last selected unit in the selected hex
+    if (pMapPane && m_pAtlantis)
+    {
+        CStr   sSection;
+        sSection << "PLANE_" << pMapPane->m_SelPlane;
+        long savedUnitId = atol(GetConfig(sSection.GetData(), SZ_KEY_UNIT_SEL));
+        if (savedUnitId)
+        {
+            CLand * pLand = m_pAtlantis->GetLand(pMapPane->m_SelHexX, pMapPane->m_SelHexY, pMapPane->m_SelPlane, TRUE);
+            if (pLand)
+                pLand->guiUnit = savedUnitId;
+        }
+    }
+
     OnMapSelectionChange();
 
     // if there were Hex Events, show them

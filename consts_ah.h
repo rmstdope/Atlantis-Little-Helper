@@ -259,6 +259,7 @@ enum
 #define SZ_KEY_ATLA_Y0                   "ATLA_TOP"
 #define SZ_KEY_HEX_SEL_X                 "HEX_SELECTED_X"
 #define SZ_KEY_HEX_SEL_Y                 "HEX_SELECTED_Y"
+#define SZ_KEY_UNIT_SEL                  "UNIT_SELECTED"
 #define SZ_KEY_STATE                     "SHOW_STATE"
 #define SZ_KEY_PLANE_SEL                 "PLANE_SELECTED"
 #define SZ_KEY_OPEN                      "IS_OPEN"
