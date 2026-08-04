@@ -104,7 +104,7 @@ void CUnitPaneFltr::Update(CUnitFilterDlg * pFilter)
     const char     * p;
     CStr             S;
     BOOL             bUsePython = FALSE;
-    CPythonEmbedder  Python(gpApp->m_pAtlantis);
+    CPythonEmbedder  Python(gpApp->m_pAtlantis.get());
     eEErr            rcPy = E_OK;
     CStr             sPythonText, sRealPythonText;
     CStr             sConfSect;
@@ -508,4 +508,3 @@ void CUnitPaneFltr::OnPopupMenuIssueOrders(wxCommandEvent& event)
             pUnitPane->Update(pUnitPane->m_pCurLand);
     }
 }
-
