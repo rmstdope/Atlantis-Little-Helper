@@ -31,7 +31,7 @@ static const char * stristr( const char * string, const char * image )
     char   first[3];
     int    imagelen;
 
-    if ((NULL==image) || (0==*image))
+    if ((nullptr==image) || (0==*image))
         return string;
 
     imagelen = strlen(image);
@@ -51,18 +51,18 @@ static const char * stristr( const char * string, const char * image )
         }
     }
 
-    return NULL;
+    return nullptr;
 }
 
 int SafeCmp(const char * s1, const char * s2)
 {
-    if (NULL==s1)
-        if (NULL==s2)
+    if (nullptr==s1)
+        if (nullptr==s2)
             return 0;
         else
             return -1;
     else
-        if (NULL==s2)
+        if (nullptr==s2)
             return 1;
         else
             return stricmp(s1, s2);
@@ -70,13 +70,13 @@ int SafeCmp(const char * s1, const char * s2)
 
 int SafeCmpNoSpaces(const char * s1, const char * s2)
 {
-    if (NULL==s1)
-        if (NULL==s2)
+    if (nullptr==s1)
+        if (nullptr==s2)
             return 0;
         else
             return -1;
     else
-        if (NULL==s2)
+        if (nullptr==s2)
             return 1;
         else
         {
@@ -168,7 +168,7 @@ void SetCh(std::string & s, int nPos, char ch)
 
 void AddStr(std::string & s, const char * szS, int iSLen)
 {
-    if ((NULL==szS) || (0==szS[0]))
+    if ((nullptr==szS) || (0==szS[0]))
         return;
 
     if (0==iSLen)
@@ -185,7 +185,7 @@ void SetStr(std::string & s, const char * szS, int iSLen)
 
 void InsStr(std::string & s, const char * szS, int nPos, int iSLen)
 {
-    if ((NULL==szS) || (0==szS[0]))
+    if ((nullptr==szS) || (0==szS[0]))
         return;
 
     if (nPos<0)
@@ -213,7 +213,7 @@ void AddDouble(std::string & s, double dNum, int width, int precision)
 
 void AddBuf(std::string & s, const void * szData, int iDataLen)
 {
-    if ((NULL==szData) || (0==iDataLen))
+    if ((nullptr==szData) || (0==iDataLen))
         return;
 
     s.append((const char *)szData, (size_t)iDataLen);
@@ -221,7 +221,7 @@ void AddBuf(std::string & s, const void * szData, int iDataLen)
 
 void InsBuf(std::string & s, const void * szData, int nPos, int iDataLen)
 {
-    if ((NULL==szData) || (0==iDataLen))
+    if ((nullptr==szData) || (0==iDataLen))
         return;
 
     if (nPos<0)
@@ -232,14 +232,14 @@ void InsBuf(std::string & s, const void * szData, int nPos, int iDataLen)
     s.insert((size_t)nPos, (const char *)szData, (size_t)iDataLen);
 }
 
-char * GetToken(std::string & out, const char * Src, char Limit, TrimMode Mode, BOOL StripQuotes)
+char * GetToken(std::string & out, const char * Src, char Limit, TrimMode Mode, bool StripQuotes)
 {
     char * p;
 
     out.clear();
 
-    if (NULL==Src)
-        return NULL;
+    if (nullptr==Src)
+        return nullptr;
 
     if (StripQuotes && '"' == *Src)
     {
@@ -249,7 +249,7 @@ char * GetToken(std::string & out, const char * Src, char Limit, TrimMode Mode, 
     else
         p = (char*)strchr(Src,Limit);
 
-    if (NULL==p)
+    if (nullptr==p)
         out.assign(Src);
     else
     {
@@ -264,15 +264,15 @@ char * GetToken(std::string & out, const char * Src, char Limit, TrimMode Mode, 
     return p;
 }
 
-char * GetToken(std::string & out, const char * Src, const char * Limit, char & LimitUsed, TrimMode Mode, BOOL StripQuotes)
+char * GetToken(std::string & out, const char * Src, const char * Limit, char & LimitUsed, TrimMode Mode, bool StripQuotes)
 {
     char * p;
 
     out.clear();
     LimitUsed = 0;
 
-    if (NULL==Src)
-        return NULL;
+    if (nullptr==Src)
+        return nullptr;
 
     if (StripQuotes && '"' == *Src)
     {
@@ -282,7 +282,7 @@ char * GetToken(std::string & out, const char * Src, const char * Limit, char & 
     else
         p = (char*)strpbrk(Src,Limit);
 
-    if (NULL==p)
+    if (nullptr==p)
         out.assign(Src);
     else
     {
@@ -298,7 +298,7 @@ char * GetToken(std::string & out, const char * Src, const char * Limit, char & 
     return p;
 }
 
-char * GetInteger(std::string & out, const char * Src, BOOL & Valid)
+char * GetInteger(std::string & out, const char * Src, bool & Valid)
 {
     out.clear();
 
@@ -319,7 +319,7 @@ char * GetInteger(std::string & out, const char * Src, BOOL & Valid)
     return (char*)Src;
 }
 
-char * GetDouble(std::string & out, const char * Src, BOOL & Valid)
+char * GetDouble(std::string & out, const char * Src, bool & Valid)
 {
     out.clear();
 
@@ -438,7 +438,7 @@ int FindSubStrR(const std::string & s, const char * szS)
     if (!szS)
         return -1;
 
-    const char * p1 = NULL;
+    const char * p1 = nullptr;
     const char * base = s.c_str();
     const char * p2 = stristr(base, szS);
     int n = strlen(szS);
@@ -504,17 +504,17 @@ void Replace(std::string & s, char search, char replace_with)
     }
 }
 
-BOOL IsInteger(const std::string & s)
+bool IsInteger(const std::string & s)
 {
-    BOOL Ok = FALSE;
+    bool Ok = false;
 
     for (size_t pos = 0; pos < s.size(); ++pos)
     {
         char ch = s[pos];
         if ((ch>='0' && ch<='9') || (0==pos && '-'==ch))
-            Ok = TRUE;
+            Ok = true;
         else
-            return FALSE;
+            return false;
     }
 
     return Ok;

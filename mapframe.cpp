@@ -171,11 +171,11 @@ CMapFrame::CMapFrame(wxWindow * parent, int layout)
     wxApp::s_macAboutMenuItemId = menu_About;
 #endif
 
-    m_Splitter  = NULL;
-    m_Splitter1 = NULL;
-    m_Splitter2 = NULL;
-    m_Splitter3 = NULL;
-    m_Splitter4 = NULL;
+    m_Splitter  = nullptr;
+    m_Splitter1 = nullptr;
+    m_Splitter2 = nullptr;
+    m_Splitter3 = nullptr;
+    m_Splitter4 = nullptr;
 
     MakeMenu(layout);
     MakeToolBar();
@@ -311,7 +311,7 @@ void CMapFrame::MakeToolBar()
                          wxEmptyString, 
                          toolBarBitmap[i], wxNullBitmap,
                          wxITEM_NORMAL,
-                         toolTip[i], wxEmptyString, NULL);
+                         toolTip[i], wxEmptyString, nullptr);
     }
 
     toolBar->Realize();
@@ -363,10 +363,10 @@ void CMapFrame::Init(int layout, const char * szConfigSection)
 
             p1 = new CMapPane (m_Splitter1, -1, layout  );
             p2 = new CUnitPane(m_Splitter);
-            p3 = new CEditPane(m_Splitter2, "Hex description"        , FALSE, FONT_EDIT_DESCR);
-            p4 = new CEditPane(m_Splitter3, "Unit description"       , FALSE, FONT_EDIT_DESCR);
-            p5 = new CEditPane(m_Splitter4, "Orders"                 , FALSE, FONT_EDIT_ORDER);
-            p6 = new CEditPane(m_Splitter4, "Comments/Default orders", TRUE , FONT_EDIT_ORDER);
+            p3 = new CEditPane(m_Splitter2, "Hex description"        , false, FONT_EDIT_DESCR);
+            p4 = new CEditPane(m_Splitter3, "Unit description"       , false, FONT_EDIT_DESCR);
+            p5 = new CEditPane(m_Splitter4, "Orders"                 , false, FONT_EDIT_ORDER);
+            p6 = new CEditPane(m_Splitter4, "Comments/Default orders", true , FONT_EDIT_ORDER);
 
             SetPane(AH_PANE_MAP          , p1);
             SetPane(AH_PANE_UNITS_HEX    , p2);
@@ -425,7 +425,7 @@ void CMapFrame::Init(int layout, const char * szConfigSection)
                                               wxSP_3D | wxCLIP_CHILDREN);
 
             p1 = new CMapPane (m_Splitter, -1, layout  );
-            p2 = new CEditPane(m_Splitter, NULL, FALSE, FONT_EDIT_DESCR);
+            p2 = new CEditPane(m_Splitter, nullptr, false, FONT_EDIT_DESCR);
 
             SetPane(AH_PANE_MAP       , p1);
             SetPane(AH_PANE_MAP_DESCR , p2);
@@ -453,7 +453,7 @@ void CMapFrame::Init(int layout, const char * szConfigSection)
 
 //--------------------------------------------------------------------
 
-void CMapFrame::Done(BOOL SetClosedFlag)
+void CMapFrame::Done(bool SetClosedFlag)
 {
     CMapPane    * pMapPane;
     CUnitPane         * pUnitPane;
@@ -492,8 +492,8 @@ void CMapFrame::Done(BOOL SetClosedFlag)
 
 void CMapFrame::OnQuit(wxCommandEvent& WXUNUSED(event))
 {
-    // TRUE is to force the frame to close
-    Close(TRUE);
+    // true is to force the frame to close
+    Close(true);
 }
 
 
@@ -501,10 +501,10 @@ void CMapFrame::OnQuit(wxCommandEvent& WXUNUSED(event))
 
 void CMapFrame::OnQuitNoSave(wxCommandEvent& WXUNUSED(event))
 {
-    gpApp->m_DiscardChanges = TRUE;
+    gpApp->m_DiscardChanges = true;
 
-    // TRUE is to force the frame to close
-    Close(TRUE);
+    // true is to force the frame to close
+    Close(true);
 }
 
 //--------------------------------------------------------------------
@@ -543,11 +543,11 @@ void CMapFrame::OnToolbarCmd(wxCommandEvent& event)
 
 void CMapFrame::OnToolbarUpdate(wxUpdateUIEvent& event)
 {
-    BOOL Ok = false;
+    bool Ok = false;
     if (gpApp->m_Panes[AH_PANE_MAP])
         Ok = ((CMapPane*)gpApp->m_Panes[AH_PANE_MAP])->IsToolActive(event);
 
-    event.Enable(FALSE!=Ok); // otherwise that bitch VC++, well, bitches
+    event.Enable(false!=Ok); // otherwise that bitch VC++, well, bitches
 }
 
 //--------------------------------------------------------------------
@@ -669,14 +669,14 @@ void CMapFrame::OnCloseWindow(wxCloseEvent& event)
 
 void CMapFrame::OnLoadReport(wxCommandEvent& WXUNUSED(event))
 {
-    gpApp->LoadReport(FALSE);
+    gpApp->LoadReport(false);
 }
 
 //--------------------------------------------------------------------
 
 void CMapFrame::OnJoinReport(wxCommandEvent& WXUNUSED(event))
 {
-    gpApp->LoadReport(TRUE);
+    gpApp->LoadReport(true);
 }
 
 //--------------------------------------------------------------------
@@ -690,7 +690,7 @@ void CMapFrame::OnLoadOrders(wxCommandEvent& WXUNUSED(event))
 
 void CMapFrame::OnSaveOrdersAs(wxCommandEvent& WXUNUSED(event))
 {
-    gpApp->SaveOrders(FALSE);
+    gpApp->SaveOrders(false);
 }
 
 //--------------------------------------------------------------------
@@ -704,42 +704,42 @@ void CMapFrame::OnOptions(wxCommandEvent& event)
 
 void CMapFrame::OnViewSkillsAll(wxCommandEvent& event)
 {
-    gpApp->ViewShortNamedObjects(TRUE, SZ_SECT_SKILLS, "Skills", gpApp->m_pAtlantis->m_Skills);
+    gpApp->ViewShortNamedObjects(true, SZ_SECT_SKILLS, "Skills", gpApp->m_pAtlantis->m_Skills);
 }
 
 //--------------------------------------------------------------------
 
 void CMapFrame::OnViewSkillsNew(wxCommandEvent& event)
 {
-    gpApp->ViewShortNamedObjects(FALSE, SZ_SECT_SKILLS, "Skills", gpApp->m_pAtlantis->m_Skills);
+    gpApp->ViewShortNamedObjects(false, SZ_SECT_SKILLS, "Skills", gpApp->m_pAtlantis->m_Skills);
 }
 
 //--------------------------------------------------------------------
 
 void CMapFrame::OnViewItemsAll(wxCommandEvent& event)
 {
-    gpApp->ViewShortNamedObjects(TRUE, SZ_SECT_ITEMS, "Items", gpApp->m_pAtlantis->m_Items);
+    gpApp->ViewShortNamedObjects(true, SZ_SECT_ITEMS, "Items", gpApp->m_pAtlantis->m_Items);
 }
 
 //--------------------------------------------------------------------
 
 void CMapFrame::OnViewItemsNew(wxCommandEvent& event)
 {
-    gpApp->ViewShortNamedObjects(FALSE, SZ_SECT_ITEMS, "Items", gpApp->m_pAtlantis->m_Items);
+    gpApp->ViewShortNamedObjects(false, SZ_SECT_ITEMS, "Items", gpApp->m_pAtlantis->m_Items);
 }
 
 //--------------------------------------------------------------------
 
 void CMapFrame::OnViewObjectsAll(wxCommandEvent& event)
 {
-    gpApp->ViewShortNamedObjects(TRUE, SZ_SECT_OBJECTS, "Objects", gpApp->m_pAtlantis->m_Objects);
+    gpApp->ViewShortNamedObjects(true, SZ_SECT_OBJECTS, "Objects", gpApp->m_pAtlantis->m_Objects);
 }
 
 //--------------------------------------------------------------------
 
 void CMapFrame::OnViewObjectsNew(wxCommandEvent& event)
 {
-    gpApp->ViewShortNamedObjects(FALSE, SZ_SECT_OBJECTS, "Objects", gpApp->m_pAtlantis->m_Objects);
+    gpApp->ViewShortNamedObjects(false, SZ_SECT_OBJECTS, "Objects", gpApp->m_pAtlantis->m_Objects);
 }
 
 //--------------------------------------------------------------------
@@ -753,7 +753,7 @@ void CMapFrame::OnViewBattlesAll(wxCommandEvent& event)
 
 void CMapFrame::OnViewEvents(wxCommandEvent& event)
 {
-    gpApp->ViewEvents(TRUE);
+    gpApp->ViewEvents(true);
 }
 
 //--------------------------------------------------------------------
@@ -774,7 +774,7 @@ void CMapFrame::OnViewNewProducts(wxCommandEvent& event)
 
 void CMapFrame::OnViewErrors(wxCommandEvent& event)
 {
-    gpApp->ViewEvents(FALSE);
+    gpApp->ViewEvents(false);
 }
 
 //--------------------------------------------------------------------
@@ -823,7 +823,7 @@ void CMapFrame::OnWindowUnits(wxCommandEvent& event)
 
 void CMapFrame::OnWindowUnitsFltr(wxCommandEvent& event)
 {
-    gpApp->OpenUnitFrameFltr(TRUE);
+    gpApp->OpenUnitFrameFltr(true);
 }
 
 //--------------------------------------------------------------------
@@ -844,7 +844,7 @@ void CMapFrame::OnWindowEditors(wxCommandEvent& event)
 
 void CMapFrame::OnApplyDefaultOrders(wxCommandEvent& event)
 {
-    gpApp->SetOrdersChanged(gpApp->m_pAtlantis->ApplyDefaultOrders(TRUE) //(BOOL)atol(gpApp->GetConfig(SZ_SECT_COMMON, SZ_KEY_DEFAULT_EMPTY_ONLY)))
+    gpApp->SetOrdersChanged(gpApp->m_pAtlantis->ApplyDefaultOrders(true) //(bool)atol(gpApp->GetConfig(SZ_SECT_COMMON, SZ_KEY_DEFAULT_EMPTY_ONLY)))
                             || gpApp->GetOrdersChanged());
 
     CUnitPane * p = (CUnitPane*)gpApp->m_Panes[AH_PANE_UNITS_HEX];
@@ -926,7 +926,7 @@ void CMapFrame::OnFindTradeRoutes(wxCommandEvent& event)
     if (pMapPane)
     {
         pMapPane->RemoveRectangle();
-        pMapPane->Refresh(FALSE, NULL);
+        pMapPane->Refresh(false, nullptr);
     }
 }
 

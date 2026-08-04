@@ -26,8 +26,8 @@ class CMapFrame : public CAhFrame
 public:
     CMapFrame(wxWindow * parent, int layout);
 
-    virtual void    Init(int layout, const char * szConfigSection);
-    virtual void    Done(BOOL SetClosedFlag);
+    virtual void    Init(int layout, const char * szConfigSection) override;
+    virtual void    Done(bool SetClosedFlag) override;
 
     static const char * GetConfigSection(int layout);
 

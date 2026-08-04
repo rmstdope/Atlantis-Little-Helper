@@ -51,9 +51,9 @@ END_EVENT_TABLE()
 CUnitFrame::CUnitFrame(wxWindow * parent)
            :CAhFrame (parent, "Units (hex)", (wxDEFAULT_FRAME_STYLE | wxCLIP_CHILDREN) & ~wxMINIMIZE_BOX)
 {
-    m_Splitter1 = NULL;
-    m_Splitter2= NULL;
-    m_Splitter3= NULL;
+    m_Splitter1 = nullptr;
+    m_Splitter2= nullptr;
+    m_Splitter3= nullptr;
 }
 
 //--------------------------------------------------------------------
@@ -96,9 +96,9 @@ void CUnitFrame::Init(int layout, const char * szConfigSection)
         panel1     = new CFlatPanel(m_Splitter1);
 
         p1 = new CUnitPane(panel1 );
-        p2 = new CEditPane(m_Splitter2, NULL      , FALSE, FONT_EDIT_DESCR);
-        p3 = new CEditPane(m_Splitter3, "Orders"  , FALSE, FONT_EDIT_ORDER );
-        p4 = new CEditPane(m_Splitter3, "Comments", TRUE , FONT_EDIT_ORDER );
+        p2 = new CEditPane(m_Splitter2, nullptr      , false, FONT_EDIT_DESCR);
+        p3 = new CEditPane(m_Splitter3, "Orders"  , false, FONT_EDIT_ORDER );
+        p4 = new CEditPane(m_Splitter3, "Comments", true , FONT_EDIT_ORDER );
 
         panel1->SetChild(p1);
 
@@ -141,7 +141,7 @@ void CUnitFrame::Init(int layout, const char * szConfigSection)
 
 //--------------------------------------------------------------------
 
-void CUnitFrame::Done(BOOL SetClosedFlag)
+void CUnitFrame::Done(bool SetClosedFlag)
 {
     CUnitPane         * pUnitPane;
 

@@ -202,7 +202,7 @@ COptionsDialog::COptionsDialog(wxWindow * parent)
 
 
 
-    SetAutoLayout( TRUE );     // tell dialog to use sizer
+    SetAutoLayout( true );     // tell dialog to use sizer
     SetSizer( topsizer );      // actually set the sizer
     topsizer->Fit( this );            // set size to minimum size as calculated by the sizer
     topsizer->SetSizeHints( this );   // set size hints to honour mininum size}
@@ -228,7 +228,7 @@ void COptionsDialog::Init()
 
     for(i=0; i<FONT_COUNT; i++)
     {
-        m_bFontChanged[i]      = FALSE;
+        m_bFontChanged[i]      = false;
 
         m_FontData[i].size     = gpApp->m_Fonts[i]->GetPointSize();
         m_FontData[i].family   = gpApp->m_Fonts[i]->GetFamily()   ;
@@ -272,15 +272,15 @@ void COptionsDialog::Init()
 
     switch(atol(gpApp->GetConfig(SZ_SECT_COMMON, SZ_KEY_LAYOUT)))
     {
-      case AH_LAYOUT_1_WIN:   m_pRadio1Win->SetValue(TRUE);   break;
-      case AH_LAYOUT_2_WIN:   m_pRadio2Win->SetValue(TRUE);   break;
-      default             :   m_pRadio3Win->SetValue(TRUE);   break;
+      case AH_LAYOUT_1_WIN:   m_pRadio1Win->SetValue(true);   break;
+      case AH_LAYOUT_2_WIN:   m_pRadio2Win->SetValue(true);   break;
+      default             :   m_pRadio3Win->SetValue(true);   break;
     }
 
     if (0==stricmp(gpApp->GetConfig(SZ_SECT_COMMON, SZ_KEY_ICONS), SZ_ICONS_ADVANCED))
-        m_pRadioIconsAdvanced->SetValue(TRUE);
+        m_pRadioIconsAdvanced->SetValue(true);
     else
-        m_pRadioIconsSimple->SetValue(TRUE);
+        m_pRadioIconsSimple->SetValue(true);
 
 
     m_pComboFonts   ->SetSelection(0);
@@ -306,12 +306,12 @@ void COptionsDialog::Done()
 
 void COptionsDialog::OnOk    (wxCommandEvent& event)
 {
-    BOOL DoApplyColors;
+    bool DoApplyColors;
     int layout;
 
     if (m_IsValid && event.GetId()==wxID_OK)
     {
-        m_IsValid = FALSE;
+        m_IsValid = false;
         DoApplyColors = ((m_pChkHatchUnvisited->GetValue()?1:0)!=atol(gpApp->GetConfig(SZ_SECT_COMMON, SZ_KEY_HATCH_UNVISITED)));
 
 
@@ -373,7 +373,7 @@ void COptionsDialog::OnCancel(wxCommandEvent& event)
 
     if (m_IsValid && event.GetId()==wxID_CANCEL)
     {
-        m_IsValid = FALSE;
+        m_IsValid = false;
         for(i=0; i<FONT_COUNT; i++)
         {
             if (m_bFontChanged[i])
@@ -389,10 +389,10 @@ void COptionsDialog::OnCancel(wxCommandEvent& event)
                                             static_cast<wxFontFamily>(m_FontData[i].family),
                                             static_cast<wxFontStyle>(m_FontData[i].style),
                                             static_cast<wxFontWeight>(m_FontData[i].weight),
-                                            FALSE,
+                                            false,
                                             m_FontData[i].face,
                                             m_FontData[i].encoding   );
-//            font = new wxFont(size, family, style, weight, FALSE, facename, (wxFontEncoding)encoding);
+//            font = new wxFont(size, family, style, weight, false, facename, (wxFontEncoding)encoding);
 
             }
         }
@@ -443,7 +443,7 @@ void COptionsDialog::OnFont    (wxCommandEvent& event)
         gpApp->m_Fonts[fontidx]->SetEncoding (retFont.GetEncoding ());
         gpApp->m_Fonts[fontidx]->SetFaceName (retFont.GetFaceName ());
 
-        m_bFontChanged[fontidx] = TRUE;
+        m_bFontChanged[fontidx] = true;
 //        delete gpApp->m_Fonts[fontidx];
 //        gpApp->m_Fonts[fontidx] = new wxFont(retFont);
 
@@ -469,7 +469,7 @@ void COptionsDialog::OnColor    (wxCommandEvent& event)
     colname = m_pComboColors->GetStringSelection();
     StrToColor(&colour, gpApp->GetConfig(SZ_SECT_COLORS, colname.mb_str()));
 
-    data.SetChooseFull(TRUE);
+    data.SetChooseFull(true);
     data.SetCustomColour(0,colour);
     data.SetColour(colour);
 

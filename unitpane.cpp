@@ -66,8 +66,8 @@ END_EVENT_TABLE()
 CUnitPane::CUnitPane(wxWindow *parent, wxWindowID id)
           :CListPane(parent, id, wxLC_REPORT)
 {
-    m_pUnits   = NULL;
-    m_pCurLand = NULL;
+    m_pUnits   = nullptr;
+    m_pCurLand = nullptr;
     m_ColClicked = -1;
     ApplyFonts();
 }
@@ -96,15 +96,15 @@ void CUnitPane::Done()
     {
         m_pLayout->FreeAll();
         delete m_pLayout;
-        m_pLayout = NULL;
+        m_pLayout = nullptr;
     }
 
     if (m_pUnits)
     {
         m_pUnits->DeleteAll();
         delete m_pUnits;
-        m_pUnits = NULL;
-        m_pData  = NULL;
+        m_pUnits = nullptr;
+        m_pData  = nullptr;
     }
 }
 
@@ -116,7 +116,7 @@ void CUnitPane::Update(CLand * pLand)
     CUnit           * pUnit;
     eSelMode          selmode = sel_by_no;
     long              seldata = 0;
-    BOOL              FullUpdate = (pLand != m_pCurLand); // if not full mode, refresh new units only
+    bool              FullUpdate = (pLand != m_pCurLand); // if not full mode, refresh new units only
     CBaseCollById     NewUnits(64);
     wxListItem        info;
 
@@ -243,7 +243,7 @@ void CUnitPane::Sort()
     NewUnits.DeleteAll();
 
 
-    SetData(sel_by_id, data, TRUE);
+    SetData(sel_by_id, data, true);
 }
 
 //--------------------------------------------------------------------------
@@ -312,7 +312,7 @@ void CUnitPane::ReloadHdr(const char * szConfigSectionHdr)
         selmode = sel_by_id;
     }
 
-    SetData(selmode, seldata, TRUE);
+    SetData(selmode, seldata, true);
 }
 
 //--------------------------------------------------------------------------
@@ -365,7 +365,7 @@ void CUnitPane::OnSelected(wxListEvent& event)
 CUnit * CUnitPane::GetUnit(long index)
 {
     wxListItem   info;
-    CUnit      * pUnit = NULL;
+    CUnit      * pUnit = nullptr;
 
     info.m_itemId = index;
     info.m_col    = 0;
@@ -553,7 +553,7 @@ void CUnitPane::OnPopupMenuSplit(wxCommandEvent& event)
 
         CUnitSplitDlg dlg(this, pUnit);
         if (wxID_OK == dlg.ShowModal()) // it will modify unit's orders
-            gpApp->SetOrdersChanged(TRUE);
+            gpApp->SetOrdersChanged(true);
 
         Update(m_pCurLand);
     }
@@ -640,13 +640,13 @@ void CUnitPane::OnPopupMenuDetectSpies(wxCommandEvent& WXUNUSED(event))
     long         idx   = GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
     CUnit      * pUnit = GetUnit(idx);
     CEditPane  * pOrders;
-    BOOL         DoCheck;
+    bool         DoCheck;
 
     if (pUnit)
     {
         DoCheck = atol(gpApp->GetConfig(SZ_SECT_COMMON, SZ_KEY_SPY_DETECT_WARNING));
         if (DoCheck &&
-            wxYES != wxMessageBox(wxT("Really generate orders for spy detection?  It might freeze the program on Linux!"), wxT("Confirm"), wxYES_NO, NULL))
+            wxYES != wxMessageBox(wxT("Really generate orders for spy detection?  It might freeze the program on Linux!"), wxT("Confirm"), wxYES_NO, nullptr))
             return;
 
         pOrders = (CEditPane*)gpApp->m_Panes[AH_PANE_UNIT_COMMANDS];
@@ -675,8 +675,8 @@ void CUnitPane::OnPopupMenuAddUnitToTracking (wxCommandEvent& WXUNUSED(event))
     std::string         S;
     const char * szName;
     const char * szValue;
-    BOOL         found = FALSE;
-    BOOL         ManyUnits = (GetSelectedItemCount() > 1);
+    bool         found = false;
+    bool         ManyUnits = (GetSelectedItemCount() > 1);
 
     sectidx = gpApp->GetSectionFirst(SZ_SECT_UNIT_TRACKING, szName, szValue);
     while (sectidx >= 0)
@@ -700,7 +700,7 @@ void CUnitPane::OnPopupMenuAddUnitToTracking (wxCommandEvent& WXUNUSED(event))
             while (idx>=0)
             {
                 pUnit = GetUnit(idx);
-                found = FALSE;
+                found = false;
 
                 szValue = gpApp->GetConfig(SZ_SECT_UNIT_TRACKING, dlg.m_Choice.c_str());
                 while (szValue && *szValue)
@@ -708,7 +708,7 @@ void CUnitPane::OnPopupMenuAddUnitToTracking (wxCommandEvent& WXUNUSED(event))
                     szValue = GetToken(S, szValue, ',');
                     if (atol(S.c_str()) == pUnit->Id)
                     {
-                        found = TRUE;
+                        found = true;
                         break;
                     }
                 }
@@ -737,7 +737,7 @@ void CUnitPane::OnPopupMenuUnitFlags (wxCommandEvent& WXUNUSED(event))
     long         idx;
     CUnit      * pUnit;
     unsigned int flags = 0;
-    BOOL         ManyUnits = (GetSelectedItemCount() > 1);
+    bool         ManyUnits = (GetSelectedItemCount() > 1);
 
     if (!ManyUnits)
     {
@@ -777,7 +777,7 @@ void CUnitPane::OnPopupMenuUnitFlags (wxCommandEvent& WXUNUSED(event))
         idx   = GetNextItem(idx, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
     }
 //    Update(m_pCurLand);
-    SetData(sel_by_no, -1, FALSE);
+    SetData(sel_by_no, -1, false);
 
 }
 
@@ -788,7 +788,7 @@ void CUnitPane::OnPopupMenuIssueOrders(wxCommandEvent& event)
     long         idx;
     CUnit      * pUnit;
     CEditPane  * pOrders;
-    BOOL         Changed = FALSE;
+    bool         Changed = false;
     CGetTextDlg  dlg(this, "Order", "Orders for the selected units");
 
     if (wxID_OK != dlg.ShowModal())
@@ -808,7 +808,7 @@ void CUnitPane::OnPopupMenuIssueOrders(wxCommandEvent& event)
         pUnit = GetUnit(idx);
         if (pUnit->IsOurs)
         {
-            Changed = TRUE;
+            Changed = true;
             TrimRight(pUnit->Orders, TRIM_ALL);
             if (!pUnit->Orders.empty())
                 pUnit->Orders << EOL_SCR;
@@ -819,7 +819,7 @@ void CUnitPane::OnPopupMenuIssueOrders(wxCommandEvent& event)
 
     if (Changed)
     {
-        gpApp->SetOrdersChanged(TRUE);
+        gpApp->SetOrdersChanged(true);
         gpApp->m_pAtlantis->RunOrders(m_pCurLand);
         Update(m_pCurLand);
     }

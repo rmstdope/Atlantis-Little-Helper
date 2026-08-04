@@ -35,10 +35,10 @@ void AddULong(std::string & s, unsigned long ulNum);
 void AddDouble(std::string & s, double dNum, int width, int precision);
 void AddBuf(std::string & s, const void * szData, int iDataLen);
 void InsBuf(std::string & s, const void * szData, int nPos, int iDataLen);
-char * GetToken(std::string & out, const char * Src, char Limit, TrimMode Mode=TRIM_SPACES, BOOL StripQuotes=TRUE);
-char * GetToken(std::string & out, const char * Src, const char * Limit, char & LimitUsed, TrimMode Mode=TRIM_SPACES, BOOL StripQuotes=TRUE);
-char * GetInteger(std::string & out, const char * Src, BOOL & Valid);
-char * GetDouble(std::string & out, const char * Src, BOOL & Valid);
+char * GetToken(std::string & out, const char * Src, char Limit, TrimMode Mode=TRIM_SPACES, bool StripQuotes=true);
+char * GetToken(std::string & out, const char * Src, const char * Limit, char & LimitUsed, TrimMode Mode=TRIM_SPACES, bool StripQuotes=true);
+char * GetInteger(std::string & out, const char * Src, bool & Valid);
+char * GetDouble(std::string & out, const char * Src, bool & Valid);
 void TrimLeft(std::string & s, TrimMode Mode=TRIM_SPACES);
 void TrimRight(std::string & s, TrimMode Mode=TRIM_SPACES);
 void Format(std::string & out, const char * lpszFormat, ...);
@@ -49,7 +49,7 @@ void DelSubStr(std::string & s, int nPos, int nCount);
 void Normalize(std::string & s);
 void RemoveLineBreaks(std::string & s);
 void Replace(std::string & s, char search, char replace_with);
-BOOL IsInteger(const std::string & s);
+bool IsInteger(const std::string & s);
 const char * ToLower(std::string & s);
 
 #endif // __AH_STRING_UTILS_H__

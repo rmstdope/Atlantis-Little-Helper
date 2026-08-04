@@ -67,12 +67,12 @@ CUnitFlagsDlg::CUnitFlagsDlg(wxWindow *parent, E_FLAG_EDIT_MODE Mode, unsigned i
     const char      * p;
 
     // Zero all pointers first
-    m_btnOk         = NULL;
-    m_btnCancel     = NULL;
-    m_btnSetAllLand = NULL;
-    m_btnSetAllUnit = NULL;
-    m_btnRmvAllLand = NULL;
-    m_btnRmvAllUnit = NULL;
+    m_btnOk         = nullptr;
+    m_btnCancel     = nullptr;
+    m_btnSetAllLand = nullptr;
+    m_btnSetAllUnit = nullptr;
+    m_btnRmvAllLand = nullptr;
+    m_btnRmvAllUnit = nullptr;
     memset(m_chbUnitFlags   , 0, sizeof(m_chbUnitFlags));
     memset(m_chbLandFlags   , 0, sizeof(m_chbLandFlags));
     memset(m_txtUnitFlagText, 0, sizeof(m_txtUnitFlagText));
@@ -103,7 +103,7 @@ CUnitFlagsDlg::CUnitFlagsDlg(wxWindow *parent, E_FLAG_EDIT_MODE Mode, unsigned i
         {
             m_chbUnitFlags[i]     = new wxCheckBox   (this, -1, wxT(""));
             if (m_UnitFlags & x)
-                m_chbUnitFlags[i]->SetValue(TRUE);
+                m_chbUnitFlags[i]->SetValue(true);
             sizer->Add(m_chbUnitFlags[i] , 0, wxALIGN_CENTER | wxLEFT | wxRIGHT , SPACER_GENERIC);
         }
         sKey.clear();
@@ -167,7 +167,7 @@ CUnitFlagsDlg::CUnitFlagsDlg(wxWindow *parent, E_FLAG_EDIT_MODE Mode, unsigned i
 
 
 
-    SetAutoLayout( TRUE );     // tell dialog to use sizer
+    SetAutoLayout( true );     // tell dialog to use sizer
     SetSizer( topsizer );      // actually set the sizer
     topsizer->Fit( this );            // set size to minimum size as calculated by the sizer
     topsizer->SetSizeHints( this );   // set size hints to honour mininum size}
@@ -301,7 +301,7 @@ CMapFlagDlg::CMapFlagDlg(wxWindow *parent, CLand * pLand, wxPoint & position)
     
     topsizer->Add( button_sizer, 0, wxALIGN_CENTER );
 
-    SetAutoLayout( TRUE );     // tell dialog to use sizer
+    SetAutoLayout( true );     // tell dialog to use sizer
     SetSizer( topsizer );      // actually set the sizer
     topsizer->Fit( this );            // set size to minimum size as calculated by the sizer
     topsizer->SetSizeHints( this );   // set size hints to honour mininum size}
@@ -311,7 +311,7 @@ CMapFlagDlg::CMapFlagDlg(wxWindow *parent, CLand * pLand, wxPoint & position)
 
 
     int x,y, w,h, w1,h1;
-    BOOL change = FALSE;
+    bool change = false;
 
     GetPosition(&x,&y);
     GetSize(&w,&h);
@@ -320,22 +320,22 @@ CMapFlagDlg::CMapFlagDlg(wxWindow *parent, CLand * pLand, wxPoint & position)
     if (x<0)
     {
         x      = 0;
-        change = TRUE;
+        change = true;
     }
     if (y<0)
     {
         y      = 0;
-        change = TRUE;
+        change = true;
     }
     if (x+w > w1)
     {
         x = w1-w;
-        change = TRUE;
+        change = true;
     }
     if (y+h > h1)
     {
         y = h1-h;
-        change = TRUE;
+        change = true;
     }
     if (change)
         SetSize(x,y,w,h);

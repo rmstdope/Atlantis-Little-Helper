@@ -35,13 +35,13 @@ ah25app::OnInit()
 {
 	ah25Frame *frame = new ah25Frame( wxT( "Hello World" ), wxPoint(50,50), wxSize(450,340) );
 
-	frame->Show(TRUE);
+	frame->Show(true);
 	SetTopWindow(frame);
-	return TRUE;
+	return true;
 } 
 
 ah25Frame::ah25Frame( const wxString& title, const wxPoint& pos, const wxSize& size )
-	: wxFrame((wxFrame *)NULL, -1, title, pos, size)
+	: wxFrame((wxFrame *)nullptr, -1, title, pos, size)
 {
 	wxMenu *menuFile = new wxMenu;
 	
@@ -61,7 +61,7 @@ ah25Frame::ah25Frame( const wxString& title, const wxPoint& pos, const wxSize& s
 void 
 ah25Frame::OnQuit( wxCommandEvent& WXUNUSED( event ) )
 {
-	Close(TRUE);
+	Close(true);
 }
 
 void 

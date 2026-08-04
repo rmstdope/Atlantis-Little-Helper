@@ -73,10 +73,10 @@ CUnitFilterDlg::CUnitFilterDlg(wxWindow *parent, const char * szConfigSection)
     wxStaticText * stSetName;
     int            idx;
 
-    m_IsSaving           = FALSE;
+    m_IsSaving           = false;
     m_lastselect         = 0;
     m_sControllingConfig = szConfigSection;
-    m_bFindGoneUnits     = FALSE;
+    m_bFindGoneUnits     = false;
 
 
     topsizer = new wxBoxSizer( wxVERTICAL );
@@ -97,7 +97,7 @@ CUnitFilterDlg::CUnitFilterDlg(wxWindow *parent, const char * szConfigSection)
     stSetName       = new wxStaticText (this, -1, wxT("Filter name:"));
 
     if (!pMapPane->HaveSelection())
-        m_chUseSelectedHexes->Enable(FALSE);
+        m_chUseSelectedHexes->Enable(false);
 
     sizer    = new wxBoxSizer( wxHORIZONTAL );
     sizer->Add(stSetName       , 0, wxALIGN_CENTER | wxALL , SPACER_GENERIC);
@@ -114,8 +114,8 @@ CUnitFilterDlg::CUnitFilterDlg(wxWindow *parent, const char * szConfigSection)
 
     for (count=0; count < UNIT_SIMPLE_FLTR_COUNT; count++)
     {
-        m_cbProperty[count] = new wxComboBox(this, -1); //, "", wxDefaultPosition, wxDefaultSize, 0, NULL, wxCB_DROPDOWN | wxCB_READONLY );
-        m_cbCompare [count] = new wxComboBox(this, -1); //, "", wxDefaultPosition, wxDefaultSize, 0, NULL, wxCB_DROPDOWN | wxCB_READONLY );
+        m_cbProperty[count] = new wxComboBox(this, -1); //, "", wxDefaultPosition, wxDefaultSize, 0, nullptr, wxCB_DROPDOWN | wxCB_READONLY );
+        m_cbCompare [count] = new wxComboBox(this, -1); //, "", wxDefaultPosition, wxDefaultSize, 0, nullptr, wxCB_DROPDOWN | wxCB_READONLY );
         m_tcValue   [count] = new wxTextCtrl(this, -1);
 
         if (count>0)
@@ -150,7 +150,7 @@ CUnitFilterDlg::CUnitFilterDlg(wxWindow *parent, const char * szConfigSection)
     sizer->Add(m_btnHelp    , 0, wxALIGN_CENTER | wxALL, SPACER_GENERIC);
     topsizer->Add(sizer, 0, wxALIGN_CENTER );
 
-    SetAutoLayout( TRUE );     // tell dialog to use sizer
+    SetAutoLayout( true );     // tell dialog to use sizer
     SetSizer( topsizer );      // actually set the sizer
     topsizer->Fit( this );            // set size to minimum size as calculated by the sizer
     topsizer->SetSizeHints( this );   // set size hints to honour mininum size}
@@ -181,7 +181,7 @@ CUnitFilterDlg::CUnitFilterDlg(wxWindow *parent, const char * szConfigSection)
     if (!gpApp->CanSwitchToRep(repPrev, idx))
         m_btnGone->Disable();
 
-    m_bReady = TRUE;
+    m_bReady = true;
 }
 
 //--------------------------------------------------------------------------
@@ -192,7 +192,7 @@ void CUnitFilterDlg::LoadSetCombo(const char * setselect)
     int          setnameoffs;
     int          x=0, i=0;
 
-    m_IsSaving = TRUE;
+    m_IsSaving = true;
 
     setnameoffs = strlen(SZ_SECT_UNIT_FILTER);
     setsection  = gpApp->GetNextSectionName(CONFIG_FILE_CONFIG, SZ_SECT_UNIT_FILTER);
@@ -210,7 +210,7 @@ void CUnitFilterDlg::LoadSetCombo(const char * setselect)
         m_cbSetName->Append(wxString::FromAscii(&setselect[setnameoffs]));
     m_cbSetName->SetSelection(x);
 
-    m_IsSaving = FALSE;
+    m_IsSaving = false;
 }
 
 //--------------------------------------------------------------------------
@@ -297,13 +297,13 @@ void CUnitFilterDlg::Load(const char * szConfigSection)
     S = gpApp->GetConfig(szConfigSection, SZ_KEY_UNIT_FLTR_SOURCE);
     if (0==stricmp(S.c_str(), SZ_KEY_UNIT_FLTR_SOURCE_PYTHON))
     {
-        m_rbUsePython->SetValue(TRUE);
-        EnableBoxes(FALSE);
+        m_rbUsePython->SetValue(true);
+        EnableBoxes(false);
     }
     else
     {
-        m_rbUseBoxes->SetValue(TRUE);
-        EnableBoxes(TRUE);
+        m_rbUseBoxes->SetValue(true);
+        EnableBoxes(true);
     }
 
     S = gpApp->GetConfig(szConfigSection, SZ_KEY_UNIT_FLTR_SELECTED_HEXES);
@@ -317,11 +317,11 @@ void CUnitFilterDlg::Load(const char * szConfigSection)
 
 //--------------------------------------------------------------------------
 
-BOOL CUnitFilterDlg::IsValid()
+bool CUnitFilterDlg::IsValid()
 {
     std::string         S1, S2;
     int          count;
-    BOOL         isvalid = FALSE;
+    bool         isvalid = false;
 
     if (m_rbUseBoxes->GetValue())
         for (count=0; count < UNIT_SIMPLE_FLTR_COUNT; count++)
@@ -329,13 +329,13 @@ BOOL CUnitFilterDlg::IsValid()
             S1 = m_cbProperty[count]->GetValue().mb_str();   TrimRight(S1, TRIM_ALL);
             S2 = m_cbCompare[count]->GetValue().mb_str();    TrimRight(S2, TRIM_ALL);
             if (!S1.empty() && !S2.empty())
-                isvalid = TRUE;
+                isvalid = true;
         }
     else
     {
         S1 = m_tcFilterText->GetValue().mb_str();
         if (!S1.empty() )
-            isvalid = TRUE;
+            isvalid = true;
     }
     return isvalid;
 }
@@ -348,9 +348,9 @@ void CUnitFilterDlg::Save()
     std::string         ConfigKey;
     std::string         SetName;
     std::string         S;
-    BOOL         found = FALSE;
+    bool         found = false;
 
-    m_IsSaving = TRUE;
+    m_IsSaving = true;
 
     gpApp->RemoveSection(m_sCurrentSection.c_str());
 
@@ -362,7 +362,7 @@ void CUnitFilterDlg::Save()
         for (count=0; count<(int)m_cbSetName->GetCount(); count++)
             if (0==stricmp(m_cbSetName->GetString(count).mb_str(), SetName.c_str()))
             {
-                found = TRUE;
+                found = true;
                 break;
             }
         if (!found)
@@ -392,7 +392,7 @@ void CUnitFilterDlg::Save()
 
     }
 
-    m_IsSaving = FALSE;
+    m_IsSaving = false;
 }
 
 //--------------------------------------------------------------------------
@@ -411,7 +411,7 @@ void CUnitFilterDlg::Reload(const char * setname)
 
 //--------------------------------------------------------------------------
 
-void CUnitFilterDlg::EnableBoxes (BOOL bOldBoxes)
+void CUnitFilterDlg::EnableBoxes (bool bOldBoxes)
 {
     int i;
 
@@ -435,7 +435,7 @@ void CUnitFilterDlg::OnTextChange   (wxCommandEvent& event)
 
     if (object == m_cbSetName)
     {
-        if (m_lastselect < time(NULL))
+        if (m_lastselect < time(nullptr))
             Reload(m_cbSetName->GetValue().mb_str()); // returns the old value on windoze when value is selected
     }
     else
@@ -451,7 +451,7 @@ void CUnitFilterDlg::OnSelectChange (wxCommandEvent& event)
     if (object == m_cbSetName)
     {
         Reload(m_cbSetName->GetString(m_cbSetName->GetSelection()).mb_str());
-        m_lastselect = time(NULL);
+        m_lastselect = time(nullptr);
     }
     else
         OnBoxesChange(event);
@@ -565,7 +565,7 @@ void CUnitFilterDlg::OnButton(wxCommandEvent& event)
     }
     else if (object == m_btnGone)
     {
-        m_bFindGoneUnits = TRUE;
+        m_bFindGoneUnits = true;
         StoreSize();
         EndModal(wxID_OK);
     }

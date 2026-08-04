@@ -236,7 +236,7 @@ public:
 
 
     virtual const char  * ResolveAlias(const char * alias);
-    virtual BOOL GetProperty(const char  *  name,
+    virtual bool GetProperty(const char  *  name,
                              EValueType   & type,
                              const void  *& value, // returns pointer to inner location
                              EPropertyType  proptype = eNormal
@@ -267,7 +267,7 @@ public:
 
     int   Count()     const { return (int)m_items.size(); }
     void* At(int i)   const { return (i >= 0 && i < (int)m_items.size()) ? m_items[i] : nullptr; }
-    BOOL  Insert(void* pItem)             { m_items.push_back((CBaseObject*)pItem); return TRUE; }
+    bool  Insert(void* pItem)             { m_items.push_back((CBaseObject*)pItem); return true; }
     void  AtInsert(int i, void* pItem)    { m_items.insert(m_items.begin()+i, (CBaseObject*)pItem); }
     void  AtDelete(int i)                 { if (i >= 0 && i < (int)m_items.size()) m_items.erase(m_items.begin()+i); }
     void  AtFree(int i)                   { if (i >= 0 && i < (int)m_items.size()) { FreeItem(m_items[i]); m_items.erase(m_items.begin()+i); } }
@@ -290,8 +290,8 @@ public:
 
     int   Count()     const { return (int)m_items.size(); }
     void* At(int i)   const { return (i >= 0 && i < (int)m_items.size()) ? m_items[i] : nullptr; }
-    BOOL  Insert(void* pItem);
-    BOOL  Search(void* pItem, int& nIndex) const;
+    bool  Insert(void* pItem);
+    bool  Search(void* pItem, int& nIndex) const;
     void  AtInsert(int i, void* pItem)    { m_items.insert(m_items.begin()+i, (CBaseObject*)pItem); }
     void  AtDelete(int i)                 { if (i >= 0 && i < (int)m_items.size()) m_items.erase(m_items.begin()+i); }
     void  AtFree(int i)                   { if (i >= 0 && i < (int)m_items.size()) { FreeItem(m_items[i]); m_items.erase(m_items.begin()+i); } }
@@ -325,8 +325,8 @@ public:
 
     int   Count()     const { return (int)m_items.size(); }
     void* At(int i)   const { return (i >= 0 && i < (int)m_items.size()) ? m_items[i] : nullptr; }
-    BOOL  Insert(void* pItem);
-    BOOL  Search(void* pItem, int& nIndex) const;
+    bool  Insert(void* pItem);
+    bool  Search(void* pItem, int& nIndex) const;
     void  AtDelete(int i)  { m_items.erase(m_items.begin()+i); }
     void  AtFree(int i)    { delete m_items[i]; m_items.erase(m_items.begin()+i); }
     void  DeleteAll()      { m_items.clear(); }
@@ -360,8 +360,8 @@ class CAttitude : public CBaseObject
         int FactionId;
         int Stance;
         void    SetStance(int new_stance);
-        BOOL    IsDeclaredAs(int attitude);
-        BOOL    IsEqual(CAttitude *attitude);
+        bool    IsDeclaredAs(int attitude);
+        bool    IsEqual(CAttitude *attitude);
 };
 
 //-----------------------------------------------------------------
@@ -371,7 +371,7 @@ class CUnit : public CBaseObject
 public:
     CUnit();
     virtual ~CUnit();
-    virtual BOOL GetProperty(const char  *  name,
+    virtual bool GetProperty(const char  *  name,
                              EValueType   & type,
                              const void  *& value, // returns pointer to inner location
                              EPropertyType  proptype = eNormal
@@ -420,7 +420,7 @@ protected:
     void    AddWeight(int nitems, int * weights, const char ** movenames, int nweights);
     
     static std::string     m_CustomFlagNames[UNIT_CUSTOM_FLAG_COUNT];
-    static BOOL     m_CustomFlagNamesLoaded;
+    static bool     m_CustomFlagNamesLoaded;
 
 };
 
@@ -462,7 +462,7 @@ public:
     CLand();
     virtual ~CLand();
 
-    BOOL      AddUnit(CUnit * pUnit);
+    bool      AddUnit(CUnit * pUnit);
     void      RemoveUnit(CUnit * pUnit);
     void      ResetUnitsAndStructs();
     CStruct * GetStructById(long id);
@@ -497,7 +497,7 @@ public:
     int           CoastBits;
     CPlane      * pPlane;
     int           AtlaclientsLastTurnNo;
-    BOOL          WeatherWillBeGood;
+    bool          WeatherWillBeGood;
     double        Wages;
     long          MaxWages;
     long          Troops[ATT_UNDECLARED+1];
@@ -573,8 +573,8 @@ public:
 
     int   Count()     const { return (int)m_items.size(); }
     void* At(int i)   const { return (i >= 0 && i < (int)m_items.size()) ? m_items[i] : nullptr; }
-    BOOL  Insert(void* pItem);
-    BOOL  Search(void* pItem, int& nIndex) const;
+    bool  Insert(void* pItem);
+    bool  Search(void* pItem, int& nIndex) const;
     void  AtDelete(int i)  { m_items.erase(m_items.begin()+i); }
     void  DeleteAll()      { m_items.clear(); }
     void  FreeAll()        { m_items.clear(); } // does not own
@@ -618,30 +618,30 @@ public:
 class CGameDataHelper
 {
 public:
-    void         ReportError       (const char * msg, int msglen, BOOL orderrelated);
+    void         ReportError       (const char * msg, int msglen, bool orderrelated);
     long         GetStudyCost      (const char * skill);
     long         GetStructAttr     (const char * kind, long & MaxLoad, long & MinSailingPower);
     const char * GetConfString     (const char * section, const char * param);
-    BOOL         GetOrderId        (const char * order, long & id);
-    BOOL         IsTradeItem       (const char * item);
-    BOOL         IsMan             (const char * item);
-    const char * GetWeatherLine    (BOOL IsCurrent, BOOL IsGood, int Zone);
+    bool         GetOrderId        (const char * order, long & id);
+    bool         IsTradeItem       (const char * item);
+    bool         IsMan             (const char * item);
+    const char * GetWeatherLine    (bool IsCurrent, bool IsGood, int Zone);
     const char * ResolveAlias      (const char * alias);
-    BOOL         GetItemWeights    (const char * item, int *& weights, const char **& movenames, int & movecount );
+    bool         GetItemWeights    (const char * item, int *& weights, const char **& movenames, int & movecount );
     void         GetMoveNames      (const char **& movenames);
-    BOOL         GetTropicZone     (const char * plane, long & y_min, long & y_max);
+    bool         GetTropicZone     (const char * plane, long & y_min, long & y_max);
     void         SetTropicZone     (const char * plane, long y_min, long y_max);
     void         GetProdDetails    (const char * item, TProdDetails & details);
-    long         MaxSkillLevel     (const char * race, const char * skill, const char * leadership, BOOL IsArcadiaSkillSystem);
-    BOOL         ImmediateProdCheck();
-    BOOL         CanSeeAdvResources(const char * skillname, const char * terrain, std::vector<long> & Levels, std::vector<std::string> & Resources);
-    BOOL         ShowMoveWarnings  ();
-    BOOL         IsRawMagicSkill   (const char * skillname);
+    long         MaxSkillLevel     (const char * race, const char * skill, const char * leadership, bool IsArcadiaSkillSystem);
+    bool         ImmediateProdCheck();
+    bool         CanSeeAdvResources(const char * skillname, const char * terrain, std::vector<long> & Levels, std::vector<std::string> & Resources);
+    bool         ShowMoveWarnings  ();
+    bool         IsRawMagicSkill   (const char * skillname);
     int          GetAttitudeForFaction(int id);
     void         SetAttitudeForFaction(int id, int attitude);
     void         SetPlayingFaction (long id);
-    BOOL         IsWagon           (const char * item);
-    BOOL         IsWagonPuller     (const char * item);
+    bool         IsWagon           (const char * item);
+    bool         IsWagonPuller     (const char * item);
     int          WagonCapacity     ();
 };
 
@@ -669,8 +669,8 @@ public:
 
     int   Count()     const { return (int)m_items.size(); }
     void* At(int i)   const { return (i >= 0 && i < (int)m_items.size()) ? m_items[i] : nullptr; }
-    BOOL  Insert(void* pItem);
-    BOOL  Search(void* pItem, int& nIndex) const;
+    bool  Insert(void* pItem);
+    bool  Search(void* pItem, int& nIndex) const;
     void  AtDelete(int i)  { m_items.erase(m_items.begin()+i); }
     void  AtFree(int i)    { delete m_items[i]; m_items.erase(m_items.begin()+i); }
     void  DeleteAll()      { m_items.clear(); }
@@ -695,9 +695,9 @@ protected:
 long LandCoordToId(int x, int y, int z);
 void LandIdToCoord(long id, int & x, int & y, int & z);
 void TestLandId();
-BOOL IsASkillRelatedProperty(const char * propname);
+bool IsASkillRelatedProperty(const char * propname);
 void MakeQualifiedPropertyName(const char * prefix, const char * shortname, std::string & FullName);
 void SplitQualifiedPropertyName(const char * fullname, std::string & Prefix, std::string & ShortName);
-BOOL EvaluateBaseObjectByBoxes(CBaseObject * pObj, std::string * Property, eCompareOp * CompareOp, std::string * Value, long * lValue, int count);
+bool EvaluateBaseObjectByBoxes(CBaseObject * pObj, std::string * Property, eCompareOp * CompareOp, std::string * Value, long * lValue, int count);
 
 #endif

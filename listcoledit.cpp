@@ -80,10 +80,10 @@ CListHeaderEditDlg::CListHeaderEditDlg(wxWindow *parent, const char * szWorkKey)
     wxStaticText * stSetName;
 
     m_WorkKey         = szWorkKey;
-    m_SetIsValid      = FALSE;
+    m_SetIsValid      = false;
     m_SourceIdx       = -1;
     m_DestIdx         = -1;
-    m_IsSaving        = FALSE;
+    m_IsSaving        = false;
     m_lastselect      = 0;
 
     m_btnOk           = new wxButton     (this, wxID_OK        , wxT("Ok")    );
@@ -96,7 +96,7 @@ CListHeaderEditDlg::CListHeaderEditDlg(wxWindow *parent, const char * szWorkKey)
     stSetName         = new wxStaticText (this, -1             , wxT("Current set:"));
     m_lstSource = new wxListCtrl(this, ID_LIST_SRC , wxDefaultPosition, wxDefaultSize, wxLC_LIST | wxSUNKEN_BORDER | wxLC_SINGLE_SEL);
     m_lstDest   = new wxListCtrl(this, ID_LIST_DEST, wxDefaultPosition, wxDefaultSize, wxLC_LIST | wxSUNKEN_BORDER | wxLC_SINGLE_SEL);
-    m_cbSetName = new wxComboBox(this, ID_CB_SET_NAME, wxT(""), wxDefaultPosition, wxDefaultSize, 0, NULL, wxCB_DROPDOWN);
+    m_cbSetName = new wxComboBox(this, ID_CB_SET_NAME, wxT(""), wxDefaultPosition, wxDefaultSize, 0, nullptr, wxCB_DROPDOWN);
     m_txtCaption= new wxTextCtrl(this, ID_TXT_CAPTION);
 
     topsizer = new wxBoxSizer( wxVERTICAL );
@@ -135,7 +135,7 @@ CListHeaderEditDlg::CListHeaderEditDlg(wxWindow *parent, const char * szWorkKey)
     LoadListDest(m_cbSetName->GetValue().mb_str());
 
 
-    SetAutoLayout( TRUE );     // tell dialog to use sizer
+    SetAutoLayout( true );     // tell dialog to use sizer
     SetSizer( topsizer );      // actually set the sizer
     topsizer->Fit( this );            // set size to minimum size as calculated by the sizer
     topsizer->SetSizeHints( this );   // set size hints to honour mininum size}
@@ -212,7 +212,7 @@ void CListHeaderEditDlg::LoadListDest(const char * szNewName)
     m_DestIdx         = -1;
     m_lstDest->ClearAll();
     m_Fields.FreeAll();
-    m_SetIsValid = FALSE;
+    m_SetIsValid = false;
 
     m_SetName =szNewName;
     if (m_SetName.empty())
@@ -224,7 +224,7 @@ void CListHeaderEditDlg::LoadListDest(const char * szNewName)
     while (sectidx >= 0)
     {
 // 001 = 87, 0, faction, FName
-        m_SetIsValid  = TRUE;
+        m_SetIsValid  = true;
         pField        = new TUnitColData;
 
         szValue       = SkipSpaces(GetToken(S, szValue, ','));
@@ -253,18 +253,18 @@ void  CListHeaderEditDlg::SaveListDest()
     TUnitColData   Dummy;
     TUnitColData * pField;
     int            idx;
-    BOOL           found=FALSE;
+    bool           found=false;
 
     if (!m_SetIsValid || m_IsSaving)
         return;
-    m_IsSaving = TRUE;
+    m_IsSaving = true;
 
     ProcessCaption(m_DestIdx, m_DestIdx);
 
     for (x=0; x<(int)m_cbSetName->GetCount(); x++)
         if (0==stricmp(m_cbSetName->GetString(x).mb_str(), m_SetName.c_str()))
         {
-            found = TRUE;
+            found = true;
             break;
         }
     if (!found)
@@ -285,7 +285,7 @@ void  CListHeaderEditDlg::SaveListDest()
         }
     }
 
-    m_IsSaving = FALSE;
+    m_IsSaving = false;
 }
 
 //--------------------------------------------------------------------------
@@ -321,14 +321,14 @@ void  CListHeaderEditDlg::AddItem()
 
         if (!m_Fields.Insert(pField)) {
             delete pField;
-            pField = NULL;
+            pField = nullptr;
         }
     }
     if (pField) {
         m_lstDest->InsertItem(m_DestIdx+1, wxString::FromAscii(pField->PropName.c_str()));
         m_lstDest->SetItemState(m_DestIdx+1, wxLIST_STATE_SELECTED, wxLIST_STATE_SELECTED);
     }
-    m_SetIsValid = TRUE;
+    m_SetIsValid = true;
 }
 
 //--------------------------------------------------------------------------
@@ -426,7 +426,7 @@ void  CListHeaderEditDlg::OnSetNameChange(wxCommandEvent& event)
 {
     if (m_IsSaving)
         return;
-    if (m_lastselect < time(NULL))
+    if (m_lastselect < time(nullptr))
         LoadListDest(m_cbSetName->GetValue().mb_str()); // returns the old value on windoze when value is selected
 }
 
@@ -437,7 +437,7 @@ void  CListHeaderEditDlg::OnSetNameSelect(wxCommandEvent& event)
     if (m_IsSaving)
         return;
     LoadListDest(m_cbSetName->GetString(m_cbSetName->GetSelection()).mb_str());
-    m_lastselect = time(NULL);
+    m_lastselect = time(nullptr);
 }
 
 //--------------------------------------------------------------------------

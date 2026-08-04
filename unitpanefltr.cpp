@@ -66,7 +66,7 @@ CUnitPaneFltr::CUnitPaneFltr(wxWindow *parent, wxWindowID id)
               :CUnitPane(parent, id), m_NewUnits(32)
 {
     m_ColClickedFltr = -1;
-    m_IsUpdating     = FALSE;
+    m_IsUpdating     = false;
 }
 
 //--------------------------------------------------------------------------
@@ -81,7 +81,7 @@ void CUnitPaneFltr::Done()
     if (pMapPane)
     {
         ClearLandFlags();
-        pMapPane->Refresh(FALSE);
+        pMapPane->Refresh(false);
     }
 }
 
@@ -97,12 +97,12 @@ void CUnitPaneFltr::Update(CUnitFilterDlg * pFilter)
     std::string             ConfigKey;
     eCompareOp       CompareOp[UNIT_SIMPLE_FLTR_COUNT];
     CUnit          * pUnit, * pPrevUnit;
-    BOOL             ok;
+    bool             ok;
     std::string             TrackingGroup;
     std::set<long>   Tracking;
     const char     * p;
     std::string             S;
-    BOOL             bUsePython = FALSE;
+    bool             bUsePython = false;
     CPythonEmbedder  Python(gpApp->m_pAtlantis.get());
     eEErr            rcPy = E_OK;
     std::string             sPythonText, sRealPythonText;
@@ -110,12 +110,12 @@ void CUnitPaneFltr::Update(CUnitFilterDlg * pFilter)
     CBaseColl        Hexes(64);
     CLand          * pLand, * pPrevLand;
     int              unitidx;
-    BOOL             Selected = FALSE;
-    BOOL             ShowOnMap= FALSE;
+    bool             Selected = false;
+    bool             ShowOnMap= false;
     CMapPane       * pMapPane = (CMapPane* )gpApp->m_Panes[AH_PANE_MAP];
     int              nl;
-    BOOL             ShowGoneUnits = FALSE;
-    CAtlaParser    * pPrevTurn = NULL;
+    bool             ShowGoneUnits = false;
+    CAtlaParser    * pPrevTurn = nullptr;
 
     sConfSect = gpApp->GetConfig(m_sConfigSection.c_str(), SZ_KEY_FLTR_SET);
     if (pFilter)
@@ -229,8 +229,8 @@ void CUnitPaneFltr::Update(CUnitFilterDlg * pFilter)
                 
             for (unitidx=0; unitidx<pPrevLand->Units.Count(); unitidx++)
             {
-                ok    = FALSE;
-                pUnit = NULL;
+                ok    = false;
+                pUnit = nullptr;
                 pPrevUnit = (CUnit*)pPrevLand->Units.At(unitidx);
                 if (pLand->Units.Search(pPrevUnit, i))
                     pUnit = (CUnit*)pLand->Units.At(i);
@@ -238,7 +238,7 @@ void CUnitPaneFltr::Update(CUnitFilterDlg * pFilter)
                 {
                     if (gpApp->m_pAtlantis->m_Units.Search(pPrevUnit, i))
                         pUnit = (CUnit*)gpApp->m_pAtlantis->m_Units.At(i);
-                    ok = TRUE;
+                    ok = true;
                 }
                 if (!pUnit)
                 {
@@ -271,7 +271,7 @@ void CUnitPaneFltr::Update(CUnitFilterDlg * pFilter)
             for (unitidx=0; unitidx<pLand->Units.Count(); unitidx++)
             {
                 pUnit = (CUnit*)pLand->Units.At(unitidx);
-                ok    = TRUE;
+                ok    = true;
     
                 if (!TrackingGroup.empty())
                     ok = (Tracking.count(pUnit->Id) > 0);
@@ -297,7 +297,7 @@ void CUnitPaneFltr::Update(CUnitFilterDlg * pFilter)
     Hexes.DeleteAll();
     InsertUnitDone();
     pMapPane->RemoveRectangle();
-    pMapPane->Refresh(FALSE);
+    pMapPane->Refresh(false);
 
 
 Failed:
@@ -307,20 +307,20 @@ Failed:
         std::string sOut, sErr;
 
         Python.DoneUnitFilter();
-        gpApp->StdRedirectReadMore(FALSE, sErr);
-        gpApp->StdRedirectReadMore(TRUE, sOut);
+        gpApp->StdRedirectReadMore(false, sErr);
+        gpApp->StdRedirectReadMore(true, sOut);
         if (E_OK != rcPy)
         {
             S.clear();
             S << EOL_SCR << "----------- Python code -------------" << EOL_SCR;
-            gpApp->ShowError(S.c_str(), S.size(), TRUE);
-            gpApp->ShowError(sRealPythonText.c_str(), sRealPythonText.size(), TRUE);
+            gpApp->ShowError(S.c_str(), S.size(), true);
+            gpApp->ShowError(sRealPythonText.c_str(), sRealPythonText.size(), true);
             S.clear();
             S << EOL_SCR << "------------------------" << EOL_SCR << EOL_SCR;
-            gpApp->ShowError(S.c_str(), S.size(), TRUE);
+            gpApp->ShowError(S.c_str(), S.size(), true);
 
-            gpApp->ShowError(sErr.c_str(), sErr.size(), TRUE);
-            gpApp->ShowError(sOut.c_str(), sOut.size(), TRUE);
+            gpApp->ShowError(sErr.c_str(), sErr.size(), true);
+            gpApp->ShowError(sOut.c_str(), sOut.size(), true);
         }
     }
 }
@@ -348,7 +348,7 @@ void CUnitPaneFltr::ClearLandFlags()
 
 void CUnitPaneFltr::InsertUnitInit()
 {
-    m_IsUpdating = TRUE;
+    m_IsUpdating = true;
     m_pUnits->DeleteAll();
     m_NewUnits.FreeAll();
 
@@ -376,8 +376,8 @@ void CUnitPaneFltr::InsertUnit(CUnit * pUnit)
 void CUnitPaneFltr::InsertUnitDone()
 {
     m_pUnits->SetSortMode(m_SortKey, 3);
-    SetData(sel_by_no, 0, TRUE);
-    m_IsUpdating = FALSE;
+    SetData(sel_by_no, 0, true);
+    m_IsUpdating = false;
 }
 
 //--------------------------------------------------------------------------
@@ -451,7 +451,7 @@ void CUnitPaneFltr::OnPopupMenuFilter  (wxCommandEvent& event)
     {
         CMapPane * pMapPane = (CMapPane* )gpApp->m_Panes[AH_PANE_MAP];
         pMapPane->RemoveRectangle();
-        pMapPane->Refresh(FALSE);
+        pMapPane->Refresh(false);
     }
 }
 
@@ -496,7 +496,7 @@ void CUnitPaneFltr::OnPopupMenuIssueOrders(wxCommandEvent& event)
 
     if (!LandIds.empty())
     {
-        gpApp->SetOrdersChanged(TRUE);
+        gpApp->SetOrdersChanged(true);
 /*        gpApp->m_pAtlantis->RunOrders(m_pCurLand);
         Update(m_pCurLand);*/
         for (long landId : LandIds)

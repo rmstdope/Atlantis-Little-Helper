@@ -31,7 +31,7 @@
 CFileReader::CFileReader()
 {
     m_Queue.reserve(256);
-    m_f     = NULL;
+    m_f     = nullptr;
     m_nPos  = 0;
     m_nSize = 0;
 }
@@ -46,7 +46,7 @@ CFileReader::~CFileReader()
 //---------------------------------------------------------------------
 
 
-BOOL  CFileReader::Open(const char * szFName)
+bool  CFileReader::Open(const char * szFName)
 {
     Close();
 
@@ -55,7 +55,7 @@ BOOL  CFileReader::Open(const char * szFName)
 
     m_FileName = szFName;
 
-    return (NULL != m_f);
+    return (nullptr != m_f);
 }
 
 //---------------------------------------------------------------------
@@ -64,7 +64,7 @@ void CFileReader::Close()
 {
     if (m_f)
         fclose(m_f);
-    m_f = NULL;
+    m_f = nullptr;
     m_nPos  = 0;
     m_nSize = 0;
 }
@@ -72,26 +72,26 @@ void CFileReader::Close()
 //---------------------------------------------------------------------
 
 
-BOOL CFileReader::GetNextChar(char & ch)
+bool CFileReader::GetNextChar(char & ch)
 {
     // return first queued char
     if (m_Queue.size()>0)
     {
         ch = m_Queue.c_str()[0];
         DelCh(m_Queue, 0);
-        return TRUE;
+        return true;
     }
 
     if (m_nPos >= m_nSize)
     {
         if ((!ReadMore()) || (m_nPos >= m_nSize))
-            return FALSE;
+            return false;
     }
 
 
     ch = m_Buf[m_nPos];
     m_nPos++;
-    return TRUE;
+    return true;
 
 }
 
@@ -112,7 +112,7 @@ void CFileReader::QueueString(const char * p, int n)
 
 //---------------------------------------------------------------------
 
-BOOL CFileReader::GetNextLine(std::string & s)
+bool CFileReader::GetNextLine(std::string & s)
 {
     char ch;
 
@@ -130,16 +130,16 @@ BOOL CFileReader::GetNextLine(std::string & s)
 
 //---------------------------------------------------------------------
 /*
-BOOL CFileReader::ReadMore()
+bool CFileReader::ReadMore()
 {
     m_nPos  = 0;
     m_nSize = 0;
 
     if (!m_f)
-        return FALSE;
+        return false;
 
     if (feof(m_f))
-        return FALSE;
+        return false;
 
     m_nSize = fread(m_Buf, 1, RW_BUF_SIZE, m_f);
     if (0==m_nSize)
@@ -184,7 +184,7 @@ BOOL CFileReader::ReadMore()
 //---------------------------------------------------------------------
 
 
-BOOL CFileReader::ReadMore()
+bool CFileReader::ReadMore()
 {
     int i;
 
@@ -192,10 +192,10 @@ BOOL CFileReader::ReadMore()
     m_nSize = 0;
 
     if (!m_f)
-        return FALSE;
+        return false;
 
     if (feof(m_f))
-        return FALSE;
+        return false;
 
     for (i=0; i<3; i++)
     {
@@ -226,7 +226,7 @@ BOOL CFileReader::ReadMore()
 CFileWriter::CFileWriter()
 {
     m_s.reserve(1024);
-    m_f     = NULL;
+    m_f     = nullptr;
 }
 
 //---------------------------------------------------------------------
@@ -239,13 +239,13 @@ CFileWriter::~CFileWriter()
 //---------------------------------------------------------------------
 
 
-BOOL CFileWriter::Open(const char * szFName, const char * szMode)
+bool CFileWriter::Open(const char * szFName, const char * szMode)
 {
     Close();
 
     m_f = fopen(szFName, szMode);
 
-    return (NULL != m_f);
+    return (nullptr != m_f);
 }
 
 //---------------------------------------------------------------------
@@ -256,38 +256,38 @@ void CFileWriter::Close()
     {
         Flush();
         fclose(m_f);
-        m_f     = NULL;
+        m_f     = nullptr;
     }
 }
 
 //---------------------------------------------------------------------
 
 
-BOOL CFileWriter::WriteBuf(const char * szData, long nDataSize)
+bool CFileWriter::WriteBuf(const char * szData, long nDataSize)
 {
     if (!m_f)
-        return FALSE;
+        return false;
 
     AddBuf(m_s, szData, nDataSize);
     if (m_s.size() > RW_BUF_SIZE)
         return Flush();
 
-    return TRUE;
+    return true;
 }
 
 //---------------------------------------------------------------------
 
-BOOL CFileWriter::Flush()
+bool CFileWriter::Flush()
 {
     size_t n;
 
     n = fwrite(m_s.c_str(), 1, m_s.size(), m_f);
 
     if (n < (size_t)m_s.size())
-        return FALSE;
+        return false;
 
     m_s.clear();
-    return TRUE;
+    return true;
 
 }
 

@@ -43,16 +43,16 @@ public:
     wxCheckBox    * m_chDisplayOnMap;
 
     std::string            m_TrackingGroup;
-    BOOL            m_bFindGoneUnits;
+    bool            m_bFindGoneUnits;
 
 private:
     void Init();
     void Save();
-    BOOL IsValid();
+    bool IsValid();
     void Load        (const char * szConfigSection);
     void LoadSetCombo(const char * setselect);
     void Reload      (const char * setname);
-    void EnableBoxes (BOOL bOldBoxes);
+    void EnableBoxes (bool bOldBoxes);
 
     void OnButton       (wxCommandEvent& event);
     void OnRadioButton  (wxCommandEvent& event);
@@ -67,7 +67,7 @@ private:
     std::string         m_sControllingConfig;
     std::string         m_sCurrentSection;
     std::string         m_sSavedConfigSelected;
-    BOOL         m_IsSaving;
+    bool         m_IsSaving;
     time_t       m_lastselect;
     wxButton   * m_btnSet   ;
     wxButton   * m_btnRemove;
@@ -78,7 +78,7 @@ private:
     wxColour     m_ColorNormal;
     wxColour     m_ColorReadOnly;
 
-    BOOL         m_bReady;
+    bool         m_bReady;
 
     DECLARE_EVENT_TABLE()
 };

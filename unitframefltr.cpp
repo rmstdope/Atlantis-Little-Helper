@@ -80,7 +80,7 @@ void CUnitFrameFltr::Init(int layout, const char * szConfigSection)
 
 //--------------------------------------------------------------------
 
-void CUnitFrameFltr::Done(BOOL SetClosedFlag)
+void CUnitFrameFltr::Done(bool SetClosedFlag)
 {
     CUnitPaneFltr * pUnitPane;
 

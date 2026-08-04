@@ -50,7 +50,7 @@ if (!ptr)                             \
 
 CPythonEmbedder::CPythonEmbedder()
 {
-    m_pAtlantis = NULL;
+    m_pAtlantis = nullptr;
     ShowError("Wrong CPythonEmbedder constructor called!");
 }
 
@@ -59,14 +59,13 @@ CPythonEmbedder::CPythonEmbedder()
 CPythonEmbedder::CPythonEmbedder(CAtlaParser * pAtlantis)
 {
     m_pAtlantis       = pAtlantis;
-    m_bInitUnitFilter = FALSE;
-    m_bInitUnitFilter = FALSE;
-    m_bInitGeneric    = FALSE;
+    m_bInitUnitFilter = false;
+    m_bInitGeneric    = false;
 
-    m_pCode   = NULL;
-    m_pModule = NULL;
-    m_pDict   = NULL;
-    m_pFunc   = NULL;
+    m_pCode   = nullptr;
+    m_pModule = nullptr;
+    m_pDict   = nullptr;
+    m_pFunc   = nullptr;
 }
 
 //-------------------------------------------------------------------------
@@ -86,7 +85,7 @@ void   CPythonEmbedder::ShowError(const char * msg, int msglen)
     if (msglen<=0)
         msglen = strlen(msg);
 
-    gpApp->ShowError (msg, msglen, TRUE);
+    gpApp->ShowError (msg, msglen, true);
 }
 
 
@@ -115,7 +114,7 @@ eEErr  CPythonEmbedder::InitGeneric()
 
     Py_SetProgramName((char*)SZ_ALH_PROGRAM_NAME);
     Py_Initialize();
-    m_bInitGeneric = TRUE;
+    m_bInitGeneric = true;
 
     return rc;
 }
@@ -125,7 +124,7 @@ eEErr  CPythonEmbedder::InitGeneric()
 void   CPythonEmbedder::DoneGeneric()
 {
     Py_Finalize();
-    m_bInitGeneric = FALSE;
+    m_bInitGeneric = false;
 }
 
 //-------------------------------------------------------------------------
@@ -138,7 +137,7 @@ void   CPythonEmbedder::CheckForPythonError()
 
 //-------------------------------------------------------------------------
 
-static CUnit * gpUnit = NULL;  // to be used by unitfltr_getproperty()
+static CUnit * gpUnit = nullptr;  // to be used by unitfltr_getproperty()
 
 extern "C" PyObject * unitfltr_getproperty(PyObject *self, PyObject* args)
 {
@@ -181,7 +180,7 @@ extern "C" PyObject * unitfltr_getproperty(PyObject *self, PyObject* args)
 PyMethodDef unitfltr_methods[] =
 {
     {SZ_ALH_UNIT_FILTER_FN_GET_PROPERTY,  unitfltr_getproperty, METH_VARARGS,  "Get unit property."},
-    {NULL, NULL}   // sentinel
+    {nullptr, nullptr}   // sentinel
 };
 
 
@@ -210,7 +209,7 @@ eEErr  CPythonEmbedder::InitUnitFilter(const char * userfilter, std::string & sP
 
     if (m_bInitUnitFilter)
         return E_ALREADY_INIT;
-    m_bInitUnitFilter = TRUE;
+    m_bInitUnitFilter = true;
 
     GetCommonCode(sCommand);
 
@@ -220,7 +219,7 @@ eEErr  CPythonEmbedder::InitUnitFilter(const char * userfilter, std::string & sP
              << "    res = " ;
     while (p && *p)
     {
-        p = GetToken(sToken, p, "+-*/<>=!()., \t\r\n", ch, TRIM_ALL, FALSE);
+        p = GetToken(sToken, p, "+-*/<>=!()., \t\r\n", ch, TRIM_ALL, false);
 
         // python is case sensitive, so lowercase all quoted strings
         if (!sToken.empty() && '\"' == sToken.c_str()[0] && '\"' == sToken.c_str()[sToken.size()-1])
@@ -263,11 +262,11 @@ quit:
 
 //-------------------------------------------------------------------------
 
-eEErr  CPythonEmbedder::RunUnitFilter(CUnit * pUnit, BOOL & success)
+eEErr  CPythonEmbedder::RunUnitFilter(CUnit * pUnit, bool & success)
 {
     eEErr result = E_PYTHON;
 
-    success = FALSE;
+    success = false;
 
     CHECK_NULL_PTR(m_pFunc, E_NULL_POINTERS, "m_pFunc not initialised")
 
@@ -276,14 +275,14 @@ eEErr  CPythonEmbedder::RunUnitFilter(CUnit * pUnit, BOOL & success)
         PyObject * pValue;
 
         gpUnit = pUnit; // will be used by the extension function
-        pValue = PyObject_CallObject(m_pFunc, NULL);
+        pValue = PyObject_CallObject(m_pFunc, nullptr);
         if (pValue)
         {
             success = PyInt_AsLong(pValue);
             Py_DECREF(pValue);
             result = E_OK;
         }
-        gpUnit = NULL;
+        gpUnit = nullptr;
     }
 
 quit:
@@ -302,11 +301,11 @@ void   CPythonEmbedder::DoneUnitFilter()
     if (m_pModule)  Py_DECREF(m_pModule);
     /// m_pDict is a borrowed reference
     /// m_pFunc: Borrowed reference
-    m_pCode   = NULL;
-    m_pModule = NULL;
-    m_pDict   = NULL;
-    m_pFunc   = NULL;
-    m_bInitUnitFilter = FALSE;
+    m_pCode   = nullptr;
+    m_pModule = nullptr;
+    m_pDict   = nullptr;
+    m_pFunc   = nullptr;
+    m_bInitUnitFilter = false;
 }
 
 //-------------------------------------------------------------------------

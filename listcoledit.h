@@ -97,10 +97,10 @@ private:
     std::string             m_WorkKey;
     std::string             m_SetName;
     CUnitColDataColl m_Fields;
-    BOOL             m_SetIsValid;
+    bool             m_SetIsValid;
     int              m_SourceIdx;
     int              m_DestIdx;
-    BOOL             m_IsSaving;
+    bool             m_IsSaving;
     time_t           m_lastselect;
 
     wxButton   * m_btnOk    ;

@@ -80,7 +80,7 @@ public:
     ~CListPane();
 
     void SetLayout();
-    void SetData(eSelMode selmode, long seldata, BOOL FullUpdate);
+    void SetData(eSelMode selmode, long seldata, bool FullUpdate);
     void SetSortName(unsigned short key, const char * sortname);
     const char * GetSortName(unsigned short key);
     virtual void Sort();

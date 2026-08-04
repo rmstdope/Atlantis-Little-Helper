@@ -41,11 +41,11 @@ public:
 private:
     void Init();
     void Save();
-    BOOL IsValid();
+    bool IsValid();
     void Load        (const char * szConfigSection);
     void LoadSetCombo(const char * setselect);
     void Reload      (const char * setname);
-    void EnableBoxes (BOOL bOldBoxes);
+    void EnableBoxes (bool bOldBoxes);
 
     void OnButton       (wxCommandEvent& event);
     void OnRadioButton  (wxCommandEvent& event);
@@ -60,7 +60,7 @@ private:
     std::string         m_sControllingConfig;
     std::string         m_sCurrentSection;
     std::string         m_sSavedConfigSelected;
-    BOOL         m_IsSaving;
+    bool         m_IsSaving;
     time_t       m_lastselect;
 
     wxComboBox    * m_cbSetName;
@@ -77,7 +77,7 @@ private:
     wxColour     m_ColorNormal;
     wxColour     m_ColorReadOnly;
 
-    BOOL         m_bReady;
+    bool         m_bReady;
 
     DECLARE_EVENT_TABLE();
 };

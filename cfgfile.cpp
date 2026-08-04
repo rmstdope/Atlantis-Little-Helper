@@ -80,7 +80,7 @@ int  CConfigFile::Compare (void * pItem1, void * pItem2) const
 
 //---------------------------------------------------------------------------------
 
-BOOL CConfigFile::Insert(void * pItem)
+bool CConfigFile::Insert(void * pItem)
 {
     int lo = 0, hi = (int)m_items.size();
     while (lo < hi)
@@ -89,13 +89,13 @@ BOOL CConfigFile::Insert(void * pItem)
         int cmp = Compare(m_items[mid], pItem);
         if      (cmp < 0) lo = mid + 1;
         else if (cmp > 0) hi = mid;
-        else              return FALSE; // duplicate
+        else              return false; // duplicate
     }
     m_items.insert(m_items.begin() + lo, (CONFIG_PARAM*)pItem);
-    return TRUE;
+    return true;
 }
 
-BOOL CConfigFile::Search(void * pItem, int & nIndex) const
+bool CConfigFile::Search(void * pItem, int & nIndex) const
 {
     int lo = 0, hi = (int)m_items.size();
     while (lo < hi)
@@ -116,11 +116,11 @@ CONFIG_PARAM * NewParam(const char * szSection, const char * szName, const char 
     CONFIG_PARAM * pPrm;
 
     if (!(szName && *szName))
-        return NULL;
+        return nullptr;
 
-    // allow empty values, but not NULL
+    // allow empty values, but not nullptr
     if (!szValue)
-        return NULL;
+        return nullptr;
 
     pPrm = new CONFIG_PARAM();
     pPrm->szSection  = (szSection && *szSection) ? szSection : "";
@@ -137,10 +137,10 @@ CONFIG_PARAM * NewParam(const char * szSection, const char * szName, const char 
 
 //---------------------------------------------------------------------------------
 
-BOOL CConfigFile::Load(const char * szFName)
+bool CConfigFile::Load(const char * szFName)
 {
     CFileReader         F;
-    BOOL                Ok;
+    bool                Ok;
     char                ch;
     enum                EState {start, name, value, sect, cmnt} State;
     std::string         Name;
@@ -248,10 +248,10 @@ BOOL CConfigFile::Load(const char * szFName)
 
 //---------------------------------------------------------------------------------
 
-BOOL CConfigFile::Save(const char * szFName)
+bool CConfigFile::Save(const char * szFName)
 {
     CFileWriter         F;
-    BOOL                Ok;
+    bool                Ok;
     int                 i, n;
     CONFIG_PARAM      * pParam;
     int                 MaxNameLen = 0;
@@ -344,7 +344,7 @@ const char * CConfigFile::GetByName(const char * szSection, const char * szName)
         return pPrm->szValue.c_str();
     }
     else
-        return NULL;
+        return nullptr;
 }
 
 //---------------------------------------------------------------------------------
@@ -358,7 +358,7 @@ void CConfigFile::SetByName(const char * szSection, const char * szName, const c
     Test.szName    = szName;
     if (Search(&Test, i))
     {
-        if (NULL==szNewValue)
+        if (nullptr==szNewValue)
             AtFree(i);
         else
         {
@@ -438,7 +438,7 @@ void CConfigFile::RemoveSection(const char * szSection)
 
 //---------------------------------------------------------------------------------
 
-BOOL CConfigFile::GetNextSection(const char * szPrevSection, const char *& szNextSection)
+bool CConfigFile::GetNextSection(const char * szPrevSection, const char *& szNextSection)
 {
     std::string    S;
     int            n;
@@ -461,10 +461,10 @@ BOOL CConfigFile::GetNextSection(const char * szPrevSection, const char *& szNex
     if (pPrm)
     {
         szNextSection = pPrm->szSection.c_str();
-        return TRUE;
+        return true;
     }
 
-    return FALSE;
+    return false;
 }
 
 //---------------------------------------------------------------------------------

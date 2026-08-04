@@ -127,10 +127,10 @@ enum {
 
 typedef struct SAVE_HEX_OPTIONS_STRUCT
 {
-    BOOL   SaveStructs;
-    BOOL   AlwaysSaveImmobStructs;
-    BOOL   SaveUnits;
-    BOOL   SaveResources;
+    bool   SaveStructs;
+    bool   AlwaysSaveImmobStructs;
+    bool   SaveUnits;
+    bool   SaveResources;
     long   WriteTurnNo; // Add turn number atlaclient style
 } SAVE_HEX_OPTIONS;
 
@@ -145,31 +145,31 @@ public:
     CAtlaParser(CGameDataHelper * pHelper);
     ~CAtlaParser();
     void       Clear();
-    int        ParseRep(const char * FNameIn, BOOL Join, BOOL IsHistory);     // History is a rep!
-    int        SaveOrders  (const char * FNameOut, const char * password, BOOL decorate, int factid);
+    int        ParseRep(const char * FNameIn, bool Join, bool IsHistory);     // History is a rep!
+    int        SaveOrders  (const char * FNameOut, const char * password, bool decorate, int factid);
     int        LoadOrders  (const char * FNameIn, int & FactionId);  // return an id of the order's faction
-    void       RunOrders(CLand * pLand, const char * sCheckTeach = NULL);
-    BOOL       ShareSilver(CUnit * pMainUnit);
-    BOOL       GenOrdersTeach(CUnit * pMainUnit);
-    BOOL       GenGiveEverything(CUnit * pFrom, const char * To);
-    BOOL       DiscardJunkItems(CUnit * pUnit, const char * junk);
-    BOOL       DetectSpies(CUnit * pUnit, long lonum, long hinum, long amount);
-    BOOL       ApplyDefaultOrders(BOOL EmptyOnly);
+    void       RunOrders(CLand * pLand, const char * sCheckTeach = nullptr);
+    bool       ShareSilver(CUnit * pMainUnit);
+    bool       GenOrdersTeach(CUnit * pMainUnit);
+    bool       GenGiveEverything(CUnit * pFrom, const char * To);
+    bool       DiscardJunkItems(CUnit * pUnit, const char * junk);
+    bool       DetectSpies(CUnit * pUnit, long lonum, long hinum, long amount);
+    bool       ApplyDefaultOrders(bool EmptyOnly);
     int        ParseCBDataFile(const char * FNameIn);
-    void       WriteMagesCSV(const char * FName, BOOL vertical, const char * separator, int format);
+    void       WriteMagesCSV(const char * FName, bool vertical, const char * separator, int format);
 
-    CLand    * GetLand(int x, int y, int nPlane, BOOL AdjustForEdge=FALSE);
+    CLand    * GetLand(int x, int y, int nPlane, bool AdjustForEdge=false);
     CLand    * GetLand(long LandId);
     CLand    * GetLand(const char * landcoords); //  "48,52[,somewhere]"
     void       GetUnitList(std::vector<CBaseObject*>* pResultColl, int x, int y, int z);
     void       CountMenForTheFaction(int FactionId);
     void       ComposeProductsLine(CLand * pLand, const char * eol, std::string & S);
-    BOOL       LandStrCoordToId(const char * landcoords, long & id);
+    bool       LandStrCoordToId(const char * landcoords, long & id);
     void       ComposeLandStrCoord(CLand * pLand, std::string & LandStr);
     CFaction * GetFaction(int id);
-    BOOL       SaveOneHex(CFileWriter & Dest, CLand * pLand, CPlane * pPlane, SAVE_HEX_OPTIONS * pOptions);
+    bool       SaveOneHex(CFileWriter & Dest, CLand * pLand, CPlane * pPlane, SAVE_HEX_OPTIONS * pOptions);
     long       SkillDaysToLevel(long days);
-    BOOL       CheckResourcesForProduction(CUnit * pUnit, CLand * pLand, std::string & Error);
+    bool       CheckResourcesForProduction(CUnit * pUnit, CLand * pLand, std::string & Error);
 
 
     int               m_CrntFactionId;
@@ -199,29 +199,29 @@ public:
     long              m_nCurLine;
     long              m_GatesCount;
     int               m_ParseErr;
-    BOOL              m_OrdersLoaded;
+    bool              m_OrdersLoaded;
     std::string              m_FactionInfo;
-    BOOL              m_ArcadiaSkills;
+    bool              m_ArcadiaSkills;
 
 protected:
-    int          ParseFactionInfo(BOOL GetNo, BOOL Join);
-    int          ParseEvents(BOOL IsEvents=TRUE);
+    int          ParseFactionInfo(bool GetNo, bool Join);
+    int          ParseEvents(bool IsEvents=true);
     int          ParseUnclSilver(std::string & Line);
-    int          ParseAttitudes(std::string & Line, BOOL Join);
-    int          ParseTerrain (CLand * pMotherLand, int ExitDir, std::string & FirstLine, BOOL FullMode, CLand ** ppParsedLand);
-    int          AnalyzeTerrain(CLand * pMotherLand, CLand * pLand, BOOL IsExit, int ExitDir, std::string & Description);
+    int          ParseAttitudes(std::string & Line, bool Join);
+    int          ParseTerrain (CLand * pMotherLand, int ExitDir, std::string & FirstLine, bool FullMode, CLand ** ppParsedLand);
+    int          AnalyzeTerrain(CLand * pMotherLand, CLand * pLand, bool IsExit, int ExitDir, std::string & Description);
     void         ComposeHexDescriptionForArnoGame(const char * olddescr, const char * newdescr, std::string & CompositeDescr);
 
     void         ParseWages(CLand * pLand, const char * str1, const char * str2);
     void         CheckExit(CPlane * pPlane, int Direction, CLand * pLandSrc, CLand * pLandExit);
-    int          ParseUnit(std::string & FirstLine, BOOL Join);
+    int          ParseUnit(std::string & FirstLine, bool Join);
     int          ParseStructure (std::string & FirstLine);
     int          ParseErrors();
-    int          ParseLines(BOOL Join);
-    BOOL         ParseOneUnitEvent(std::string & EventLine, BOOL IsEvent, int UnitId);
-    BOOL         ParseOneLandEvent(std::string & EventLine, BOOL IsEvent);
+    int          ParseLines(bool Join);
+    bool         ParseOneUnitEvent(std::string & EventLine, bool IsEvent, int UnitId);
+    bool         ParseOneLandEvent(std::string & EventLine, bool IsEvent);
     void         ParseOneMovementEvent(const char * params, const char * structid, const char * fullevent);
-    int          ParseOneEvent(std::string & EventLine, BOOL IsEvent);
+    int          ParseOneEvent(std::string & EventLine, bool IsEvent);
     void         ParseWeather(const char * src, CLand * pLand);
     int          ApplyLandFlags();
     int          SetLandFlag(const char * p, long flag);
@@ -233,47 +233,47 @@ protected:
     void         SetExitFlagsAndTropicZone();
     int          SetUnitProperty(CUnit * pUnit, const char * name, EValueType type, const void * value, EPropertyType proptype);
     int          SetLandProperty(CLand * pLand, const char * name, EValueType type, const void * value, EPropertyType proptype);
-    int          LoadOrders  (CFileReader & F, int FactionId, BOOL GetComments);
+    int          LoadOrders  (CFileReader & F, int FactionId, bool GetComments);
     const char * ReadPropertyName(const char * src, std::string & Name);
     void         StoreBattle(std::string & Source);
     void         AnalyzeBattle(const char * src, std::string & Details);
     void         AnalyzeBattle_OneSide(const char * src, std::string & Details);
-    const char * AnalyzeBattle_ParseUnit(const char * src, CUnit *& pUnit, BOOL & InFrontLine);
+    const char * AnalyzeBattle_ParseUnit(const char * src, CUnit *& pUnit, bool & InFrontLine);
     void         AnalyzeBattle_SummarizeUnits(CBaseColl & Units, std::string & Details);
     void         SetShaftLinks();
     void         ApplySailingEvents();
-    BOOL         GetTargetUnitId(const char *& p, long FactionId, long & nId);
+    bool         GetTargetUnitId(const char *& p, long FactionId, long & nId);
     int          ParseOneImportantEvent(std::string & EventLine);
     int          ParseImportantEvents();
 
     CUnit      * MakeUnit(long Id);
     CPlane     * MakePlane(const char * planename);
 
-    BOOL         ReadNextLine(std::string & s);
+    bool         ReadNextLine(std::string & s);
     void         PutLineBack (std::string & s);
 
     void         GenericErr(int Severity, const char * Msg);
     void         OrderErr(int Severity, int UnitId, const char * Msg);
     void         OrderErrFinalize();
-    void         RunLandOrders(CLand * pLand, const char * sCheckTeach = NULL);
-    void         OrderProcess_Teach(BOOL skiperror, CUnit * pUnit);
+    void         RunLandOrders(CLand * pLand, const char * sCheckTeach = nullptr);
+    void         OrderProcess_Teach(bool skiperror, CUnit * pUnit);
 
     // Order handlers and helpers
-    void         RunOrder_Teach            (std::string & Line, std::string & ErrorLine, BOOL skiperror, CUnit * pUnit, CLand * pLand, const char * params, BOOL TeachCheckGlb);
-    void         RunOrder_Move             (std::string & Line, std::string & ErrorLine, BOOL skiperror, CUnit * pUnit, CLand * pLand, const char * params, int & X, int & Y, int & LocA3, long order);
-    void         RunOrder_Promote          (std::string & Line, std::string & ErrorLine, BOOL skiperror, CUnit * pUnit, CLand * pLand, const char * params);
-    void         RunOrder_Sell             (std::string & Line, std::string & ErrorLine, BOOL skiperror, CUnit * pUnit, CLand * pLand, const char * params);
-    void         RunOrder_Buy              (std::string & Line, std::string & ErrorLine, BOOL skiperror, CUnit * pUnit, CLand * pLand, const char * params);
-    void         RunOrder_Give             (std::string & Line, std::string & ErrorLine, BOOL skiperror, CUnit * pUnit, CLand * pLand, const char * params, BOOL IgnoreMissingTarget);
-    void         RunOrder_Take             (std::string & Line, std::string & ErrorLine, BOOL skiperror, CUnit * pUnit, CLand * pLand, const char * params, BOOL IgnoreMissingTarget);
-    void         RunOrder_Send             (std::string & Line, std::string & ErrorLine, BOOL skiperror, CUnit * pUnit, CLand * pLand, const char * params);
-    void         RunOrder_Produce          (std::string & Line, std::string & ErrorLine, BOOL skiperror, CUnit * pUnit, CLand * pLand, const char * params);
-    void         RunOrder_Study            (std::string & Line, std::string & ErrorLine, BOOL skiperror, CUnit * pUnit, CLand * pLand, const char * params);
-    void         RunOrder_Name             (std::string & Line, std::string & ErrorLine, BOOL skiperror, CUnit * pUnit, CLand * pLand, const char * params);
-    void         RunOrder_SailAIII         (std::string & Line, std::string & ErrorLine, BOOL skiperror, CUnit * pUnit, CLand * pLand, const char * params, int & X, int & Y, int & LocA3);
-    BOOL         FindTargetsForSend        (std::string & Line, std::string & ErrorLine, BOOL skiperror, CUnit * pUnit, CLand * pLand, const char *& params, CUnit *& pUnit2, CLand *& pLand2);
-    BOOL         GetItemAndAmountForGive   (std::string & Line, std::string & ErrorLine, BOOL skiperror, CUnit * pUnit, CLand * pLand, const char * params, std::string & Item, int & amount, const char * command, CUnit * pUnit2);
-    void         RunOrder_Withdraw         (std::string & Line, std::string & ErrorLine, BOOL skiperror, CUnit * pUnit, CLand * pLand, const char * params);
+    void         RunOrder_Teach            (std::string & Line, std::string & ErrorLine, bool skiperror, CUnit * pUnit, CLand * pLand, const char * params, bool TeachCheckGlb);
+    void         RunOrder_Move             (std::string & Line, std::string & ErrorLine, bool skiperror, CUnit * pUnit, CLand * pLand, const char * params, int & X, int & Y, int & LocA3, long order);
+    void         RunOrder_Promote          (std::string & Line, std::string & ErrorLine, bool skiperror, CUnit * pUnit, CLand * pLand, const char * params);
+    void         RunOrder_Sell             (std::string & Line, std::string & ErrorLine, bool skiperror, CUnit * pUnit, CLand * pLand, const char * params);
+    void         RunOrder_Buy              (std::string & Line, std::string & ErrorLine, bool skiperror, CUnit * pUnit, CLand * pLand, const char * params);
+    void         RunOrder_Give             (std::string & Line, std::string & ErrorLine, bool skiperror, CUnit * pUnit, CLand * pLand, const char * params, bool IgnoreMissingTarget);
+    void         RunOrder_Take             (std::string & Line, std::string & ErrorLine, bool skiperror, CUnit * pUnit, CLand * pLand, const char * params, bool IgnoreMissingTarget);
+    void         RunOrder_Send             (std::string & Line, std::string & ErrorLine, bool skiperror, CUnit * pUnit, CLand * pLand, const char * params);
+    void         RunOrder_Produce          (std::string & Line, std::string & ErrorLine, bool skiperror, CUnit * pUnit, CLand * pLand, const char * params);
+    void         RunOrder_Study            (std::string & Line, std::string & ErrorLine, bool skiperror, CUnit * pUnit, CLand * pLand, const char * params);
+    void         RunOrder_Name             (std::string & Line, std::string & ErrorLine, bool skiperror, CUnit * pUnit, CLand * pLand, const char * params);
+    void         RunOrder_SailAIII         (std::string & Line, std::string & ErrorLine, bool skiperror, CUnit * pUnit, CLand * pLand, const char * params, int & X, int & Y, int & LocA3);
+    bool         FindTargetsForSend        (std::string & Line, std::string & ErrorLine, bool skiperror, CUnit * pUnit, CLand * pLand, const char *& params, CUnit *& pUnit2, CLand *& pLand2);
+    bool         GetItemAndAmountForGive   (std::string & Line, std::string & ErrorLine, bool skiperror, CUnit * pUnit, CLand * pLand, const char * params, std::string & Item, int & amount, const char * command, CUnit * pUnit2);
+    void         RunOrder_Withdraw         (std::string & Line, std::string & ErrorLine, bool skiperror, CUnit * pUnit, CLand * pLand, const char * params);
 
     void         AdjustSkillsAfterGivingMen(CUnit * pUnitGive, CUnit * pUnitTake, std::string & item, long AmountGiven);
     void         LookupAdvancedResourceVisibility(CUnit * pUnit, CLand * pLand);
@@ -297,8 +297,8 @@ protected:
     CStruct        * m_pCurStruct ;
     int              m_NextStructId;
     std::string             m_sOrderErrors;
-    BOOL             m_JoiningRep;  // joining an allies' report
-    BOOL             m_IsHistory;   // parsing history file
+    bool             m_JoiningRep;  // joining an allies' report
+    bool             m_IsHistory;   // parsing history file
     long             m_CurYearMon; // Year/month for the file being loaded
     std::string             m_WeatherLine[8];
 };

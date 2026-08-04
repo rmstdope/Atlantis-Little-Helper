@@ -25,17 +25,17 @@
 class CEditPane : public wxPanel
 {
 public:
-    CEditPane(wxWindow* parent, const char * header, BOOL editable, int WhichFont);
+    CEditPane(wxWindow* parent, const char * header, bool editable, int WhichFont);
     virtual     ~CEditPane();
     
     virtual void Update();
     virtual void Init();
-    void         SetSource(std::string * pSource, BOOL * pChanged);
+    void         SetSource(std::string * pSource, bool * pChanged);
     virtual void ApplyFonts();
-    BOOL         SaveModifications();
+    bool         SaveModifications();
     void         OnKillFocus();
     void         OnMouseDClick();
-    void         SetReadOnly(BOOL ReadOnly);
+    void         SetReadOnly(bool ReadOnly);
     void         GetValue(std::string & value);
 
     wxTextCtrl   * m_pEditor;
@@ -45,7 +45,7 @@ protected :
     void         OnSize      (wxSizeEvent & event);
 
     std::string         * m_pSource;
-    BOOL         * m_pChanged;
+    bool         * m_pChanged;
     wxStaticText * m_pHeader;
     int            m_HdrHeight;
     int            m_WhichFont;     
