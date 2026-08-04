@@ -84,7 +84,7 @@ CAhApp::CAhApp() : m_HexDescrSrc    (128),
     m_SelUnitIdx        = -1;
     m_layout            = 0;
     m_DisableErrs       = FALSE;
-    m_pAccel            = NULL;
+    m_pAccel            = nullptr;
 
     memset(m_Frames, 0, sizeof(m_Frames));
     memset(m_Panes , 0, sizeof(m_Panes ));
@@ -99,7 +99,7 @@ CAhApp::CAhApp() : m_HexDescrSrc    (128),
     m_FontDescr[FONT_VIEW_DLG  ]  = "View dialogs";
     m_FontDescr[FONT_ERR_DLG   ]  = "Messages and Errors";
 
-    m_pAtlantis = NULL;
+    m_pAtlantis.reset(new CAtlaParser(&ThisGameDataHelper));
     m_Brightness_Delta = 0;
     m_nStdoutLastPos = 0;
     m_nStderrLastPos = 0;
@@ -320,13 +320,6 @@ bool CAhApp::OnInit()
             m_MagicSkillsHash.emplace(S.GetData(), -1L);
     }
 
-    m_pAtlantis = new CAtlaParser(&ThisGameDataHelper);
-    {
-        auto _it = std::lower_bound(m_Reports.begin(), m_Reports.end(), m_pAtlantis,
-            [](CAtlaParser* a, CAtlaParser* b) { return a->m_YearMon < b->m_YearMon; });
-        m_Reports.insert(_it, m_pAtlantis);
-    }
-
     // Read list of year/month for report
     i = GetSectionFirst(SZ_SECT_REPORTS, szName, szValue);
     while (i>=0)
@@ -410,7 +403,7 @@ int CAhApp::OnExit()
         m_Config[CONFIG_FILE_CONFIG].Save(SZ_CONFIG_FILE);
         m_Config[CONFIG_FILE_STATE ].Save(SZ_CONFIG_STATE_FILE);
 
-        if (ERR_OK==m_pAtlantis->m_ParseErr)
+        if (m_pAtlantis && ERR_OK==m_pAtlantis->m_ParseErr)
             SaveHistory(SZ_HISTORY_FILE);
     }
 
@@ -419,15 +412,11 @@ int CAhApp::OnExit()
     m_MaxSkillHash.clear();
     m_MagicSkillsHash.clear();
 
-    for (auto* p : m_Reports) delete p;
     m_Reports.clear();
 
     for (i=0; i<FONT_COUNT; i++)
         delete m_Fonts[i];
 
-
-    if (m_pAccel)
-        delete m_pAccel;
 
     m_MoveModes.clear();
     m_MoveModesRaw.clear();
@@ -455,7 +444,7 @@ void CAhApp::CreateAccelerator()
     entries[3].Set(wxACCEL_CTRL,  (int)'U',     accel_UnitList );
     entries[4].Set(wxACCEL_CTRL,  (int)'O',     accel_Orders   );
     
-    m_pAccel = new wxAcceleratorTable(5, entries);
+    m_pAccel.reset(new wxAcceleratorTable(5, entries));
 }
 
 //-------------------------------------------------------------------------
@@ -2640,7 +2629,6 @@ int  CAhApp::LoadReport  (const char * FNameIn, BOOL Join)
     CStr S, Sect, S2;
     CStr FName;
     int  LoadOrd;
-    int  i;
     long n;
     int  err = ERR_FOPEN;
 
@@ -2656,7 +2644,22 @@ int  CAhApp::LoadReport  (const char * FNameIn, BOOL Join)
         PreLoadReport();
 
         if (!m_FirstLoad && !Join)
-            m_pAtlantis = new CAtlaParser(&ThisGameDataHelper);
+        {
+            auto cachedCurrent = std::move(m_pAtlantis);
+            if (cachedCurrent)
+            {
+                const long cachedYear = cachedCurrent->m_YearMon;
+                auto reportIt = std::lower_bound(m_Reports.begin(), m_Reports.end(), cachedYear,
+                    [](const std::unique_ptr<CAtlaParser>& report, long year)
+                    {
+                        return report->m_YearMon < year;
+                    });
+                if (reportIt != m_Reports.end() && (*reportIt)->m_YearMon == cachedYear)
+                    reportIt = m_Reports.erase(reportIt);
+                m_Reports.insert(reportIt, std::move(cachedCurrent));
+            }
+            m_pAtlantis.reset(new CAtlaParser(&ThisGameDataHelper));
+        }
 
         if (!Join)
         {
@@ -2729,21 +2732,27 @@ int  CAhApp::LoadReport  (const char * FNameIn, BOOL Join)
 
         if (!m_FirstLoad && !Join)
         {
-            if (([&]() -> bool { auto _ri = std::lower_bound(m_Reports.begin(), m_Reports.end(), m_pAtlantis, [](CAtlaParser* a, CAtlaParser* b){ return a->m_YearMon < b->m_YearMon; }); if (_ri != m_Reports.end() && (*_ri)->m_YearMon == (m_pAtlantis)->m_YearMon) { i = (int)(_ri - m_Reports.begin()); return true; } return false; })())
-                { delete m_Reports[i]; m_Reports.erase(m_Reports.begin() + (i)); }
-            { auto _ri = std::lower_bound(m_Reports.begin(), m_Reports.end(), m_pAtlantis, [](CAtlaParser* a, CAtlaParser* b){ return a->m_YearMon < b->m_YearMon; }); m_Reports.insert(_ri, m_pAtlantis); }
-
             n = atol(GetConfig(SZ_SECT_COMMON, SZ_KEY_REP_CACHE_COUNT));
             if (n<=0)
                 n = 1;
-            if ((int)m_Reports.size()>n)
+
+            const long maxCachedReports = n - 1;
+            auto currentPos = std::lower_bound(m_Reports.begin(), m_Reports.end(), m_pAtlantis->m_YearMon,
+                [](const std::unique_ptr<CAtlaParser>& report, long year)
+                {
+                    return report->m_YearMon < year;
+                });
+            long currentInsertIdx = currentPos - m_Reports.begin();
+            while ((long)m_Reports.size() > maxCachedReports)
             {
-                if (i > n/2)
-                    n = 0;
+                if (currentInsertIdx > maxCachedReports/2)
+                {
+                    m_Reports.erase(m_Reports.begin());
+                    if (currentInsertIdx > 0)
+                        --currentInsertIdx;
+                }
                 else
-                    n = (int)m_Reports.size()-1;
-                if (m_pAtlantis != m_Reports[n])
-                    { delete m_Reports[n]; m_Reports.erase(m_Reports.begin() + (n)); }
+                    m_Reports.pop_back();
             }
         }
         m_FirstLoad = FALSE;
@@ -3027,18 +3036,40 @@ void CAhApp::EditPaneDClicked(CEditPane * pPane)
 
 void CAhApp::SwitchToYearMon(long YearMon)
 {
-    char          Dummy[sizeof(CAtlaParser)];
-    CAtlaParser * pDummy  = (CAtlaParser *)Dummy;
-    int           i;
     CStr          S, S2;
 
     PreLoadReport();
     if (GetOrdersChanged())
         return;
-    pDummy->m_YearMon = YearMon;
-    if (([&]() -> bool { auto _ri = std::lower_bound(m_Reports.begin(), m_Reports.end(), pDummy, [](CAtlaParser* a, CAtlaParser* b){ return a->m_YearMon < b->m_YearMon; }); if (_ri != m_Reports.end() && (*_ri)->m_YearMon == (pDummy)->m_YearMon) { i = (int)(_ri - m_Reports.begin()); return true; } return false; })())
+
+    auto reportIt = std::lower_bound(m_Reports.begin(), m_Reports.end(), YearMon,
+        [](const std::unique_ptr<CAtlaParser>& report, long year)
+        {
+            return report->m_YearMon < year;
+        });
+    if (reportIt != m_Reports.end() && (*reportIt)->m_YearMon == YearMon)
     {
-        m_pAtlantis = m_Reports[i];
+        if (m_pAtlantis && m_pAtlantis->m_YearMon != YearMon)
+        {
+            auto cachedCurrent = std::move(m_pAtlantis);
+            const long cachedYear = cachedCurrent->m_YearMon;
+            auto cachedIt = std::lower_bound(m_Reports.begin(), m_Reports.end(), cachedYear,
+                [](const std::unique_ptr<CAtlaParser>& report, long year)
+                {
+                    return report->m_YearMon < year;
+                });
+            if (cachedIt != m_Reports.end() && (*cachedIt)->m_YearMon == cachedYear)
+                cachedIt = m_Reports.erase(cachedIt);
+            m_Reports.insert(cachedIt, std::move(cachedCurrent));
+        }
+
+        reportIt = std::lower_bound(m_Reports.begin(), m_Reports.end(), YearMon,
+            [](const std::unique_ptr<CAtlaParser>& report, long year)
+            {
+            return report->m_YearMon < year;
+            });
+        m_pAtlantis = std::move(*reportIt);
+        m_Reports.erase(reportIt);
         PostLoadReport();
     }
     else
@@ -3147,21 +3178,22 @@ BOOL CAhApp::GetPrevTurnReport(CAtlaParser *& pPrevTurn)
 {
     int idx;
     
-    pPrevTurn = NULL;
+    pPrevTurn = nullptr;
         
     if (CanSwitchToRep(repPrev, idx))
     {
-        char          Dummy[sizeof(CAtlaParser)];
-        CAtlaParser * pDummy  = (CAtlaParser *)Dummy;
-        int           i;
         CStr          S, S2;
     
         long YearMon = m_ReportDates[idx];
     
-        pDummy->m_YearMon = YearMon;
-        if (([&]() -> bool { auto _ri = std::lower_bound(m_Reports.begin(), m_Reports.end(), pDummy, [](CAtlaParser* a, CAtlaParser* b){ return a->m_YearMon < b->m_YearMon; }); if (_ri != m_Reports.end() && (*_ri)->m_YearMon == (pDummy)->m_YearMon) { i = (int)(_ri - m_Reports.begin()); return true; } return false; })())
+        auto reportIt = std::lower_bound(m_Reports.begin(), m_Reports.end(), YearMon,
+            [](const std::unique_ptr<CAtlaParser>& report, long year)
+            {
+                return report->m_YearMon < year;
+            });
+        if (reportIt != m_Reports.end() && (*reportIt)->m_YearMon == YearMon)
         {
-            pPrevTurn = m_Reports[i];
+            pPrevTurn = reportIt->get();
         }
         else
         {
@@ -3173,28 +3205,35 @@ BOOL CAhApp::GetPrevTurnReport(CAtlaParser *& pPrevTurn)
             BOOL         join = FALSE;
             m_DisableErrs = TRUE;
             wxBeginBusyCursor();
-            pPrevTurn = new CAtlaParser(&ThisGameDataHelper);
-            pPrevTurn->ParseRep(SZ_HISTORY_FILE, FALSE, TRUE);
+            std::unique_ptr<CAtlaParser> prevTurn(new CAtlaParser(&ThisGameDataHelper));
+            prevTurn->ParseRep(SZ_HISTORY_FILE, FALSE, TRUE);
             while (p && *p)
             {
                 p = S.GetToken(p, ',');
                 //LoadReport(S.GetData(), join);
-                pPrevTurn->ParseRep(S.GetData(), join, FALSE);
+                prevTurn->ParseRep(S.GetData(), join, FALSE);
                 join = TRUE;
             }
             wxEndBusyCursor();
             m_DisableErrs = FALSE;
-            if (pPrevTurn->m_YearMon == YearMon)
-                { auto _ri = std::lower_bound(m_Reports.begin(), m_Reports.end(), pPrevTurn, [](CAtlaParser* a, CAtlaParser* b){ return a->m_YearMon < b->m_YearMon; }); m_Reports.insert(_ri, pPrevTurn); }
-            else
+            if (prevTurn->m_YearMon == YearMon)
             {
-                delete pPrevTurn;
-                pPrevTurn = NULL;
+                pPrevTurn = prevTurn.get();
+                auto insertIt = std::lower_bound(m_Reports.begin(), m_Reports.end(), YearMon,
+                    [](const std::unique_ptr<CAtlaParser>& report, long year)
+                    {
+                        return report->m_YearMon < year;
+                    });
+                if (insertIt != m_Reports.end() && (*insertIt)->m_YearMon == YearMon)
+                    insertIt = m_Reports.erase(insertIt);
+                m_Reports.insert(insertIt, std::move(prevTurn));
             }
+            else
+                pPrevTurn = nullptr;
         }
     }
 
-    return (pPrevTurn != NULL);
+    return (pPrevTurn != nullptr);
 }
 
 /*
