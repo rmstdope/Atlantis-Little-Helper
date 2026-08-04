@@ -312,13 +312,11 @@ void  CListHeaderEditDlg::AddItem()
         pField = (TUnitColData *)m_Fields.At(idx);
     else
     {
-        CStrInt      * pSI, SI(Dummy.PropName.GetData(), 0);
-
-        if (gpApp->m_pAtlantis->m_UnitPropertyTypes.Search(&SI, idx))
         {
-            pSI = (CStrInt*)gpApp->m_pAtlantis->m_UnitPropertyTypes.At(idx);
-            if (eLong == (EValueType)pSI->m_value)
-                flags = LIST_FLAG_ALIGN_RIGHT;
+            auto it__ = gpApp->m_pAtlantis->m_UnitPropertyTypes.find(Dummy.PropName.GetData());
+            if (it__ != gpApp->m_pAtlantis->m_UnitPropertyTypes.end())
+                if (eLong == (EValueType)it__->second)
+                    flags = LIST_FLAG_ALIGN_RIGHT;
         }
 
         pField           = new TUnitColData;

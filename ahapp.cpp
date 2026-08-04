@@ -115,10 +115,9 @@ bool CAhApp::OnInit()
     const char      * p;
     const char      * szName;
     const char      * szValue;
-    CStrStr         * pSS;
     CStr              S(32), S2;
     int               sectidx;
-    CStrStrColl2      Coll;
+    std::set<std::pair<std::string,std::string>> CollDedup;
 
 
     gpApp = this;
@@ -168,18 +167,15 @@ bool CAhApp::OnInit()
 
 
     // Load unit property groups
-    m_UnitPropertyGroups.m_bDuplicates=TRUE;
     sectidx = GetSectionFirst(SZ_SECT_UNITPROP_GROUPS, szName, szValue);
     while (sectidx >= 0)
     {
         while (szValue && *szValue)
         {
             szValue = S.GetToken(szValue, ',');
-            pSS     = new CStrStr(szName, S.GetData());
-            if (Coll.Insert(pSS))
-                m_UnitPropertyGroups.Insert(pSS);
-            else
-                delete pSS;
+            std::string key(szName), val(S.GetData());
+            if (CollDedup.insert({key, val}).second)
+                m_UnitPropertyGroups.emplace(key, val);
         }
         sectidx = GetSectionNext(sectidx, SZ_SECT_UNITPROP_GROUPS, szName, szValue);
     }
@@ -187,23 +183,23 @@ bool CAhApp::OnInit()
 
 
     // Property group name must not be an alias!
-    szName = "";
-    for (i=0; i<Coll.Count(); i++)
     {
-        pSS = (CStrStr*)Coll.At(i);
-        if (0!=stricmp(szName, pSS->m_key))
+        std::string lastKey;
+        for (auto & kv : m_UnitPropertyGroups)
         {
-            szName = pSS->m_key;
-            p = ResolveAlias(szName);
-            if (0!=stricmp(szName, p))
+            if (lastKey != kv.first)
             {
-                S = "Group name \"";
-                S << szName << "\" can be resolved as alias for \"" << p << "\"!\r\n";
-                ShowError(S.GetData(), S.GetLength(), TRUE);
+                lastKey = kv.first;
+                p = ResolveAlias(lastKey.c_str());
+                if (0!=stricmp(lastKey.c_str(), p))
+                {
+                    S = "Group name \"";
+                    S << lastKey.c_str() << "\" can be resolved as alias for \"" << p << "\"!\r\n";
+                    ShowError(S.GetData(), S.GetLength(), TRUE);
+                }
             }
         }
     }
-    Coll.DeleteAll();
 
 
     InitMoveModes();
@@ -2419,17 +2415,10 @@ void CAhApp::CheckSailing()
 
 #define SET_UNIT_PROP_NAME(_name, _type)                                 \
 {                                                                        \
-    CStrInt         * pSI, SI;                                           \
     int               k;                                                 \
     if (!m_pAtlantis->m_UnitPropertyNames.Search((void*)_name, k))       \
         m_pAtlantis->m_UnitPropertyNames.Insert(strdup(_name));          \
-    SI.m_key = _name;                                                    \
-    if (!m_pAtlantis->m_UnitPropertyTypes.Search(&SI, k))                \
-    {                                                                    \
-        pSI = new CStrInt(_name, _type);                                 \
-        m_pAtlantis->m_UnitPropertyTypes.Insert(pSI);                    \
-    }                                                                    \
-    SI.m_key = NULL;                                                     \
+    m_pAtlantis->m_UnitPropertyTypes.emplace(_name, (int)(_type));       \
 }
 
 void CAhApp::PreLoadReport()
@@ -2659,11 +2648,8 @@ int  CAhApp::LoadReport  (const char * FNameIn, BOOL Join)
         }
 
         // Append unit group property names here so they are available while parsing
-        for (i=0; i<m_UnitPropertyGroups.Count(); i++ )
-        {
-            CStrStr * pSS = (CStrStr*)m_UnitPropertyGroups.At(i);
-            SET_UNIT_PROP_NAME(pSS->m_key, eLong)
-        }
+        for (auto & upg__ : m_UnitPropertyGroups)
+            SET_UNIT_PROP_NAME(upg__.first.c_str(), eLong)
 
 
         err = m_pAtlantis->ParseRep(FName.GetData(), Join, FALSE);
@@ -3200,11 +3186,8 @@ BOOL CAhApp::GetPrevTurnReport(CAtlaParser *& pPrevTurn)
         }
 
         // Append unit group property names here so they are available while parsing
-        for (i=0; i<m_UnitPropertyGroups.Count(); i++ )
-        {
-            CStrStr * pSS = (CStrStr*)m_UnitPropertyGroups.At(i);
-            SET_UNIT_PROP_NAME(pSS->m_key, eLong)
-        }
+        for (auto & upg__ : m_UnitPropertyGroups)
+            SET_UNIT_PROP_NAME(upg__.first.c_str(), eLong)
 
 
         err = m_pAtlantis->ParseRep(FName.GetData(), Join, FALSE);

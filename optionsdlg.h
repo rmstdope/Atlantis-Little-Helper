@@ -20,6 +20,10 @@
 #ifndef __OPTIONS_DLG_INCL_H__
 #define __OPTIONS_DLG_INCL_H__
 
+#include <vector>
+#include <string>
+#include <utility>
+
 
 
 typedef struct _AH_FONT_DATA
@@ -52,8 +56,8 @@ private:
     bool            m_IsValid;
     bool            m_bFontChanged[FONT_COUNT];
     AH_FONT_DATA    m_FontData[FONT_COUNT]; // original data to restore on cancel
-    CStrStrColl     m_ColorData;            // original data to restore on cancel
-    CStrStrColl     m_FactionData;          // original data to restore on cancel
+    std::vector<std::pair<std::string,std::string>> m_ColorData;   // original data to restore on cancel
+    std::vector<std::pair<std::string,std::string>> m_FactionData; // original data to restore on cancel
 
     wxComboBox    * m_pComboFonts;
     wxComboBox    * m_pComboColors;

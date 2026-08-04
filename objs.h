@@ -21,7 +21,11 @@
 #define __OBJS_IS_OBJECTS_FOUNDATION_H_INCL__
 
 #include "cstr.h"
-#include "collection.h"
+#include <map>
+#include <vector>
+#include <string>
+#include <algorithm>
+#include <set>
 
 enum EValueType
 {
@@ -57,107 +61,6 @@ enum EPropertyType
 #define PE_INV_PROP_TYPE   (-4)      
 
 //=============================================================
-
-class CStrInt
-{
-public:
-    CStrInt(){m_key=NULL; m_value=0;};
-    CStrInt(const char * key, int value)
-    {
-        m_key       = key?strdup(key  ):NULL;
-        m_value     = value;
-    };
-    ~CStrInt()
-    {
-        if (m_key)
-            free((void*)m_key);
-    }
-
-    const char * m_key;
-    int          m_value;
-};
-
-
-//-----------------------------------------------------------------
-
-class CStrIntColl : public CSortedCollection
-{
-public:
-    CStrIntColl()           : CSortedCollection()       {};
-    CStrIntColl(int nDelta) : CSortedCollection(nDelta) {};
-    virtual ~CStrIntColl() {FreeAll();};
-protected:
-    virtual void FreeItem(void * pItem) {if (pItem) delete (CStrInt*)pItem;};
-    virtual int Compare(void * pItem1, void * pItem2) 
-    {
-        return SafeCmp( ((CStrInt*)pItem1)->m_key,  ((CStrInt*)pItem2)->m_key );
-    };
-};
-
-
-//-------------------------------------------------------------------
-
-class CStrStr
-{
-public:
-    CStrStr(){m_key=NULL; m_value=NULL;};
-    CStrStr(const char * key, const char * value)
-    {
-        m_key       = key?strdup(key  ):NULL;
-        m_value     = value?strdup(value):NULL;
-    };
-    ~CStrStr()
-    {
-        if (m_key)
-            free((void*)m_key);
-        if (m_value)
-            free((void*)m_value);
-    }
-
-    const char * m_key;
-    const char * m_value;
-};
-
-
-//-----------------------------------------------------------------
-
-class CStrStrColl : public CSortedCollection
-{
-public:
-    CStrStrColl()           : CSortedCollection()       {};
-    CStrStrColl(int nDelta) : CSortedCollection(nDelta) {};
-    virtual ~CStrStrColl() {FreeAll();};
-protected:
-    virtual void FreeItem(void * pItem) {if (pItem) delete (CStrStr*)pItem;};
-    virtual int Compare(void * pItem1, void * pItem2) 
-    {
-        return SafeCmp( ((CStrStr*)pItem1)->m_key,  ((CStrStr*)pItem2)->m_key );
-    };
-};
-
-
-//-------------------------------------------------------------------
-
-class CStrStrColl2 : public CSortedCollection
-{
-public:
-    CStrStrColl2()           : CSortedCollection()       {};
-    CStrStrColl2(int nDelta) : CSortedCollection(nDelta) {};
-    virtual ~CStrStrColl2() {FreeAll();};
-protected:
-    virtual void FreeItem(void * pItem) {if (pItem) delete (CStrStr*)pItem;};
-    virtual int Compare(void * pItem1, void * pItem2) 
-    {
-        int x = SafeCmp( ((CStrStr*)pItem1)->m_key,  ((CStrStr*)pItem2)->m_key );
-        if (0==x)
-            x = SafeCmp( ((CStrStr*)pItem1)->m_value,  ((CStrStr*)pItem2)->m_value );
-
-        return x;
-    };
-};
-
-
-//-------------------------------------------------------------------
 
 struct TEvent
 {
@@ -198,14 +101,22 @@ public:
 
 //-------------------------------------------------------------------
 
-class TPropertyColl : public CSortedCollection
+// Map from property name to TProperty* (owned)
+class TPropertyColl
 {
 public:
-    TPropertyColl()           : CSortedCollection()       {};
-    TPropertyColl(int nDelta) : CSortedCollection(nDelta) {};
-protected:
-    virtual void FreeItem(void * pItem) {if (pItem) delete (TProperty*)pItem;};
-    virtual int  Compare(void * pItem1, void * pItem2);
+    TPropertyColl()  {};
+    ~TPropertyColl() { freeAll(); };
+
+    TProperty * find(const char * name) const;
+    void        insert(TProperty * p);
+    void        erase(const char * name);
+    void        freeAll();
+    size_t      count() const { return m_map.size(); }
+    TProperty * at(int no) const;   // iterate by position (O(n), used rarely)
+
+private:
+    std::map<std::string, TProperty*> m_map;
 };
 
 //-------------------------------------------------------------------
@@ -218,7 +129,7 @@ public:
 
     virtual BOOL GetProperty(const char    *  name,
                              EValueType     & valuetype,
-                             const void    *& value, // returns pointer to inner location
+                             const void    *& value,
                              EPropertyType    proptype = eNormal
                             );
     virtual int  SetProperty(const char  *  name,
@@ -229,13 +140,13 @@ public:
     virtual void DelProperty(const char  *  name);
     virtual void ResetNormalProperties();
     virtual const char  * ResolveAlias(const char * alias) {return alias;};
-    virtual CStrStrColl * GetPropertyGroups() {return NULL;};
+    virtual std::multimap<std::string,std::string> * GetPropertyGroups() {return NULL;};
     virtual const char  * GetPropertyName(int no);
 
 protected:
     BOOL GetJustProperty    (const char    *  name,
                              EValueType     & valuetype,
-                             const void    *& value, // returns pointer to inner location
+                             const void    *& value,
                              EPropertyType    proptype = eNormal
                             );
     TPropertyColl  m_Properties;
@@ -244,24 +155,30 @@ protected:
 
 //-------------------------------------------------------------------
 
-class TPropertyHolderColl : public CResortableCollection
+class TPropertyHolderColl
 {
 public:
-    TPropertyHolderColl();
-    TPropertyHolderColl(int nDelta);
-    virtual ~TPropertyHolderColl();
+    TPropertyHolderColl()  {};
+    TPropertyHolderColl(int /*nDelta*/) {};
+    virtual ~TPropertyHolderColl() { DeleteAll(); }
 
     void SetSortMode(const char ** keys, int keycount);
 
+    // Collection-like API used by callers
+    size_t            Count()   const { return m_items.size(); }
+    TPropertyHolder * At(int i) const { return m_items[i]; }
+
+    void AtInsert(int i, TPropertyHolder * p) { m_items.insert(m_items.begin()+i, p); }
+    void AtDelete(int i)                      { m_items.erase(m_items.begin()+i); }
+    void DeleteAll()                          { m_items.clear(); }
 
 protected:
-    virtual void FreeItem(void * pItem);
-    virtual int  Compare(void * pItem1, void * pItem2);
+    void ClearKeys();
+    int  Compare(TPropertyHolder * a, TPropertyHolder * b) const;
 
-    void         ClearKeys();
-
-    int    m_KeyCount;
-    char * m_Key[MAX_PROP_COLL_KEYS];
+    std::vector<TPropertyHolder*> m_items;
+    int    m_KeyCount = 0;
+    char * m_Key[MAX_PROP_COLL_KEYS] = {};
 };
 
 //-------------------------------------------------------------------

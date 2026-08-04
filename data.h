@@ -336,7 +336,7 @@ public:
                              const void  *& value, // returns pointer to inner location
                              EPropertyType  proptype = eNormal
                             );
-    virtual CStrStrColl * GetPropertyGroups();
+    virtual std::multimap<std::string,std::string> * GetPropertyGroups();
     void    ExtractCommentsFromDefOrders();
     virtual void ResetNormalProperties();
     void    CheckWeight(CStr & sErr);
@@ -373,7 +373,7 @@ public:
     // potentially can be moved to some bitflags field
     bool            IsWorking;
 
-    static CStrStrColl * m_PropertyGroupsColl;
+    static std::multimap<std::string,std::string> * m_PropertyGroupsColl;
 
     virtual void DebugPrint(CStr & sDest);
 protected:

@@ -245,7 +245,7 @@ void CAtlaParser::Clear()
     m_TradeLandStrs.FreeAll();
     m_BattleLandStrs.FreeAll();
     m_UnitPropertyNames.FreeAll();
-    m_UnitPropertyTypes.FreeAll();
+    m_UnitPropertyTypes.clear();
     m_LandPropertyNames.FreeAll();
     //m_LandPropertyTypes.FreeAll();
 
@@ -6896,15 +6896,12 @@ BOOL CAtlaParser::ApplyDefaultOrders(BOOL EmptyOnly)
 
 int  CAtlaParser::SetUnitProperty(CUnit * pUnit, const char * name, EValueType type, const void * value, EPropertyType proptype)
 {
-    int       i;
-    CStrInt * pSI;
+    int i;
 
     if (!m_UnitPropertyNames.Search((void*)name, i))
     {
         m_UnitPropertyNames.Insert(strdup(name));
-        pSI = new CStrInt(name, (int)type);
-        if (!m_UnitPropertyTypes.Insert(pSI))
-            delete pSI;
+        m_UnitPropertyTypes.emplace(name, (int)type);
     }
     return pUnit->SetProperty(name, type, value, proptype);
 }

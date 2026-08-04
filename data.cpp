@@ -672,13 +672,13 @@ void CLand::AddNewEdgeStruct(const char * name, int direction)
 
 //=============================================================
 
-CStrStrColl * CUnit::m_PropertyGroupsColl = NULL;
+std::multimap<std::string,std::string> * CUnit::m_PropertyGroupsColl = NULL;
 CStr          CUnit::m_CustomFlagNames[UNIT_CUSTOM_FLAG_COUNT];
 BOOL          CUnit::m_CustomFlagNamesLoaded = FALSE;
 
 
 
-CStrStrColl * CUnit::GetPropertyGroups()
+std::multimap<std::string,std::string> * CUnit::GetPropertyGroups()
 {
     return m_PropertyGroupsColl;
 }
@@ -1305,13 +1305,10 @@ BOOL EvaluateBaseObjectByBoxes(CBaseObject * pObj, CStr * Property, eCompareOp *
             if ( !pObj->GetProperty(Property[i].GetData(), type, value, eNormal))
             {
                 // make an empty sValue
-                CStrInt * pSI, SI(Property[i].GetData(), 0);
-                int       idx;
-
-                if (gpApp->m_pAtlantis->m_UnitPropertyTypes.Search(&SI, idx))
+                auto it__ = gpApp->m_pAtlantis->m_UnitPropertyTypes.find(Property[i].GetData());
+                if (it__ != gpApp->m_pAtlantis->m_UnitPropertyTypes.end())
                 {
-                    pSI = (CStrInt*)gpApp->m_pAtlantis->m_UnitPropertyTypes.At(idx);
-                    type = (EValueType)pSI->m_value;
+                    type = (EValueType)it__->second;
                     if (eLong == type)
                         value = 0;
                     else

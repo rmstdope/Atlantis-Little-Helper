@@ -283,7 +283,7 @@ public:
     wxWindow           * m_Panes [AH_PANE_COUNT ];
     wxFont             * m_Fonts [FONT_COUNT];
     const char         * m_FontDescr[FONT_COUNT];
-    CStrStrColl          m_UnitPropertyGroups;
+    std::multimap<std::string, std::string> m_UnitPropertyGroups;
 
 //    BOOL                 m_LandFlagsChanged;
     BOOL                 m_CommentsChanged;

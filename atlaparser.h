@@ -182,7 +182,7 @@ public:
     CBaseColl         m_Planes;
     long              m_YearMon;    // Current year/month accumulated for all loaded files
     CStringSortColl   m_UnitPropertyNames;
-    CStrIntColl       m_UnitPropertyTypes;
+    std::map<std::string, int> m_UnitPropertyTypes;
     CStringSortColl   m_LandPropertyNames;
     //CStringSortColl   m_LandPropertyTypes;
     CBaseColl         m_Skills;

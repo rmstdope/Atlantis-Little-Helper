@@ -221,7 +221,6 @@ void COptionsDialog::Init()
     long         i;
     const char * szName;
     const char * szValue;
-    CStrStr    * pSS;
 
     m_IsValid = true;
 
@@ -249,8 +248,7 @@ void COptionsDialog::Init()
     while (i>=0)
     {
         m_pComboColors->Append(wxString::FromAscii(szName));
-        pSS = new CStrStr(szName, szValue);
-        m_ColorData.Insert(pSS);
+        m_ColorData.push_back({szName, szValue ? szValue : ""});
         i = gpApp->GetSectionNext(i, SZ_SECT_COLORS, szName, szValue);
     }
 
@@ -258,8 +256,7 @@ void COptionsDialog::Init()
     while (i>=0)
     {
         m_pComboFactions->Append(wxString::FromAscii(szName));
-        pSS = new CStrStr(szName, szValue);
-        m_FactionData.Insert(pSS);
+        m_FactionData.push_back({szName, szValue ? szValue : ""});
         i = gpApp->GetSectionNext(i, SZ_SECT_PASSWORDS, szName, szValue);
     }
 
@@ -303,8 +300,8 @@ void COptionsDialog::Init()
 
 void COptionsDialog::Done()
 {
-    m_ColorData.FreeAll();
-    m_FactionData.FreeAll();
+    m_ColorData.clear();
+    m_FactionData.clear();
 }
 
 //--------------------------------------------------------------------------
@@ -375,7 +372,6 @@ void COptionsDialog::OnOk    (wxCommandEvent& event)
 void COptionsDialog::OnCancel(wxCommandEvent& event)
 {
     int          i;
-    CStrStr    * pSS;
 
     if (m_IsValid && event.GetId()==wxID_CANCEL)
     {
@@ -403,17 +399,11 @@ void COptionsDialog::OnCancel(wxCommandEvent& event)
             }
         }
 
-        for (i=0; i<m_ColorData.Count(); i++)
-        {
-            pSS = (CStrStr*)m_ColorData.At(i);
-            gpApp->SetConfig(SZ_SECT_COLORS, pSS->m_key, pSS->m_value);
-        }
+        for (size_t i2=0; i2<m_ColorData.size(); i2++)
+            gpApp->SetConfig(SZ_SECT_COLORS, m_ColorData[i2].first.c_str(), m_ColorData[i2].second.c_str());
 
-        for (i=0; i<m_FactionData.Count(); i++)
-        {
-            pSS = (CStrStr*)m_FactionData.At(i);
-            gpApp->SetConfig(SZ_SECT_PASSWORDS, pSS->m_key, pSS->m_value);
-        }
+        for (size_t i2=0; i2<m_FactionData.size(); i2++)
+            gpApp->SetConfig(SZ_SECT_PASSWORDS, m_FactionData[i2].first.c_str(), m_FactionData[i2].second.c_str());
 
         gpApp->ApplyFonts();
         gpApp->ApplyColors();
