@@ -45,8 +45,10 @@ TProperty::TProperty(const char * name, EValueType type, const void * value)
     m_type      = type;
     if (eCharPtr==type)
     {
-        m_value     = value?strdup((const char *)value):NULL;
-        m_valueorg  = value?strdup((const char *)value):NULL;
+        m_strValue    = value ? (const char*)value : "";
+        m_strValueOrg = m_strValue;
+        m_value       = (void*)m_strValue.c_str();
+        m_valueorg    = (void*)m_strValueOrg.c_str();
     }
     else
     {
@@ -59,13 +61,7 @@ TProperty::TProperty(const char * name, EValueType type, const void * value)
 
 TProperty::~TProperty()
 {
-    if (eCharPtr==m_type) 
-    {
-        if (m_value)
-            free(m_value);
-        if (m_valueorg)
-            free(m_valueorg);
-    }
+    // eCharPtr payload is stored in std::string members.
 }
 
 //-------------------------------------------------------------------
@@ -75,31 +71,39 @@ int TProperty::SetValue(EValueType     type,
                         EPropertyType  proptype
                         )
 {
-    void     ** pvalue;
-
     if (type!=m_type)
         return PE_INV_VALUE_TYPE;
 
-    switch (proptype)
-    {
-    case eNormal:
-        pvalue = &m_value;
-        break;
-    case eOriginal:
-        pvalue = &m_valueorg;
-        break;
-    default:
-        return PE_INV_PROP_TYPE;
-    }
-
     if (eCharPtr==type)
     {
-        if (*pvalue)
-            free(*pvalue);
-        *pvalue     = value?strdup((const char *)value):NULL;
+        switch (proptype)
+        {
+        case eNormal:
+            m_strValue = value ? (const char*)value : "";
+            m_value = (void*)m_strValue.c_str();
+            break;
+        case eOriginal:
+            m_strValueOrg = value ? (const char*)value : "";
+            m_valueorg = (void*)m_strValueOrg.c_str();
+            break;
+        default:
+            return PE_INV_PROP_TYPE;
+        }
     }
     else
-        *pvalue     = (void*)value;
+    {
+        switch (proptype)
+        {
+        case eNormal:
+            m_value = (void*)value;
+            break;
+        case eOriginal:
+            m_valueorg = (void*)value;
+            break;
+        default:
+            return PE_INV_PROP_TYPE;
+        }
+    }
 
     return PE_OK;
 }
@@ -176,8 +180,12 @@ BOOL TPropertyHolder::GetJustProperty(const char    *  name,
     valuetype = pProp->m_type;
     switch (proptype)
     {
-    case eNormal:   value = pProp->m_value;    break;
-    case eOriginal: value = pProp->m_valueorg; break;
+    case eNormal:
+        value = (valuetype == eCharPtr) ? (const void*)pProp->m_strValue.c_str() : pProp->m_value;
+        break;
+    case eOriginal:
+        value = (valuetype == eCharPtr) ? (const void*)pProp->m_strValueOrg.c_str() : pProp->m_valueorg;
+        break;
     default:        value = NULL; return FALSE;
     }
     return TRUE;
@@ -285,7 +293,12 @@ void TPropertyHolder::ResetNormalProperties()
     {
         TProperty * pProp = m_Properties.at(i);
         if (pProp)
-            pProp->SetValue(pProp->m_type, pProp->m_valueorg, eNormal);
+        {
+            const void * resetValue = (pProp->m_type == eCharPtr)
+                ? (const void*)pProp->m_strValueOrg.c_str()
+                : pProp->m_valueorg;
+            pProp->SetValue(pProp->m_type, resetValue, eNormal);
+        }
     }
 }
 

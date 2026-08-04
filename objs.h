@@ -97,6 +97,8 @@ public:
     EValueType   m_type;
     void       * m_value;
     void       * m_valueorg;
+    std::string  m_strValue;
+    std::string  m_strValueOrg;
 };
 
 //-------------------------------------------------------------------
