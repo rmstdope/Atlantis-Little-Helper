@@ -1105,6 +1105,9 @@ bool CUnit::GetProperty(const char  *  name,
 
 void CUnit::LoadCustomFlagNames(CConfigFile* cfg)
 {
+    if (!cfg)
+        return;
+
     int  i;
     std::string sKey;
 

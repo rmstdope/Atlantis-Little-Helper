@@ -27,6 +27,12 @@
 
 #include "extend.h"
 
+#include <cstdio>
+#include <cstring>
+
+
+static CAtlaParser * gpPythonAtlantis = nullptr;
+
 
 #define CHECK_NULL_PTR(ptr, err, msg) \
 if (!ptr)                             \
@@ -83,6 +89,12 @@ void   CPythonEmbedder::ShowError(const char * msg, int msglen)
 
     if (m_errorCallback)
         m_errorCallback(msg, msglen);
+    else
+    {
+        std::fwrite(msg, 1, msglen, stderr);
+        std::fputc('\n', stderr);
+        std::fflush(stderr);
+    }
 }
 
 
@@ -201,6 +213,7 @@ eEErr  CPythonEmbedder::InitUnitFilter(const char * userfilter, std::string & sP
     if (m_bInitUnitFilter)
         return E_ALREADY_INIT;
     m_bInitUnitFilter = true;
+    gpPythonAtlantis = m_pAtlantis;
 
     GetCommonCode(sCommand);
 
@@ -216,7 +229,7 @@ eEErr  CPythonEmbedder::InitUnitFilter(const char * userfilter, std::string & sP
         if (!sToken.empty() && '\"' == sToken.c_str()[0] && '\"' == sToken.c_str()[sToken.size()-1])
             ToLower(sToken);
 
-        if (m_pAtlantis && m_pAtlantis->m_UnitPropertyNames.find(sToken) != m_pAtlantis->m_UnitPropertyNames.end())
+        if (gpPythonAtlantis && gpPythonAtlantis->m_UnitPropertyNames.find(sToken) != gpPythonAtlantis->m_UnitPropertyNames.end())
             sCommand << SZ_ALH_UNIT_FILTER_MODULE << "." << SZ_ALH_UNIT_FILTER_FN_GET_PROPERTY << "(\"" << sToken << "\")";
         else
             sCommand << sToken;
@@ -297,6 +310,8 @@ void   CPythonEmbedder::DoneUnitFilter()
     m_pDict   = nullptr;
     m_pFunc   = nullptr;
     m_bInitUnitFilter = false;
+    if (gpPythonAtlantis == m_pAtlantis)
+        gpPythonAtlantis = nullptr;
 }
 
 //-------------------------------------------------------------------------
