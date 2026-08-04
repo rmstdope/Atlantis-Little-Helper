@@ -22,7 +22,7 @@
 #include "string.h"
 #include <stdarg.h>
 #include <cstdint>
-#include "cstr.h"
+#include "string_utils.h"
 #include "objs.h"
 #include "compat.h"
 
@@ -31,7 +31,7 @@
 
 TProperty::TProperty()
 {
-    m_name      = NULL;
+    m_name.clear();
     m_type      = eLong;
     m_value     = (void*)0;
     m_valueorg  = (void*)0;
@@ -41,7 +41,7 @@ TProperty::TProperty()
 
 TProperty::TProperty(const char * name, EValueType type, const void * value)
 {
-    m_name      = name?strdup(name):NULL;
+    m_name      = name ? name : "";
     m_type      = type;
     if (eCharPtr==type)
     {
@@ -59,8 +59,6 @@ TProperty::TProperty(const char * name, EValueType type, const void * value)
 
 TProperty::~TProperty()
 {
-    if (m_name)
-        free((void*)m_name);
     if (eCharPtr==m_type) 
     {
         if (m_value)
@@ -121,7 +119,7 @@ TProperty * TPropertyColl::find(const char * name) const
 
 void TPropertyColl::insert(TProperty * p)
 {
-    if (!p || !p->m_name) return;
+    if (!p || p->m_name.empty()) return;
     m_map[p->m_name] = p;
 }
 
@@ -190,7 +188,7 @@ BOOL TPropertyHolder::GetJustProperty(const char    *  name,
 const char * TPropertyHolder::GetPropertyName(int no)
 {
     TProperty * pProp = m_Properties.at(no);
-    return pProp ? pProp->m_name : NULL;
+    return pProp ? pProp->m_name.c_str() : NULL;
 }
 
 //-------------------------------------------------------------------
@@ -298,7 +296,7 @@ void TPropertyHolder::ResetNormalProperties()
 void TPropertyHolderColl::ClearKeys()
 {
     for (int i = 0; i < min(m_KeyCount, MAX_PROP_COLL_KEYS); i++)
-        if (m_Key[i]) { free(m_Key[i]); m_Key[i] = NULL; }
+        m_Key[i].clear();
     m_KeyCount = 0;
 }
 
@@ -309,7 +307,7 @@ void TPropertyHolderColl::SetSortMode(const char ** keys, int keycount)
     ClearKeys();
     for (int i = 0; i < min(keycount, MAX_PROP_COLL_KEYS); i++)
         if (keys[i] && *keys[i])
-            m_Key[m_KeyCount++] = strdup(keys[i]);
+            m_Key[m_KeyCount++] = keys[i];
 
     std::stable_sort(m_items.begin(), m_items.end(),
         [this](TPropertyHolder * a, TPropertyHolder * b) { return Compare(a, b) < 0; });
@@ -329,8 +327,8 @@ int TPropertyHolderColl::Compare(TPropertyHolder * pItem1, TPropertyHolder * pIt
 
     for (n = 0; n < min(m_KeyCount, MAX_PROP_COLL_KEYS); n++)
     {
-        Ok1 = ((TPropertyHolder*)pItem1)->GetProperty(m_Key[n], t1, p1);
-        Ok2 = ((TPropertyHolder*)pItem2)->GetProperty(m_Key[n], t2, p2);
+        Ok1 = ((TPropertyHolder*)pItem1)->GetProperty(m_Key[n].c_str(), t1, p1);
+        Ok2 = ((TPropertyHolder*)pItem2)->GetProperty(m_Key[n].c_str(), t2, p2);
 
         if (!Ok1) { if (!Ok2) continue; else return -1; }
         else       { if (!Ok2) return 1; }
@@ -357,4 +355,3 @@ int TPropertyHolderColl::Compare(TPropertyHolder * pItem1, TPropertyHolder * pIt
 }
 
 //===================================================================
-

@@ -21,7 +21,7 @@
 #define __DATA_H_INCL__
 
 
-#include "cstr.h"
+#include "string_utils.h"
 #include "objs.h"
 #include <string.h>
 #include <algorithm>
@@ -242,8 +242,8 @@ public:
                              EPropertyType  proptype = eNormal
                             );
     long Id;
-    CStr Name;
-    CStr Description;
+    std::string Name;
+    std::string Description;
 
     void SetName(const char * newname);
     void SetDescription(const char * newdescr);
@@ -251,8 +251,8 @@ public:
     void ResetDescription();
     virtual void ResetNormalProperties();
 
-    virtual void DebugPrint(CStr & sDest);
-    virtual void Clear() {Id=0; Name.Empty(); Description.Empty();};
+    virtual void DebugPrint(std::string & sDest);
+    virtual void Clear() {Id=0; Name.clear(); Description.clear();};
 
 };
 
@@ -310,8 +310,8 @@ class CProduct
 {
 public:
     long  Amount;
-    CStr  ShortName;
-    CStr  LongName;
+    std::string  ShortName;
+    std::string  LongName;
 };
 
 //-----------------------------------------------------------------
@@ -336,8 +336,8 @@ protected:
     std::vector<CProduct*> m_items;
     static int Compare(void* pItem1, void* pItem2)
     {
-        return SafeCmp(((CProduct*)pItem1)->ShortName.GetData(),
-                       ((CProduct*)pItem2)->ShortName.GetData());
+        return SafeCmp(((CProduct*)pItem1)->ShortName.c_str(),
+                       ((CProduct*)pItem2)->ShortName.c_str());
     }
 };
 
@@ -349,7 +349,7 @@ public:
     CFaction() : CBaseObject() {UnclaimedSilver=0;};
     long UnclaimedSilver;
 
-    virtual void DebugPrint(CStr & sDest);
+    virtual void DebugPrint(std::string & sDest);
 };
 
 //-----------------------------------------------------------------
@@ -379,7 +379,7 @@ public:
     virtual std::multimap<std::string,std::string> * GetPropertyGroups();
     void    ExtractCommentsFromDefOrders();
     virtual void ResetNormalProperties();
-    void    CheckWeight(CStr & sErr);
+    void    CheckWeight(std::string & sErr);
     void    CalcWeightsAndMovement();
 
     CUnit * AllocSimpleCopy();
@@ -395,14 +395,14 @@ public:
     long            Weight[MOVE_MODE_MAX];
     long            SilvRcvd;
     double          Teaching; // number of students per teacher / number of days per student
-    CStr            Comments;
-    CStr            DefOrders;
-    CStr            Orders;
-    CStr            OrdersDecorated;
-    CStr            Errors;
-    CStr            Events;
-    CStr            StudyingSkill;
-    CStr            ProducingItem;
+    std::string            Comments;
+    std::string            DefOrders;
+    std::string            Orders;
+    std::string            OrdersDecorated;
+    std::string            Errors;
+    std::string            Events;
+    std::string            StudyingSkill;
+    std::string            ProducingItem;
     std::unique_ptr<std::vector<long>> pMovement; // Collection of ids of hexes to move through
     std::unique_ptr<std::vector<long>> pMoveA3Points; // Collection of Arcadia III locations for movement
     std::unique_ptr<CBaseCollById> pStudents;
@@ -415,11 +415,11 @@ public:
 
     static std::multimap<std::string,std::string> * m_PropertyGroupsColl;
 
-    virtual void DebugPrint(CStr & sDest);
+    virtual void DebugPrint(std::string & sDest);
 protected:
     void    AddWeight(int nitems, int * weights, const char ** movenames, int nweights);
     
-    static CStr     m_CustomFlagNames[UNIT_CUSTOM_FLAG_COUNT];
+    static std::string     m_CustomFlagNames[UNIT_CUSTOM_FLAG_COUNT];
     static BOOL     m_CustomFlagNamesLoaded;
 
 };
@@ -435,7 +435,7 @@ public:
     long LandId;
     long OwnerUnitId;
     long Attr;
-    CStr Kind;
+    std::string Kind;
     int  Location;
     long Load;
     long SailingPower;
@@ -474,17 +474,17 @@ public:
     int       GetNextNewUnitNo();
 
 
-    virtual void DebugPrint(CStr & sDest);
+    virtual void DebugPrint(std::string & sDest);
 
     long          Taxable;
     long          Peasants;
-    CStr          PeasantRace;
-    CStr          TerrainType;
-    CStr          CityName;
-    CStr          CityType;
-    CStr          FlagText[LAND_FLAG_COUNT];
-    CStr          Exits;
-    CStr          Events;
+    std::string          PeasantRace;
+    std::string          TerrainType;
+    std::string          CityName;
+    std::string          CityType;
+    std::string          FlagText[LAND_FLAG_COUNT];
+    std::string          Exits;
+    std::string          Events;
     CBaseCollById Structs;
     CBaseCollById Units;
     CBaseColl     UnitsSeq; // this will keep units in the sequence they were met in the report
@@ -540,7 +540,7 @@ class CShortNamedObj : public CBaseObject
 {
 public:
     CShortNamedObj() : CBaseObject() {Level = 0;};
-    CStr ShortName;
+    std::string ShortName;
     long Level;
 
 };
@@ -548,7 +548,7 @@ public:
 class CBattle : public CBaseObject
 {
 public:
-    CStr LandStrId;
+    std::string LandStrId;
 };
 
 //-----------------------------------------------------------------
@@ -600,14 +600,14 @@ protected:
 class TProdDetails
 {
 public:
-    CStr skillname;
+    std::string skillname;
     long skilllevel;
 
     long months;
-    CStr resname[MAX_RES_NUM];
+    std::string resname[MAX_RES_NUM];
     long resamt[MAX_RES_NUM];
 
-    CStr toolname;
+    std::string toolname;
     long toolhelp;
 
     void Empty();
@@ -657,7 +657,7 @@ public:
     long  FactionId;
     long  HexCount;
     long  amount;
-    CStr  Details;
+    std::string  Details;
 };
 
 class CTaxProdDetailsCollByFaction
@@ -696,8 +696,8 @@ long LandCoordToId(int x, int y, int z);
 void LandIdToCoord(long id, int & x, int & y, int & z);
 void TestLandId();
 BOOL IsASkillRelatedProperty(const char * propname);
-void MakeQualifiedPropertyName(const char * prefix, const char * shortname, CStr & FullName);
-void SplitQualifiedPropertyName(const char * fullname, CStr & Prefix, CStr & ShortName);
-BOOL EvaluateBaseObjectByBoxes(CBaseObject * pObj, CStr * Property, eCompareOp * CompareOp, CStr * Value, long * lValue, int count);
+void MakeQualifiedPropertyName(const char * prefix, const char * shortname, std::string & FullName);
+void SplitQualifiedPropertyName(const char * fullname, std::string & Prefix, std::string & ShortName);
+BOOL EvaluateBaseObjectByBoxes(CBaseObject * pObj, std::string * Property, eCompareOp * CompareOp, std::string * Value, long * lValue, int count);
 
 #endif
