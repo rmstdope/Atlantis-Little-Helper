@@ -25,6 +25,7 @@
 #include "collection.h"
 #include "objs.h"
 #include <string.h>
+#include <algorithm>
 #include "compat.h"
 
 typedef enum {GT=0,GE,   EQ,   LE,   LT,  NE, NOP} eCompareOp;
@@ -256,25 +257,50 @@ public:
 
 //-----------------------------------------------------------------
 
-class CBaseColl : public CCollection
+class CBaseColl
 {
 public:
     CBaseColl();
-    CBaseColl(int nDelta);
+    CBaseColl(int /*nDelta*/);
+    ~CBaseColl() { FreeAll(); }
+
+    int   Count()     const { return (int)m_items.size(); }
+    void* At(int i)   const { return (i >= 0 && i < (int)m_items.size()) ? m_items[i] : nullptr; }
+    BOOL  Insert(void* pItem)             { m_items.push_back((CBaseObject*)pItem); return TRUE; }
+    void  AtInsert(int i, void* pItem)    { m_items.insert(m_items.begin()+i, (CBaseObject*)pItem); }
+    void  AtDelete(int i)                 { m_items.erase(m_items.begin()+i); }
+    void  AtFree(int i)                   { FreeItem(m_items[i]); m_items.erase(m_items.begin()+i); }
+    void  DeleteAll()                     { m_items.clear(); }
+    void  FreeAll()                       { for (auto p : m_items) FreeItem(p); m_items.clear(); }
+
 protected:
-    virtual void FreeItem(void * pItem);
+    virtual void FreeItem(void* pItem);
+    std::vector<CBaseObject*> m_items;
 };
 
 //-----------------------------------------------------------------
 
-class CBaseCollById : public CSortedCollection
+class CBaseCollById
 {
 public:
     CBaseCollById();
-    CBaseCollById(int nDelta);
+    CBaseCollById(int /*nDelta*/);
+    ~CBaseCollById() { FreeAll(); }
+
+    int   Count()     const { return (int)m_items.size(); }
+    void* At(int i)   const { return (i >= 0 && i < (int)m_items.size()) ? m_items[i] : nullptr; }
+    BOOL  Insert(void* pItem);
+    BOOL  Search(void* pItem, int& nIndex) const;
+    void  AtInsert(int i, void* pItem)    { m_items.insert(m_items.begin()+i, (CBaseObject*)pItem); }
+    void  AtDelete(int i)                 { m_items.erase(m_items.begin()+i); }
+    void  AtFree(int i)                   { FreeItem(m_items[i]); m_items.erase(m_items.begin()+i); }
+    void  DeleteAll()                     { m_items.clear(); }
+    void  FreeAll()                       { for (auto p : m_items) FreeItem(p); m_items.clear(); }
+
 protected:
-    virtual void FreeItem(void * pItem);
-    virtual int Compare(void * pItem1, void * pItem2) ;
+    virtual void FreeItem(void* pItem);
+    virtual int  Compare(void* pItem1, void* pItem2) const;
+    std::vector<CBaseObject*> m_items;
 };
 
 //-----------------------------------------------------------------
@@ -289,16 +315,29 @@ public:
 
 //-----------------------------------------------------------------
 
-class CProductColl : public CSortedCollection
+class CProductColl
 {
 public:
-    CProductColl()            : CSortedCollection()      {};
-    CProductColl(int nDelta)  : CSortedCollection(nDelta){};
+    CProductColl()           {}
+    CProductColl(int /*n*/)  {}
+    ~CProductColl()          { FreeAll(); }
+
+    int   Count()     const { return (int)m_items.size(); }
+    void* At(int i)   const { return (i >= 0 && i < (int)m_items.size()) ? m_items[i] : nullptr; }
+    BOOL  Insert(void* pItem);
+    BOOL  Search(void* pItem, int& nIndex) const;
+    void  AtDelete(int i)  { m_items.erase(m_items.begin()+i); }
+    void  AtFree(int i)    { delete m_items[i]; m_items.erase(m_items.begin()+i); }
+    void  DeleteAll()      { m_items.clear(); }
+    void  FreeAll()        { for (auto p : m_items) delete p; m_items.clear(); }
+
 protected:
-    virtual void FreeItem(void * pItem) {delete (CProduct*)pItem;};
-    virtual int Compare(void * pItem1, void * pItem2)
-    {return(SafeCmp( ((CProduct*)pItem1)->ShortName.GetData(),
-                     ((CProduct*)pItem2)->ShortName.GetData() ));};
+    std::vector<CProduct*> m_items;
+    static int Compare(void* pItem1, void* pItem2)
+    {
+        return SafeCmp(((CProduct*)pItem1)->ShortName.GetData(),
+                       ((CProduct*)pItem2)->ShortName.GetData());
+    }
 };
 
 //-----------------------------------------------------------------
@@ -516,40 +555,41 @@ public:
 class CBaseCollByName : public CBaseCollById
 {
 public:
-    CBaseCollByName()           : CBaseCollById()       {};
-    CBaseCollByName(int nDelta) : CBaseCollById(nDelta) {};
+    CBaseCollByName()           : CBaseCollById()       {}
+    CBaseCollByName(int nDelta) : CBaseCollById(nDelta) {}
 protected:
-    virtual int Compare(void * pItem1, void * pItem2) ;
+    virtual int Compare(void* pItem1, void* pItem2) const;
 };
 
 //-----------------------------------------------------------------
 
-class CUnitsByHex : public CSortedCollection
+class CUnitsByHex
 {
 public:
-    CUnitsByHex() : CSortedCollection() {};
-    CUnitsByHex(int nDelta) : CSortedCollection(nDelta) {};
+    CUnitsByHex()        {}
+    CUnitsByHex(int)     {}
+    ~CUnitsByHex()       {}   // does NOT own items
+
+    int   Count()     const { return (int)m_items.size(); }
+    void* At(int i)   const { return (i >= 0 && i < (int)m_items.size()) ? m_items[i] : nullptr; }
+    BOOL  Insert(void* pItem);
+    BOOL  Search(void* pItem, int& nIndex) const;
+    void  AtDelete(int i)  { m_items.erase(m_items.begin()+i); }
+    void  DeleteAll()      { m_items.clear(); }
+    void  FreeAll()        { m_items.clear(); } // does not own
+
 protected:
-    virtual void FreeItem(void * pItem) {};
-    virtual int Compare(void * pItem1, void * pItem2)
+    std::vector<CUnit*> m_items;
+    static int Compare(void* pItem1, void* pItem2)
     {
         CUnit * p1 = (CUnit*)pItem1;
         CUnit * p2 = (CUnit*)pItem2;
-
-        if (p1->LandId > p2->LandId)
-            return 1;
-        else
-            if (p1->LandId < p2->LandId)
-                return -1;
-            else
-                if (p1->Id > p2->Id)
-                    return 1;
-                else
-                    if (p1->Id < p2->Id)
-                        return -1;
-                    else
-                        return 0;
-    };
+        if (p1->LandId > p2->LandId) return  1;
+        if (p1->LandId < p2->LandId) return -1;
+        if (p1->Id     > p2->Id)     return  1;
+        if (p1->Id     < p2->Id)     return -1;
+        return 0;
+    }
 };
 
 //-----------------------------------------------------------------
@@ -619,30 +659,32 @@ public:
     CStr  Details;
 };
 
-class CTaxProdDetailsCollByFaction : public CSortedCollection
+class CTaxProdDetailsCollByFaction
 {
-    public:
-        CTaxProdDetailsCollByFaction() : CSortedCollection() {};
-        CTaxProdDetailsCollByFaction(int nDelta) : CSortedCollection(nDelta) {};
-    protected:
-        virtual void FreeItem(void * pItem)
-        {
-            CTaxProdDetails * p = (CTaxProdDetails*)pItem;
-            delete p;
-        };
-        virtual int Compare(void * pItem1, void * pItem2)
-        {
-            CTaxProdDetails * p1 = (CTaxProdDetails*)pItem1;
-            CTaxProdDetails * p2 = (CTaxProdDetails*)pItem2;
+public:
+    CTaxProdDetailsCollByFaction()      {}
+    CTaxProdDetailsCollByFaction(int)   {}
+    ~CTaxProdDetailsCollByFaction()     { FreeAll(); }
 
-            if (p1->FactionId > p2->FactionId)
-                return 1;
-            else
-                if (p1->FactionId < p2->FactionId)
-                    return -1;
-            else
-                return 0;
-        };
+    int   Count()     const { return (int)m_items.size(); }
+    void* At(int i)   const { return (i >= 0 && i < (int)m_items.size()) ? m_items[i] : nullptr; }
+    BOOL  Insert(void* pItem);
+    BOOL  Search(void* pItem, int& nIndex) const;
+    void  AtDelete(int i)  { m_items.erase(m_items.begin()+i); }
+    void  AtFree(int i)    { delete m_items[i]; m_items.erase(m_items.begin()+i); }
+    void  DeleteAll()      { m_items.clear(); }
+    void  FreeAll()        { for (auto p : m_items) delete p; m_items.clear(); }
+
+protected:
+    std::vector<CTaxProdDetails*> m_items;
+    static int Compare(void* pItem1, void* pItem2)
+    {
+        CTaxProdDetails * p1 = (CTaxProdDetails*)pItem1;
+        CTaxProdDetails * p2 = (CTaxProdDetails*)pItem2;
+        if (p1->FactionId > p2->FactionId) return  1;
+        if (p1->FactionId < p2->FactionId) return -1;
+        return 0;
+    }
 };
 
 //-----------------------------------------------------------------
