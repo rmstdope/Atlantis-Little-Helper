@@ -62,6 +62,7 @@ CEditorForPane::CEditorForPane(CEditPane * parent)
                :wxTextCtrl(parent, -1, wxT(""), wxDefaultPosition, wxDefaultSize, wxTE_MULTILINE )
 {
     m_pParent = parent;
+    DisableSmartSubstitutions(this);
 }
 
 //--------------------------------------------------------------------
