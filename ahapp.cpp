@@ -3090,7 +3090,9 @@ BOOL CAhApp::CanSwitchToRep(eRepSeq whichrep, int & RepIdx)
         break;
 
     case repLast:
-        if (m_pAtlantis->m_YearMon == m_ReportDates[(int)gpApp->m_ReportDates.size()-1] )
+        if (m_ReportDates.empty())
+            RepIdx = -1;
+        else if (m_pAtlantis->m_YearMon == m_ReportDates[(int)gpApp->m_ReportDates.size()-1] )
             RepIdx = -1;
         else
             RepIdx = ((int)m_ReportDates.size())-1;
@@ -3441,7 +3443,7 @@ void CAhApp::OnUnitHexSelectionChange(long idx)
         ReadOnly = (!pUnit->IsOurs || pUnit->Id<=0) ;
     }
 
-    if (!ReadOnly)
+    if (!ReadOnly && !m_ReportDates.empty())
         ReadOnly = (m_pAtlantis->m_YearMon != m_ReportDates[(int)gpApp->m_ReportDates.size()-1] );
 
     if (pDescription)
@@ -5317,4 +5319,3 @@ void GetFileFromPath(const char * path, CStr & file)
 }
 
 //-------------------------------------------------------------------------
-
