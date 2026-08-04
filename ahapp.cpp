@@ -107,6 +107,7 @@ CAhApp::CAhApp() : m_HexDescrSrc    (128),
 
 CAhApp::~CAhApp()
 {
+    gpApp = NULL;
 }
 
 //-------------------------------------------------------------------------
@@ -413,6 +414,8 @@ int CAhApp::OnExit()
     m_MagicSkillsHash.clear();
 
     m_Reports.clear();
+    m_pAtlantis.reset();
+    m_pAccel.reset();
 
     for (i=0; i<FONT_COUNT; i++)
         delete m_Fonts[i];
@@ -429,7 +432,6 @@ int CAhApp::OnExit()
 
     StdRedirectDone();
 
-    gpApp = NULL;
     return 0;
 }
 
