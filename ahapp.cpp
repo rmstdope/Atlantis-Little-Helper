@@ -107,7 +107,7 @@ CAhApp::CAhApp() : m_HexDescrSrc    (128),
 
 CAhApp::~CAhApp()
 {
-    gpApp = NULL;
+    gpApp = nullptr;
 }
 
 //-------------------------------------------------------------------------

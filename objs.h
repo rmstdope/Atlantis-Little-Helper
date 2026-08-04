@@ -168,7 +168,7 @@ public:
     size_t            Count()   const { return m_items.size(); }
     TPropertyHolder * At(int i) const
     {
-        return (i >= 0 && i < (int)m_items.size()) ? m_items[i] : NULL;
+        return (i >= 0 && i < (int)m_items.size()) ? m_items[i] : nullptr;
     }
 
     void AtInsert(int i, TPropertyHolder * p) { m_items.insert(m_items.begin()+i, p); }
