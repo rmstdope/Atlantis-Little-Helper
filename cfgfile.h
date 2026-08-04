@@ -20,6 +20,10 @@
 #ifndef __CONFIG_FILE_H_INCL__
 #define __CONFIG_FILE_H_INCL__
 
+#include <vector>
+#include <string>
+#include "bool.h"
+
 
 typedef struct _CONFIG_PARAM
 {
@@ -35,7 +39,7 @@ public:
 } CONFIG_PARAM;
 
 
-class CConfigFile : public CSortedCollection
+class CConfigFile
 {
 public:
     CConfigFile();
@@ -52,11 +56,19 @@ public:
     void         RemoveSection(const char * szSection);
     BOOL         GetNextSection(const char * szPrevSection, const char *& szNextSection);
 
-protected:
-    virtual void FreeItem(void * pItem);
-    virtual int  Compare (void * pItem1, void * pItem2);
+private:
+    // Internal sorted-vector API matching the old CSortedCollection interface
+    int   Count() const { return (int)m_items.size(); }
+    void* At(int i) const { return (i >= 0 && i < (int)m_items.size()) ? m_items[i] : nullptr; }
+    BOOL  Insert(void* pItem);
+    BOOL  Search(void* pItem, int& nIndex) const;
+    void  AtFree(int i) { FreeItem(m_items[i]); m_items.erase(m_items.begin()+i); }
+    void  FreeAll() { for (auto p : m_items) FreeItem(p); m_items.clear(); }
 
+    void FreeItem(void * pItem);
+    int  Compare (void * pItem1, void * pItem2) const;
 
+    std::vector<CONFIG_PARAM*> m_items;
 };
 
 
