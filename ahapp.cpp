@@ -3739,7 +3739,6 @@ void CAhApp::ViewGates()
 
 void CAhApp::ViewCities()
 {
-    CBaseObject      * pObj;
     CBaseCollByName    coll;
     int                np,nl;
     CPlane           * pPlane;
@@ -3755,7 +3754,7 @@ void CAhApp::ViewCities()
             pLand    = (CLand*)pPlane->Lands.At(nl);
             if (!pLand->CityName.IsEmpty())
             {
-                pObj       = new CBaseObject;
+                std::unique_ptr<CBaseObject> pObj(new CBaseObject);
                 pObj->Name = pLand->CityName;
 
                 //LandIdToCoord(pLand->Id, x, y, z);
@@ -3763,8 +3762,8 @@ void CAhApp::ViewCities()
                 pObj->Description << pLand->TerrainType << " (" << sCoord << ") in " << pLand->Name;
                 pObj->Description << ", contains " << pLand->CityName << " [" << pLand->CityType << "]";
 
-                if (!coll.Insert(pObj))
-                    delete pObj;
+                if (coll.Insert(pObj.get()))
+                    pObj.release();
             }
         }
     }
@@ -3777,7 +3776,6 @@ void CAhApp::ViewCities()
 
 void CAhApp::ViewProvinces()
 {
-    CBaseObject      * pObj;
     CBaseCollByName    coll;
     int                np,nl;
     CPlane           * pPlane;
@@ -3795,14 +3793,14 @@ void CAhApp::ViewProvinces()
                 pLand      = (CLand*)pPlane->Lands.At(nl);
                 if ((pLand->Flags&LAND_VISITED) || 1==loop) // we run it twice, so we pick visited hexes if we can
                 {
-                    pObj       = new CBaseObject;
+                    std::unique_ptr<CBaseObject> pObj(new CBaseObject);
                     pObj->Name = pLand->Name;
 
                     m_pAtlantis->ComposeLandStrCoord(pLand, sCoord);
                     pObj->Description << pLand->TerrainType << " (" << sCoord << ") in " << pLand->Name;
 
-                    if (!coll.Insert(pObj))
-                        delete pObj;
+                    if (coll.Insert(pObj.get()))
+                        pObj.release();
                 }
             }
         }

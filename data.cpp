@@ -357,13 +357,11 @@ void CLand::ResetUnitsAndStructs()
             pUnit->ResetNormalProperties();
             if (pUnit->pMovement)
             {
-                delete pUnit->pMovement;
-                pUnit->pMovement = NULL;
+                pUnit->pMovement.reset();
             }
             if (pUnit->pMoveA3Points)
             {
-                delete pUnit->pMoveA3Points;
-                pUnit->pMoveA3Points = NULL;
+                pUnit->pMoveA3Points.reset();
             }
             if (pUnit->pStudents)
                 pUnit->pStudents->DeleteAll(); // probably deleting it would not be very usefull
@@ -690,9 +688,9 @@ CUnit::CUnit() : CBaseObject(), Comments(16), DefOrders(32), Orders(32), Errors(
     pFaction      = NULL;
     LandId        = 0;
     Teaching      = 0.0;
-    pMovement     = NULL;
-    pMoveA3Points = NULL;
-    pStudents     = NULL;
+    pMovement     = nullptr;
+    pMoveA3Points = nullptr;
+    pStudents     = nullptr;
     SilvRcvd      = 0;
     Flags         = 0;
     FlagsOrg      = 0;
@@ -705,15 +703,8 @@ CUnit::CUnit() : CBaseObject(), Comments(16), DefOrders(32), Orders(32), Errors(
 
 CUnit::~CUnit()
 {
-    if (pMovement)
-        delete pMovement;
-    if (pMoveA3Points)
-        delete pMoveA3Points;
     if (pStudents)
-    {
         pStudents->DeleteAll();
-        delete pStudents;
-    }
 }
 
 //-------------------------------------------------------------
