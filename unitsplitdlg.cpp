@@ -114,7 +114,7 @@ CUnitSplitDlg::CUnitSplitDlg(wxWindow *parent, CUnit * pUnit)
     topsizer->Add(sizer, 0, wxALIGN_CENTER );
 
 
-    SetAutoLayout( TRUE );     // tell dialog to use sizer
+    SetAutoLayout( true );     // tell dialog to use sizer
     SetSizer( topsizer );      // actually set the sizer
     topsizer->Fit( this );            // set size to minimum size as calculated by the sizer
     topsizer->SetSizeHints( this );   // set size hints to honour mininum size}

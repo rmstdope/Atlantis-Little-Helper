@@ -45,7 +45,7 @@ END_EVENT_TABLE()
 CFlatPanel::CFlatPanel(wxWindow* parent)
           :wxPanel(parent, -1, wxDefaultPosition, wxDefaultSize)
 {
-    m_pChild = NULL;
+    m_pChild = nullptr;
 }
 
 //--------------------------------------------------------------------------
@@ -111,7 +111,7 @@ void CAhFrame::Update()
 
 //--------------------------------------------------------------------------
 
-void CAhFrame::Done(BOOL SetClosedFlag)
+void CAhFrame::Done(bool SetClosedFlag)
 {
     int x, y, w, h, i;
     if (gpApp)
@@ -129,7 +129,7 @@ void CAhFrame::Done(BOOL SetClosedFlag)
 
         for (i=0; i<AH_PANE_COUNT; i++)
             if (m_Panes[i])
-                SetPane(i, NULL);
+                SetPane(i, nullptr);
     }
 }
 
@@ -145,7 +145,7 @@ void CAhFrame::SetPane(int no, wxWindow * pane)
 
 void CAhFrame::OnSaveOrders(wxCommandEvent& WXUNUSED(event))
 {
-    gpApp->SaveOrders(TRUE);
+    gpApp->SaveOrders(true);
 }
 
 

@@ -67,7 +67,7 @@ CShowOneDescriptionDlg::CShowOneDescriptionDlg(wxWindow * parent, const char * t
 
     topsizer->Add( button_sizer, 0, wxALIGN_CENTER );
 
-    SetAutoLayout( TRUE );     // tell dialog to use sizer
+    SetAutoLayout( true );     // tell dialog to use sizer
     SetSizer( topsizer );      // actually set the sizer
     topsizer->Fit( this );            // set size to minimum size as calculated by the sizer
     topsizer->SetSizeHints( this );   // set size hints to honour mininum size}
@@ -155,7 +155,7 @@ CShowDescriptionListDlg::CShowDescriptionListDlg(wxWindow * parent, const char *
 
     m_pItems = items;
     m_pList = new wxListBox(this, -1, wxDefaultPosition, wxDefaultSize,
-                               0, NULL, wxLB_SINGLE | wxLB_NEEDED_SB );
+                               0, nullptr, wxLB_SINGLE | wxLB_NEEDED_SB );
 
     for (i=0; i<items->Count(); i++)
     {
@@ -194,7 +194,7 @@ CShowDescriptionListDlg::CShowDescriptionListDlg(wxWindow * parent, const char *
                    0,                // make vertically unstretchable
                    wxALIGN_CENTER ); // no border and centre horizontally
 
-    SetAutoLayout( TRUE );     // tell dialog to use sizer
+    SetAutoLayout( true );     // tell dialog to use sizer
     SetSizer( topsizer );      // actually set the sizer
     topsizer->Fit( this );            // set size to minimum size as calculated by the sizer
     topsizer->SetSizeHints( this );   // set size hints to honour mininum size}
@@ -326,7 +326,7 @@ CExportMagesCSVDlg::CExportMagesCSVDlg(wxWindow * parent, const char * fname)
     wxBoxSizer  * colsizer;
     wxBoxSizer  * layoutsizer;
 
-    m_pSeparator = new wxComboBox(this, -1, wxT(""), wxDefaultPosition, wxDefaultSize, 0, NULL, wxCB_DROPDOWN);
+    m_pSeparator = new wxComboBox(this, -1, wxT(""), wxDefaultPosition, wxDefaultSize, 0, nullptr, wxCB_DROPDOWN);
     m_pSeparator->Append(wxT(","));
     m_pSeparator->Append(wxT(";"));
     p = SkipSpaces(gpApp->GetConfig(m_sConfigSection.c_str(), SZ_KEY_SEPARATOR));
@@ -335,7 +335,7 @@ CExportMagesCSVDlg::CExportMagesCSVDlg(wxWindow * parent, const char * fname)
     else
         m_pSeparator->SetSelection(0);
 
-    m_pOrientation = new wxComboBox(this, -1, wxT(""), wxDefaultPosition, wxDefaultSize, 0, NULL, wxCB_DROPDOWN );
+    m_pOrientation = new wxComboBox(this, -1, wxT(""), wxDefaultPosition, wxDefaultSize, 0, nullptr, wxCB_DROPDOWN );
     m_pOrientation->Append(wxT(SZ_VERTICAL));
     m_pOrientation->Append(wxT(SZ_HORIZONTAL));
     p = SkipSpaces(gpApp->GetConfig(m_sConfigSection.c_str(), SZ_KEY_ORIENTATION));
@@ -351,9 +351,9 @@ CExportMagesCSVDlg::CExportMagesCSVDlg(wxWindow * parent, const char * fname)
     m_nFormat = atol(gpApp->GetConfig(m_sConfigSection.c_str(), SZ_KEY_FORMAT));
     switch (m_nFormat)
     {
-        case 0:   m_pRadio1->SetValue(TRUE); break;
-        case 1:   m_pRadio2->SetValue(TRUE); break;
-        case 2:   m_pRadio3->SetValue(TRUE); break;
+        case 0:   m_pRadio1->SetValue(true); break;
+        case 1:   m_pRadio2->SetValue(true); break;
+        case 2:   m_pRadio3->SetValue(true); break;
     }
 
     m_pFileName = new wxTextCtrl(this, -1, FName);
@@ -419,7 +419,7 @@ CExportMagesCSVDlg::CExportMagesCSVDlg(wxWindow * parent, const char * fname)
 
     // -------------
 
-    SetAutoLayout( TRUE );     // tell dialog to use sizer
+    SetAutoLayout( true );     // tell dialog to use sizer
     SetSizer( topsizer );      // actually set the sizer
     topsizer->Fit( this );            // set size to minimum size as calculated by the sizer
     topsizer->SetSizeHints( this );   // set size hints to honour mininum size}
@@ -567,7 +567,7 @@ CHexExportDlg::CHexExportDlg(wxWindow *parent)
 
 
 
-    SetAutoLayout( TRUE );     // tell dialog to use sizer
+    SetAutoLayout( true );     // tell dialog to use sizer
     SetSizer( topsizer );      // actually set the sizer
     topsizer->Fit( this );            // set size to minimum size as calculated by the sizer
     topsizer->SetSizeHints( this );   // set size hints to honour mininum size}
@@ -635,7 +635,7 @@ CComboboxDlg::CComboboxDlg(wxWindow *parent, const char * szTitle, const char * 
 
     btnOk       = new wxButton     (this, wxID_OK    , wxT("Ok")    );
     btnCancel   = new wxButton     (this, wxID_CANCEL, wxT("Cancel") );
-    m_cbChoices = new wxComboBox(this, -1, wxT(""), wxDefaultPosition, wxDefaultSize, 0, NULL, wxCB_DROPDOWN);
+    m_cbChoices = new wxComboBox(this, -1, wxT(""), wxDefaultPosition, wxDefaultSize, 0, nullptr, wxCB_DROPDOWN);
 
 
     topsizer = new wxBoxSizer( wxVERTICAL );
@@ -654,7 +654,7 @@ CComboboxDlg::CComboboxDlg(wxWindow *parent, const char * szTitle, const char * 
         m_cbChoices->Append(wxString::FromAscii(S.c_str()));
     }
 
-    SetAutoLayout( TRUE );     // tell dialog to use sizer
+    SetAutoLayout( true );     // tell dialog to use sizer
     SetSizer( topsizer );      // actually set the sizer
     topsizer->Fit( this );            // set size to minimum size as calculated by the sizer
     topsizer->SetSizeHints( this );   // set size hints to honour mininum size}
@@ -709,7 +709,7 @@ CGetTextDlg::CGetTextDlg(wxWindow *parent, const char * szTitle, const char * sz
     topsizer->Add(sizer,   0, wxALIGN_CENTER | wxALL, 10);
 
 
-    SetAutoLayout( TRUE );     // tell dialog to use sizer
+    SetAutoLayout( true );     // tell dialog to use sizer
     SetSizer( topsizer );      // actually set the sizer
     topsizer->Fit( this );            // set size to minimum size as calculated by the sizer
     topsizer->SetSizeHints( this );   // set size hints to honour mininum size}
@@ -757,7 +757,7 @@ CMessageBoxSwitchableDlg::CMessageBoxSwitchableDlg(wxWindow *parent, const char 
     topsizer->Add(m_chbSwitchOff                       , 0, wxALIGN_LEFT | wxALL | wxGROW, 5);
     topsizer->Add(btnOk, 0, wxALIGN_CENTER | wxALL, 10);
 
-    SetAutoLayout( TRUE );     // tell dialog to use sizer
+    SetAutoLayout( true );     // tell dialog to use sizer
     SetSizer( topsizer );      // actually set the sizer
     topsizer->Fit( this );            // set size to minimum size as calculated by the sizer
     topsizer->SetSizeHints( this );   // set size hints to honour mininum size}
@@ -776,7 +776,7 @@ void ShowMessageBoxSwitchable(const char * szTitle, const char * szMessage, cons
     if (atol(S.c_str()) > 0)
         return;
 
-    CMessageBoxSwitchableDlg dlg(NULL, szTitle, szMessage);
+    CMessageBoxSwitchableDlg dlg(nullptr, szTitle, szMessage);
     dlg.ShowModal();
     if (dlg.m_chbSwitchOff->IsChecked())
         gpApp->SetConfig(SZ_SECT_DO_NOT_SHOW_THESE, szConfigKey, "1");

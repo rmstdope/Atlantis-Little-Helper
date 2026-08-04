@@ -104,7 +104,7 @@ void MakePathFull(const char * cur_dir, std::string & path);
 void GetDirFromPath(const char * path, std::string & dir);
 void GetFileFromPath(const char * path, std::string & file);
 
-#define APPLY_COLOR_DELTA(x) ((unsigned char )(max(min((int)x-gpApp->m_Brightness_Delta,255),0)))
+#define APPLY_COLOR_DELTA(x) ((unsigned char )(std::max(std::min((int)(x)-(int)gpApp->m_Brightness_Delta,255),0)))
 
 
 
@@ -126,8 +126,8 @@ public:
     CAhApp();
     ~CAhApp();
 
-    virtual bool         OnInit();
-    virtual int          OnExit();
+    virtual bool         OnInit() override;
+    virtual int          OnExit() override;
 
 
     void                 SetConfig(const char * szSection, const char * szName, const char * szNewValue);
@@ -145,43 +145,43 @@ public:
 
     void                 FrameClosing(CAhFrame * pFrame);
 
-    void                 ShowError (const char * msg, int msglen, BOOL ignore_disabled);
+    void                 ShowError (const char * msg, int msglen, bool ignore_disabled);
     long                 GetStudyCost   (const char * skill);
     const char         * ResolveAlias   (const char * alias);
     long                 GetStructAttr  (const char * kind, long & MaxLoad, long & MinSailingPower);
-    BOOL                 GetItemWeights (const char * item, int *& weights, const char **& movenames, int & movecount );
+    bool                 GetItemWeights (const char * item, int *& weights, const char **& movenames, int & movecount );
     void                 GetMoveNames(const char **& movenames);
 
-    BOOL                 GetOrderId     (const char * order, long & id);
-    BOOL                 IsTradeItem    (const char * item);
-    BOOL                 IsMan          (const char * item);
-    BOOL                 IsMagicSkill   (const char * skill);
-    const char *         GetWeatherLine (BOOL IsCurrent, BOOL IsGood, int Zone);
+    bool                 GetOrderId     (const char * order, long & id);
+    bool                 IsTradeItem    (const char * item);
+    bool                 IsMan          (const char * item);
+    bool                 IsMagicSkill   (const char * skill);
+    const char *         GetWeatherLine (bool IsCurrent, bool IsGood, int Zone);
     void                 GetProdDetails (const char * item, TProdDetails & details);
-    long                 GetMaxRaceSkillLevel(const char * race, const char * skill, const char * leadership, BOOL IsArcadiaSkillSystem);
-    BOOL                 CanSeeAdvResources(const char * skillname, const char * terrain, std::vector<long> & Levels, std::vector<std::string> & Resources);
+    long                 GetMaxRaceSkillLevel(const char * race, const char * skill, const char * leadership, bool IsArcadiaSkillSystem);
+    bool                 CanSeeAdvResources(const char * skillname, const char * terrain, std::vector<long> & Levels, std::vector<std::string> & Resources);
     int                  GetAttitudeForFaction(int id);
     void                 SetAttitudeForFaction(int id, int attitude);
 
 
 
-    int                  LoadReport(BOOL Join);
-    int                  LoadReport(const char * FNameIn, BOOL Join);
-    int                  SaveOrders(BOOL UsingExistingName);
+    int                  LoadReport(bool Join);
+    int                  LoadReport(const char * FNameIn, bool Join);
+    int                  SaveOrders(bool UsingExistingName);
     void                 LoadOrders();
     CUnit              * GetSelectedUnit();
-    BOOL                 CanCloseApp();
+    bool                 CanCloseApp();
     void                 Redraw();
     void                 ApplyFonts();
     void                 ApplyColors();
     void                 ApplyIcons();
 
     void                 SelectUnit(CUnit * pUnit);
-    BOOL                 SelectLand(const char * landcoords); //  "48,52[,somewhere]"
+    bool                 SelectLand(const char * landcoords); //  "48,52[,somewhere]"
     void                 SelectLand(CLand * pLand);
 
     void                 SwitchToRep(eRepSeq whichrep);
-    BOOL                 CanSwitchToRep(eRepSeq whichrep, int & RepIdx);
+    bool                 CanSwitchToRep(eRepSeq whichrep, int & RepIdx);
 
     void                 OnMapSelectionChange();
     void                 OnUnitHexSelectionChange(long idx);
@@ -190,14 +190,14 @@ public:
     void                 OpenUnitFrame();
     void                 OpenMsgFrame();
     void                 OpenEditsFrame();
-    void                 OpenUnitFrameFltr(BOOL PopUpSettings);
+    void                 OpenUnitFrameFltr(bool PopUpSettings);
     void                 WriteMagesCSV();
     void                 ShowDescriptionList(CBaseColl & Items, const char * title); // Collection of CBaseObject
     void                 ShowDescriptionList(CBaseCollById & Items, const char * title);
-//    void                 ViewSkills(BOOL ViewAll);
-    void                 ViewShortNamedObjects(BOOL ViewAll, const char * szSection, const char * szHeader, CBaseColl & ListNew);
+//    void                 ViewSkills(bool ViewAll);
+    void                 ViewShortNamedObjects(bool ViewAll, const char * szSection, const char * szHeader, CBaseColl & ListNew);
     void                 ViewBattlesAll();
-    void                 ViewEvents(BOOL DoEvents);
+    void                 ViewEvents(bool DoEvents);
     void                 ViewSecurityEvents();
     void                 ViewNewProducts();
     void                 ViewGates();
@@ -217,13 +217,13 @@ public:
     void                 EditListColumns(int command);
     const char         * GetListColSection(const char * sectprefix, const char * key);
     void                 ViewMovedUnits();
-    BOOL                 GetPrevTurnReport(CAtlaParser *& pPrevTurn); 
+    bool                 GetPrevTurnReport(CAtlaParser *& pPrevTurn); 
 
     void                 CreateAccelerator();
 
-    BOOL                 GetOrdersChanged(){return m_OrdersAreChanged;};
-    void                 SetOrdersChanged(BOOL Changed);
-    void                 StdRedirectReadMore(BOOL FromStdout, std::string & sData);
+    bool                 GetOrdersChanged(){return m_OrdersAreChanged;};
+    void                 SetOrdersChanged(bool Changed);
+    void                 StdRedirectReadMore(bool FromStdout, std::string & sData);
     void                 CheckRedirectedOutputFiles();
     void                 RerunOrders();
     void                 SetAllLandUnitFlags();
@@ -245,16 +245,16 @@ public:
     const char         * m_FontDescr[FONT_COUNT];
     std::multimap<std::string, std::string> m_UnitPropertyGroups;
 
-//    BOOL                 m_LandFlagsChanged;
-    BOOL                 m_CommentsChanged;
-    BOOL                 m_DiscardChanges;
-    BOOL                 m_UpgradeLandFlags;
+//    bool                 m_LandFlagsChanged;
+    bool                 m_CommentsChanged;
+    bool                 m_DiscardChanges;
+    bool                 m_UpgradeLandFlags;
     std::unique_ptr<wxAcceleratorTable> m_pAccel;
     long                 m_Brightness_Delta;
 
 
 private:
-    void                 ForgetFrame(int no, BOOL frameclosed);
+    void                 ForgetFrame(int no, bool frameclosed);
     int                  LoadOrders  (const char * FNameIn);
     int                  SaveOrders  (const char * FNameOut, int FactionId);
     int                  SaveHistory (const char * FNameOut);
@@ -279,7 +279,7 @@ private:
     void                 UpgradeConfigFiles();
     void                 UpgradeConfigByFactionId();
     void                 ComposeConfigOrdersSection(std::string & Sect, int FactionId);
-    BOOL                 GetExportHexOptions(std::string & FName, std::string & FMode, SAVE_HEX_OPTIONS & options, eHexIncl & HexIncl,
+    bool                 GetExportHexOptions(std::string & FName, std::string & FMode, SAVE_HEX_OPTIONS & options, eHexIncl & HexIncl,
                                              bool & InclTurnNoAcl);
     void                 ExportOneHex(CFileWriter & Dest, CPlane * pPlane, CLand * pLand, SAVE_HEX_OPTIONS & options, bool InclTurnNoAcl, bool OnlyNew);
     void                 SetMapFrameTitle();
@@ -291,19 +291,19 @@ private:
 
     std::vector<std::unique_ptr<CAtlaParser>> m_Reports;
     std::vector<long>    m_ReportDates;
-    BOOL                 m_FirstLoad;
+    bool                 m_FirstLoad;
     std::string                 m_HexDescrSrc;
     std::string                 m_UnitDescrSrc;
     std::string                 m_MsgSrc;
     long                 m_SelUnitIdx;
     int                  m_layout;
-    BOOL                 m_DisableErrs;
+    bool                 m_DisableErrs;
     std::vector<std::string> m_MoveModes;
     std::vector<const char*> m_MoveModesRaw;
     std::vector<ItemWeights*> m_ItemWeights;
     CConfigFile          m_Config[CONFIG_FILE_COUNT];
     std::set<std::string, CaseInsensitiveLess> m_ConfigSectionsState;
-    BOOL                 m_OrdersAreChanged;
+    bool                 m_OrdersAreChanged;
     std::string                 m_sTitle;
     std::unordered_map<std::string, long> m_OrderHash;
     std::unordered_map<std::string, long> m_TradeItemsHash;

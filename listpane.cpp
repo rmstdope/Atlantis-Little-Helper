@@ -33,11 +33,11 @@ CListPane::CListPane(wxWindow *parent, wxWindowID id, long style)
           :wxListCtrl(parent, id, wxDefaultPosition, wxDefaultSize, style )
 {
     m_pParent        = parent;
-    m_pLayout        = NULL;
-    m_pData          = NULL;
+    m_pLayout        = nullptr;
+    m_pData          = nullptr;
 
     for (int i=0; i<NUM_SORTS; i++)
-        m_SortKey[i] = NULL;
+        m_SortKey[i] = nullptr;
     m_SortKey[NUM_SORTS-1] = PRP_ID;
 
 }
@@ -50,7 +50,7 @@ CListPane::~CListPane()
     {
         if (m_SortKey[i])
             free((void*)m_SortKey[i]);
-        m_SortKey[i] = NULL;
+        m_SortKey[i] = nullptr;
     }
 }
 
@@ -99,7 +99,7 @@ void CListPane::SetSortName(unsigned short key, const char * sortname)
         free((void*)m_SortKey[key]);
     }
 
-    // sortname is always non-NULL (or we exit at the top)
+    // sortname is always non-nullptr (or we exit at the top)
     m_SortKey[key] = strdup(sortname);
 
     // set new sort caption
@@ -127,7 +127,7 @@ void CListPane::SetSortName(unsigned short key, const char * sortname)
 const char * CListPane::GetSortName(unsigned short key)
 {
     if (key >= NUM_SORTS-1 )
-        return NULL;
+        return nullptr;
     return m_SortKey[key];
 }
 
@@ -144,7 +144,7 @@ void CListPane::SetLayout()
         if (m_SortKey[i])
         {
             free((void*)m_SortKey[i]);
-            m_SortKey[i] = NULL;
+            m_SortKey[i] = nullptr;
         }
 
 
@@ -160,7 +160,7 @@ void CListPane::SetLayout()
 
 //------------------------------------------------------------------------
 
-void CListPane::SetData(eSelMode selmode, long seldata, BOOL FullUpdate)
+void CListPane::SetData(eSelMode selmode, long seldata, bool FullUpdate)
 {
     int                row, col;
     TPropertyHolder  * dataitem;
@@ -254,7 +254,7 @@ void CListPane::Sort()
     if (m_pData )
     {
         m_pData->SetSortMode(m_SortKey, NUM_SORTS);
-        SetData(sel_by_id, data, TRUE);
+        SetData(sel_by_id, data, true);
     }
 }
 

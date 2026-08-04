@@ -41,13 +41,6 @@ enum EPropertyType
     eBoth
 };
 
-#ifndef min
-#define min(x,y) ( ((x) < (y)) ? (x) : (y) )
-#endif
-
-#ifndef max
-#define max(x,y) ( ((x) > (y)) ? (x) : (y) )
-#endif
 
 
 #define MAX_PROP_COLL_KEYS  16
@@ -76,7 +69,7 @@ public:
     TObject() {};
     virtual ~TObject() {};
 
-    virtual BOOL HandleEvent(TEvent * event) {return FALSE;};
+    virtual bool HandleEvent(TEvent * event) {return false;};
 };
 
 //-------------------------------------------------------------------
@@ -129,7 +122,7 @@ public:
     TPropertyHolder();
     virtual ~TPropertyHolder();
 
-    virtual BOOL GetProperty(const char    *  name,
+    virtual bool GetProperty(const char    *  name,
                              EValueType     & valuetype,
                              const void    *& value,
                              EPropertyType    proptype = eNormal
@@ -142,11 +135,11 @@ public:
     virtual void DelProperty(const char  *  name);
     virtual void ResetNormalProperties();
     virtual const char  * ResolveAlias(const char * alias) {return alias;};
-    virtual std::multimap<std::string,std::string> * GetPropertyGroups() {return NULL;};
+    virtual std::multimap<std::string,std::string> * GetPropertyGroups() {return nullptr;};
     virtual const char  * GetPropertyName(int no);
 
 protected:
-    BOOL GetJustProperty    (const char    *  name,
+    bool GetJustProperty    (const char    *  name,
                              EValueType     & valuetype,
                              const void    *& value,
                              EPropertyType    proptype = eNormal

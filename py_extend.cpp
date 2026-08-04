@@ -6,7 +6,7 @@
 //    int sts;
 //
 //    if (!PyArg_ParseTuple(args, "s", &command))
-//        return NULL;
+//        return nullptr;
 //    sts = system(command);
 //    return Py_BuildValue("i", sts);
 //}
@@ -15,7 +15,7 @@
 //static PyMethodDef SpamMethods[] =
 //{
 //    {"system",  spam_system, METH_VARARGS,  "Execute a shell command."},
-//    {NULL, NULL, 0, NULL}        /* Sentinel */
+//    {nullptr, nullptr, 0, nullptr}        /* Sentinel */
 //};
 //
 //
@@ -85,7 +85,7 @@ extern "C" PyObject * xyzzy_foo(PyObject *self, PyObject* args)
 PyMethodDef xyzzy_methods[] =
 {
 	{"foo",		xyzzy_foo,	METH_NOARGS,  "Return the meaning of everything."},
-	{NULL,		NULL}		/* sentinel */
+	{nullptr,		nullptr}		/* sentinel */
 };
 
 void initxyzzy(void)

@@ -137,25 +137,25 @@ int BattleEndHeaderLen[] =      { sizeof(HDR_ERRORS        ) - 1,
 
 //----------------------------------------------------------------------
 
-BOOL IsInteger(const char * s)
+bool IsInteger(const char * s)
 {
     int n = 0;
 
     if ((!s) || (!*s))
-        return FALSE;
+        return false;
 
     while (*s)
     {
         if ( ('-'==*s) && (n>0) )
-            return FALSE;
+            return false;
         else
             if ( (*s<'0') || (*s>'9') )
-                return FALSE;
+                return false;
 
         n++;
         s++;
     }
-    return TRUE;
+    return true;
 }
 
 //======================================================================
@@ -181,19 +181,19 @@ CAtlaParser::CAtlaParser(CGameDataHelper * pHelper)
     m_GatesCount      = 0;
     m_YearMon         = 0;
     m_CurYearMon      = 0;
-    m_pSource         = NULL;
-    m_pCurLand        = NULL;
-    m_pCurStruct      = NULL;
+    m_pSource         = nullptr;
+    m_pCurLand        = nullptr;
+    m_pCurStruct      = nullptr;
     m_NextStructId    = 1;
-    m_OrdersLoaded    = FALSE;
+    m_OrdersLoaded    = false;
 //    m_MaxSkillDays    = 450;
-    m_JoiningRep      = FALSE;
-    m_IsHistory       = FALSE;
+    m_JoiningRep      = false;
+    m_IsHistory       = false;
     m_Events.Name     = "Events";
     m_SecurityEvents.Name = "Security Events";
     m_HexEvents.Name  = "Hex Events";
     m_Errors.Name     = "Errors";
-    m_ArcadiaSkills   = FALSE;
+    m_ArcadiaSkills   = false;
 
     m_UnitFlagsHash["taxing"                      ] = UNIT_FLAG_TAXING            ;
     m_UnitFlagsHash["on guard"                    ] = UNIT_FLAG_GUARDING          ;
@@ -236,8 +236,8 @@ void CAtlaParser::Clear()
 
     m_YearMon       = 0;
     m_CurYearMon    = 0;
-    m_JoiningRep    = FALSE;
-    m_IsHistory     = FALSE;
+    m_JoiningRep    = false;
+    m_IsHistory     = false;
     m_Planes.DeleteAll();
     m_PlanesNamed.FreeAll();  // this one must go before units since it checks contents of CLand::Units collection!!!
     m_Units.FreeAll();
@@ -269,9 +269,9 @@ void CAtlaParser::Clear()
 
 //----------------------------------------------------------------------
 
-BOOL CAtlaParser::ReadNextLine(std::string & s)
+bool CAtlaParser::ReadNextLine(std::string & s)
 {
-    BOOL Ok=FALSE;
+    bool Ok=false;
 
     if (m_pSource)
     {
@@ -297,7 +297,7 @@ void CAtlaParser::PutLineBack (std::string & s)
 
 //----------------------------------------------------------------------
 
-int CAtlaParser::ParseFactionInfo(BOOL GetNo, BOOL Join)
+int CAtlaParser::ParseFactionInfo(bool GetNo, bool Join)
 {
     int          err    = ERR_OK;
     std::string Line;
@@ -452,8 +452,8 @@ void CAtlaParser::ParseOneMovementEvent(const char * params, const char * struct
     std::string Buf;
     std::string Buf2;
     char         ch;
-    CLand      * pLand1 = NULL;
-    CLand      * pLand2 = NULL;
+    CLand      * pLand1 = nullptr;
+    CLand      * pLand2 = nullptr;
     std::string         S;
     CBaseObject* pSailEvent;
 
@@ -473,12 +473,12 @@ void CAtlaParser::ParseOneMovementEvent(const char * params, const char * struct
         }
     }
 
-    ParseTerrain(NULL, 0, Buf, FALSE, &pLand1);
+    ParseTerrain(nullptr, 0, Buf, false, &pLand1);
 
     // It is nice to parse 'to' terrain as well, since the unit
     // can be killed at the destination on sight...
     if (!Buf2.empty())
-        ParseTerrain(NULL, 0, Buf2, FALSE, &pLand2);
+        ParseTerrain(nullptr, 0, Buf2, false, &pLand2);
 
     // check for links between planes
     if (pLand1 && pLand2  &&  pLand1->pPlane && pLand2->pPlane  && pLand1->pPlane != pLand2->pPlane)
@@ -502,12 +502,12 @@ void CAtlaParser::ParseOneMovementEvent(const char * params, const char * struct
 
 //----------------------------------------------------------------------
 
-BOOL CAtlaParser::ParseOneUnitEvent(std::string & EventLine, BOOL IsEvent, int UnitId)
+bool CAtlaParser::ParseOneUnitEvent(std::string & EventLine, bool IsEvent, int UnitId)
 {
-    CUnit      * pUnit = NULL;
+    CUnit      * pUnit = nullptr;
     const char * p;
     std::string         Name;
-    BOOL         Taken = FALSE;
+    bool         Taken = false;
     long         x;
     int          idx;
     std::string Buf;
@@ -526,7 +526,7 @@ BOOL CAtlaParser::ParseOneUnitEvent(std::string & EventLine, BOOL IsEvent, int U
             pUnit->Events << EventLine;
         else
             pUnit->Errors << EventLine;
-        Taken = TRUE;
+        Taken = true;
     }
 
     if (IsEvent)
@@ -544,7 +544,7 @@ BOOL CAtlaParser::ParseOneUnitEvent(std::string & EventLine, BOOL IsEvent, int U
         {
             p = SkipSpaces(GetToken(Buf, p, ' ', TRIM_ALL));
             if (0==stricmp("from"  , Buf.c_str()))
-                ParseOneMovementEvent(p, NULL, NULL);
+                ParseOneMovementEvent(p, nullptr, nullptr);
         }
 
         else if ( p && ('$'==*p) && ( (0==stricmp("collects", Buf.c_str())) ||
@@ -591,10 +591,10 @@ BOOL CAtlaParser::ParseOneUnitEvent(std::string & EventLine, BOOL IsEvent, int U
                  0==stricmp("forbids", Buf.c_str()) && FindSubStr(EventLine, "entry")>=0
                 )
         {
-            BOOL show = TRUE;
+            bool show = true;
             if (0==stricmp("steals", Buf.c_str()) && 
                 0==atol(gpDataHelper->GetConfString(SZ_SECT_COMMON, SZ_KEY_SHOW_STEALS)))
-                show = FALSE;
+                show = false;
             if (show)
                 m_SecurityEvents.Description << EventLine;
         }
@@ -606,18 +606,18 @@ BOOL CAtlaParser::ParseOneUnitEvent(std::string & EventLine, BOOL IsEvent, int U
 
 //----------------------------------------------------------------------
 
-BOOL CAtlaParser::ParseOneLandEvent(std::string & EventLine, BOOL IsEvent)
+bool CAtlaParser::ParseOneLandEvent(std::string & EventLine, bool IsEvent)
 {
     const char * p;
     std::string         Buf;
     std::string         S;
-    BOOL         Taken = FALSE;
-    CLand      * pLand = NULL;
+    bool         Taken = false;
+    CLand      * pLand = nullptr;
 
     p = GetToken(Buf, EventLine.c_str(), ')');
     p = GetToken(S, p, ',');
     Buf << ") " << S;
-    ParseTerrain(NULL, 0, Buf, FALSE, &pLand);
+    ParseTerrain(nullptr, 0, Buf, false, &pLand);
     if (pLand)
         m_HexEvents.Description << EventLine;
 
@@ -637,7 +637,7 @@ BOOL CAtlaParser::ParseOneLandEvent(std::string & EventLine, BOOL IsEvent)
 
 //Choppers (1101): Produces 13 wood [WOOD] in swamp (7,35) in Moffat.
 
-int CAtlaParser::ParseOneEvent(std::string & EventLine, BOOL IsEvent)
+int CAtlaParser::ParseOneEvent(std::string & EventLine, bool IsEvent)
 {
     const char * p;
     std::string Buf;
@@ -645,8 +645,8 @@ int CAtlaParser::ParseOneEvent(std::string & EventLine, BOOL IsEvent)
     std::string         Name;
     long         x;
     char         ch;
-    BOOL         Taken = FALSE;
-    BOOL         Valid;
+    bool         Taken = false;
+    bool         Valid;
 
     if (EventLine.empty())
         return 0;
@@ -696,7 +696,7 @@ int CAtlaParser::ParseOneEvent(std::string & EventLine, BOOL IsEvent)
 //                    x = FindSubStr(Buf, " to ");
 //                    if (x>0)
 //                        DelSubStr(Buf, x, Buf.size()-x);
-//                    ParseTerrain(NULL, 0, Buf, FALSE, NULL);
+//                    ParseTerrain(nullptr, 0, Buf, false, nullptr);
 //                }
             }
         }
@@ -718,7 +718,7 @@ int CAtlaParser::ParseOneEvent(std::string & EventLine, BOOL IsEvent)
 
 //----------------------------------------------------------------------
 
-int CAtlaParser::ParseEvents(BOOL IsEvents)
+int CAtlaParser::ParseEvents(bool IsEvents)
 {
     int          err   = ERR_OK;
     std::string Line;
@@ -780,7 +780,7 @@ int CAtlaParser::ParseImportantEvents()
     std::string OneEvent;
     char         ch;
     int          i;
-    BOOL         DoBreak = FALSE;
+    bool         DoBreak = false;
 
 
 
@@ -793,7 +793,7 @@ int CAtlaParser::ParseImportantEvents()
         {
             Line << EOL_FILE;
             PutLineBack(Line);
-            DoBreak = TRUE;
+            DoBreak = true;
             break;
         }
         if (DoBreak)
@@ -825,7 +825,7 @@ int CAtlaParser::ParseImportantEvents()
 
 int CAtlaParser::ParseErrors()
 {
-    return ParseEvents(FALSE);
+    return ParseEvents(false);
 }
 
 //----------------------------------------------------------------------
@@ -868,7 +868,7 @@ Neutral : none.
 Friendly : none.
 Ally : none.
 */
-int CAtlaParser::ParseAttitudes(std::string & Line, BOOL Join)
+int CAtlaParser::ParseAttitudes(std::string & Line, bool Join)
 {
     std::string         Info;
     std::string         FNo;
@@ -879,8 +879,8 @@ int CAtlaParser::ParseAttitudes(std::string & Line, BOOL Join)
     char         ch, c;
     int          attitude = ATT_FRIEND1;
     std::string         attitudes[4];
-    BOOL         apply_attitudes = TRUE;
-    BOOL         def;
+    bool         apply_attitudes = true;
+    bool         def;
 
     attitudes[ATT_FRIEND1] = gpDataHelper->GetConfString(SZ_SECT_ATTITUDES, SZ_ATT_FRIEND1);
     attitudes[ATT_FRIEND2] = gpDataHelper->GetConfString(SZ_SECT_ATTITUDES, SZ_ATT_FRIEND2);
@@ -917,7 +917,7 @@ int CAtlaParser::ParseAttitudes(std::string & Line, BOOL Join)
                 {
                     case ':': // attitude type
                         // check for default line
-                        def = FALSE;
+                        def = false;
                         if(FindSubStr(Info, "(default") > 0)
                         {
                             // parse the default line
@@ -925,7 +925,7 @@ int CAtlaParser::ParseAttitudes(std::string & Line, BOOL Join)
                             GetToken(S1, s, ")" ,c , TRIM_ALL);
                             s = S1.c_str();
                             p = GetToken(Info, s, " ", c, TRIM_ALL);
-                            def = TRUE;
+                            def = true;
                             m_FactionInfo << EOL_SCR;
                         }
                         // which attitude is it?
@@ -1029,8 +1029,8 @@ void CAtlaParser::CheckExit(CPlane * pPlane, int Direction, CLand * pLandSrc, CL
 
 void CAtlaParser::ParseWeather(const char * src, CLand * pLand)
 {
-    BOOL         IsCurrent;
-    BOOL         IsGood;
+    bool         IsCurrent;
+    bool         IsGood;
     int          Zone;
     unsigned int i;
     std::string         S1, S2;
@@ -1096,7 +1096,7 @@ void CAtlaParser::ParseWeather(const char * src, CLand * pLand)
                 if (IsGood )
                 {
                     if (!IsCurrent)
-                       pLand->WeatherWillBeGood = TRUE;
+                       pLand->WeatherWillBeGood = true;
                 }
                 else
                 {
@@ -1118,7 +1118,7 @@ void CAtlaParser::ParseWeather(const char * src, CLand * pLand)
 
 //----------------------------------------------------------------------
 
-int CAtlaParser::AnalyzeTerrain(CLand * pMotherLand, CLand * pLand, BOOL IsExit, int ExitDir, std::string & Description)
+int CAtlaParser::AnalyzeTerrain(CLand * pMotherLand, CLand * pLand, bool IsExit, int ExitDir, std::string & Description)
 {
 /*
 plain (5,39) in Partry, contains Drimnin [city], 3217 peasants (high
@@ -1154,9 +1154,9 @@ plain (5,39) in Partry, contains Drimnin [city], 3217 peasants (high
     int          delpos = 0;
     int          dellen = 0;
     int          idx;
-    BOOL         TerrainPassed = FALSE;
-    BOOL         ProductsWereEmpty;
-    BOOL         Valid;
+    bool         TerrainPassed = false;
+    bool         ProductsWereEmpty;
+    bool         Valid;
 
     SectType = eMain;
 
@@ -1173,7 +1173,7 @@ plain (5,39) in Partry, contains Drimnin [city], 3217 peasants (high
         ParseWeather(src, pLand);  // weather description should be right after the first section
     while (!Section.empty())
     {
-        BOOL RerunSection = FALSE;
+        bool RerunSection = false;
 
         str = Section.c_str();
         while (str)
@@ -1248,7 +1248,7 @@ plain (5,39) in Partry, contains Drimnin [city], 3217 peasants (high
                             if (!p)
                             {
                                 // ok, it is a dot in the city name! need to append and rerun the section!
-                                RerunSection = TRUE;
+                                RerunSection = true;
                                 break;
                             }
                             p = GetToken(pLand->CityType, p, ']', TRIM_ALL);
@@ -1264,7 +1264,7 @@ plain (5,39) in Partry, contains Drimnin [city], 3217 peasants (high
                             // what about villages??
                         }
                         else if (!TerrainPassed)
-                            TerrainPassed = TRUE; //so we can do special parsing for Arcadia III edge objects below
+                            TerrainPassed = true; //so we can do special parsing for Arcadia III edge objects below
                         else if (IsExit)
                         {
                             // it must be an edge object...
@@ -1372,7 +1372,7 @@ plain (5,39) in Partry, contains Drimnin [city], 3217 peasants (high
                     p = SkipSpaces(GetToken(N1, p, ' ', TRIM_ALL));
                     if (!p || !*p)
                     {
-                        RerunSection = TRUE;
+                        RerunSection = true;
                         break;
                     }
 
@@ -1418,7 +1418,7 @@ void CAtlaParser::ParseWages(CLand * pLand, const char * str1, const char * str2
     const char * src;
     std::string         N1, N2;
     std::string         sSrc;
-    BOOL         Valid;
+    bool         Valid;
 
     str1 = SkipSpaces(str1);
     if (*str1 != '$')
@@ -1475,7 +1475,7 @@ CPlane * CAtlaParser::MakePlane(const char * planename)
 
 //----------------------------------------------------------------------
 
-int CAtlaParser::ParseTerrain(CLand * pMotherLand, int ExitDir, std::string & FirstLine, BOOL FullMode, CLand ** ppParsedLand)
+int CAtlaParser::ParseTerrain(CLand * pMotherLand, int ExitDir, std::string & FirstLine, bool FullMode, CLand ** ppParsedLand)
 {
 // FirstLine looks somewhat like:
 //    swamp (48,52[,somewhere]) in Aghleam, 118 peasants (tribesmen), $354.
@@ -1485,7 +1485,7 @@ int CAtlaParser::ParseTerrain(CLand * pMotherLand, int ExitDir, std::string & Fi
     std::string                 Name;
     std::string S;
     long                 x, y;
-    CLand              * pLand = NULL;
+    CLand              * pLand = nullptr;
     std::string CurLine;
     std::string PlaneName;
     std::string LandName;
@@ -1494,13 +1494,13 @@ int CAtlaParser::ParseTerrain(CLand * pMotherLand, int ExitDir, std::string & Fi
     char                 ch;
     CPlane             * pPlane;
     CStruct            * pStruct;
-    BOOL                 DoBreak;
+    bool                 DoBreak;
     CBaseObject        * pGate;
     CBaseObject          Dummy;
     int                  no;
     int                  idx;
     std::string TempDescr; // Land description is collected in here. It can replace already existing description
-    BOOL                 HaveEvents = FALSE;
+    bool                 HaveEvents = false;
     std::string CompositeDescr;
 
     if (FirstLine.empty())
@@ -1625,7 +1625,7 @@ int CAtlaParser::ParseTerrain(CLand * pMotherLand, int ExitDir, std::string & Fi
         if (pLand->Description.empty())
             pLand->Description = TempDescr;
 
-        AnalyzeTerrain(pMotherLand, pLand, pMotherLand!=NULL, ExitDir, TempDescr);
+        AnalyzeTerrain(pMotherLand, pLand, pMotherLand!=nullptr, ExitDir, TempDescr);
         if (pMotherLand)
             pMotherLand->Exits << TempDescr << EOL_SCR;
         goto Exit;
@@ -1642,14 +1642,14 @@ int CAtlaParser::ParseTerrain(CLand * pMotherLand, int ExitDir, std::string & Fi
 
     // now  goes extended land description terminated by exits list
     // And check for other headers just in case!
-    DoBreak = FALSE;
+    DoBreak = false;
     while (ReadNextLine(CurLine))
     {
         TrimRight(CurLine, TRIM_ALL);
         p = SkipSpaces(CurLine.c_str());
         if (0==stricmp("Events:", p))
         {
-            HaveEvents = TRUE;
+            HaveEvents = true;
             break;
         }
         if (0==stricmp("Exits:", p))
@@ -1659,7 +1659,7 @@ int CAtlaParser::ParseTerrain(CLand * pMotherLand, int ExitDir, std::string & Fi
             {
                 CurLine << EOL_FILE;
                 PutLineBack(CurLine);
-                DoBreak = TRUE;
+                DoBreak = true;
                 break;
             }
         if (DoBreak)
@@ -1692,10 +1692,10 @@ int CAtlaParser::ParseTerrain(CLand * pMotherLand, int ExitDir, std::string & Fi
     ComposeHexDescriptionForArnoGame(pLand->Description.c_str(), TempDescr.c_str(), CompositeDescr);
     pLand->Description = CompositeDescr;
     TrimRight(pLand->Description, TRIM_ALL);
-    AnalyzeTerrain(NULL, pLand, FALSE, ExitDir, pLand->Description);
+    AnalyzeTerrain(nullptr, pLand, false, ExitDir, pLand->Description);
 
     //Read Events and skip till Exits:
-    DoBreak = FALSE;
+    DoBreak = false;
     if (HaveEvents)
     {
         while (ReadNextLine(CurLine))
@@ -1709,7 +1709,7 @@ int CAtlaParser::ParseTerrain(CLand * pMotherLand, int ExitDir, std::string & Fi
             {
                 CurLine << EOL_FILE;
                 PutLineBack(CurLine);
-                DoBreak = TRUE;
+                DoBreak = true;
                 break;
             }
             if (DoBreak)
@@ -1724,7 +1724,7 @@ int CAtlaParser::ParseTerrain(CLand * pMotherLand, int ExitDir, std::string & Fi
         pLand->Flags |= LAND_IS_CURRENT;
 
     m_pCurLand   = pLand;
-    m_pCurStruct = NULL;
+    m_pCurStruct = nullptr;
 
     // Clear all the Edge structures which were loaded from history
     pLand->EdgeStructs.FreeAll();
@@ -1736,7 +1736,7 @@ int CAtlaParser::ParseTerrain(CLand * pMotherLand, int ExitDir, std::string & Fi
     {
         if (0==SafeCmp(EOL_SCR, CurLine.c_str()))
             continue;
-        DoBreak = TRUE;
+        DoBreak = true;
         p       = GetToken(S, CurLine.c_str(), ":(", ch);
         switch (ch)
         {
@@ -1756,9 +1756,9 @@ int CAtlaParser::ParseTerrain(CLand * pMotherLand, int ExitDir, std::string & Fi
                     pPlane->ExitsCount++;
                     S = p;
                     TrimLeft(S);
-                    ParseTerrain(pLand, i, S, FALSE, NULL);
+                    ParseTerrain(pLand, i, S, false, nullptr);
                     pLand->ExitBits |= ExitFlags[i];
-                    DoBreak = FALSE;
+                    DoBreak = false;
                     break;
                 }
             break;
@@ -1782,7 +1782,7 @@ int CAtlaParser::ParseTerrain(CLand * pMotherLand, int ExitDir, std::string & Fi
                 p = SkipSpaces(GetToken(S, p, ' '));  // S = of
                 p = GetToken(S, p, ' ');  // S = 35
                 m_GatesCount = atol(S.c_str());
-                DoBreak = FALSE;
+                DoBreak = false;
 
 
                 pGate = new CBaseObject;
@@ -1961,7 +1961,7 @@ void CAtlaParser::MakeUnitAndGetOld(long Id, CUnit *& pUnit, CUnit *& pUnitOld, 
     if (m_Units.Search(&Dummy, idxold))
         pUnitOld = (CUnit*)m_Units.At(idxold);
     else
-        pUnitOld = NULL;
+        pUnitOld = nullptr;
 
     pUnit = new CUnit;
     pUnit->Id = Id;
@@ -1992,7 +1992,7 @@ long CAtlaParser::SkillDaysToLevel(long days)
 // Only normal brackets are banned, everything else can be in names and descriptions, including .,[]
 
 
-int CAtlaParser::ParseUnit(std::string & FirstLine, BOOL Join)
+int CAtlaParser::ParseUnit(std::string & FirstLine, bool Join)
 {
 #define DOT          '.'
 #define COMMA        ','
@@ -2002,8 +2002,8 @@ int CAtlaParser::ParseUnit(std::string & FirstLine, BOOL Join)
 #define SECT_SKILLS  "Skills"
 #define SECT_COMBAT  "Combatspell"
 
-    CFaction    * pFaction = NULL;
-    CUnit       * pUnit    = NULL;
+    CFaction    * pFaction = nullptr;
+    CUnit       * pUnit    = nullptr;
     std::string CurLine;
     std::string UnitText;
     std::string          UnitPrefix;
@@ -2019,15 +2019,15 @@ int CAtlaParser::ParseUnit(std::string & FirstLine, BOOL Join)
 //    EValueType    type;
 //    const void  * stance;
     long          n1;
-    const char  * src = NULL;
+    const char  * src = nullptr;
     const char  * p;
     char          Delimiter;
     char          LastDelimiter = DOT;
     char          ch;
     int           err = ERR_OK;
     int           attitude;
-    BOOL          SkillsFound = FALSE;
-    BOOL          Valid;
+    bool          SkillsFound = false;
+    bool          Valid;
 
     TrimRight(FirstLine, TRIM_ALL);
     p = FirstLine.c_str();
@@ -2179,7 +2179,7 @@ int CAtlaParser::ParseUnit(std::string & FirstLine, BOOL Join)
 */
         if      (0==stricmp(SECT_ITEMS, Section.c_str()))
         {
-            const void * data = NULL;
+            const void * data = nullptr;
             if (pUnit)
             {
                 Normalize(Line);
@@ -2244,7 +2244,7 @@ int CAtlaParser::ParseUnit(std::string & FirstLine, BOOL Join)
 
         else if (0==stricmp(SECT_SKILLS, Section.c_str()))
         {
-            SkillsFound = TRUE;
+            SkillsFound = true;
 
             // recognize patterns:
             // S1 [S2] N1 (N2)
@@ -2256,7 +2256,7 @@ int CAtlaParser::ParseUnit(std::string & FirstLine, BOOL Join)
             if ('/'==ch)
             {
                 p = GetToken(N3, p, ')', TRIM_ALL);
-                m_ArcadiaSkills = TRUE;
+                m_ArcadiaSkills = true;
             }
 
 
@@ -2561,15 +2561,15 @@ City Guard (4429) loses 0.
 
 */
 
-const char * CAtlaParser::AnalyzeBattle_ParseUnit(const char * src, CUnit *& pUnit, BOOL & InFrontLine)
+const char * CAtlaParser::AnalyzeBattle_ParseUnit(const char * src, CUnit *& pUnit, bool & InFrontLine)
 {
     std::string         Item, S, N1, S1, S2;
     char         ch, ch1;
     const char * p;
     long         n;
 
-    InFrontLine = TRUE;
-    pUnit       = NULL;
+    InFrontLine = true;
+    pUnit       = nullptr;
 
     while (src && *src)
     {
@@ -2591,7 +2591,7 @@ const char * CAtlaParser::AnalyzeBattle_ParseUnit(const char * src, CUnit *& pUn
         //    4 leaders [LEAD]
         //    crossbow 5
         if (0==stricmp(Item.c_str(), "behind"))
-            InFrontLine = FALSE;
+            InFrontLine = false;
         else
         {
             p = Item.c_str();
@@ -2707,7 +2707,7 @@ void CAtlaParser::AnalyzeBattle_OneSide(const char * src, std::string & Details)
 {
     CBaseColl   Frontline(64), Backline;
     CUnit     * pUnit;
-    BOOL        InFrontLine;
+    bool        InFrontLine;
     std::string S1, S2;
 
     while (src && *src)
@@ -2799,8 +2799,8 @@ void CAtlaParser::StoreBattle(std::string & Source)
     CBattle     * pBattle;
     const char  * p;
     int           i;
-    BOOL          Ok = FALSE;
-    BOOL          RegularBattle = FALSE;
+    bool          Ok = false;
+    bool          RegularBattle = false;
 
     TrimRight(Source, TRIM_ALL);
     if (Source.empty())
@@ -2821,7 +2821,7 @@ void CAtlaParser::StoreBattle(std::string & Source)
     {
         p  = GetToken(S3, p, '(', TRIM_ALL);
         p  = GetToken(N3, p, ',', TRIM_ALL);
-        Ok = TRUE;
+        Ok = true;
     }
     else
     {
@@ -2837,7 +2837,7 @@ void CAtlaParser::StoreBattle(std::string & Source)
                 IsInteger(N2.c_str()) &&
                 IsInteger(N3.c_str()) &&
                 (0==strnicmp(S3.c_str(), "in", 2)) );
-        RegularBattle = TRUE;
+        RegularBattle = true;
     }
 
     if (Ok)
@@ -2871,7 +2871,7 @@ void CAtlaParser::StoreBattle(std::string & Source)
             if (0==stricmp(pBattle->Name.c_str(), pExisting->Name.c_str()))
             {
                 delete pBattle;
-                pBattle = NULL;
+                pBattle = nullptr;
                 break;
             }
         }
@@ -3168,7 +3168,7 @@ int CAtlaParser::ParseObjects()
 
 //----------------------------------------------------------------------
 
-int CAtlaParser::ParseLines(BOOL Join)
+int CAtlaParser::ParseLines(bool Join)
 {
     int        err      = ERR_OK;
     std::string CurLine;
@@ -3182,10 +3182,10 @@ int CAtlaParser::ParseLines(BOOL Join)
         p = SkipSpaces(CurLine.c_str());
 
         if      (0==strnicmp(p, HDR_FACTION           , sizeof(HDR_FACTION)-1 ))
-            err = ParseFactionInfo(TRUE, Join);
+            err = ParseFactionInfo(true, Join);
 
         else if (0==strnicmp(p, HDR_FACTION_STATUS    , sizeof(HDR_FACTION_STATUS)-1 ))
-            err = ParseFactionInfo(FALSE, Join);
+            err = ParseFactionInfo(false, Join);
 
         else if (0==strnicmp(p, HDR_EVENTS            , sizeof(HDR_EVENTS)-1 ))
             err = ParseEvents();
@@ -3224,12 +3224,12 @@ int CAtlaParser::ParseLines(BOOL Join)
             err = ParseObjects();
 
         else if (0==strnicmp(p, HDR_ORDER_TEMPLATE    , sizeof(HDR_ORDER_TEMPLATE)-1 ))
-            err = LoadOrders(*m_pSource, m_CrntFactionId, FALSE); // That's a non-return point.
+            err = LoadOrders(*m_pSource, m_CrntFactionId, false); // That's a non-return point.
                                                             // Hope there is nothing else after the order template.
 
         else
 
-            err = ParseTerrain(NULL, 0, CurLine, TRUE, NULL);
+            err = ParseTerrain(nullptr, 0, CurLine, true, nullptr);
 
         if (ERR_OK!=err)
         {
@@ -3252,10 +3252,10 @@ int CAtlaParser::ParseLines(BOOL Join)
 
 //----------------------------------------------------------------------
 
-int CAtlaParser::ParseRep(const char * FNameIn, BOOL Join, BOOL IsHistory)
+int CAtlaParser::ParseRep(const char * FNameIn, bool Join, bool IsHistory)
 {
-    m_pCurLand   = NULL;
-    m_pCurStruct = NULL;
+    m_pCurLand   = nullptr;
+    m_pCurStruct = nullptr;
     m_ParseErr   = ERR_NOTHING;
     m_pSource    = new CFileReader;
     m_JoiningRep = Join;
@@ -3291,7 +3291,7 @@ int CAtlaParser::ParseRep(const char * FNameIn, BOOL Join, BOOL IsHistory)
 Done:
     m_pSource->Close();
     delete m_pSource;
-    m_pSource = NULL;
+    m_pSource = nullptr;
     return m_ParseErr;
 }
 
@@ -3307,7 +3307,7 @@ void CAtlaParser::SetExitFlagsAndTropicZone()
     int           x, y, z;
     int           x0, y0;
     CPlane      * pPlane;
-    BOOL          SetAllExits; // if reading 1.0.0 history file
+    bool          SetAllExits; // if reading 1.0.0 history file
 
     for (np=0; np<m_Planes.Count(); np++)
     {
@@ -3344,7 +3344,7 @@ void CAtlaParser::SetExitFlagsAndTropicZone()
                         case Northwest : y--; x--;   break;
                         }
 
-                        pLandSrc = GetLand(x, y, np, TRUE);
+                        pLandSrc = GetLand(x, y, np, true);
                         if ( pLandSrc && (pLandSrc->Flags&LAND_VISITED) )
                         {
                             if (pLandSrc->ExitBits&EntryFlags[i])
@@ -3412,12 +3412,12 @@ CFaction * CAtlaParser::GetFaction(int id)
     if (m_Factions.Search(&DummyFaction, idx))
         return (CFaction*)m_Factions.At(idx);
     else
-        return NULL;
+        return nullptr;
 }
 
 //-------------------------------------------------------------
 
-CLand * CAtlaParser::GetLand(int x, int y, int nPlane, BOOL AdjustForEdge)
+CLand * CAtlaParser::GetLand(int x, int y, int nPlane, bool AdjustForEdge)
 {
     char     dummy[sizeof(CLand)];
     int      idx;
@@ -3425,7 +3425,7 @@ CLand * CAtlaParser::GetLand(int x, int y, int nPlane, BOOL AdjustForEdge)
 
     pPlane = (CPlane*)m_Planes.At(nPlane);
     if (!pPlane)
-        return NULL;
+        return nullptr;
 
     if (AdjustForEdge && (pPlane->Width > 0))
     {
@@ -3440,7 +3440,7 @@ CLand * CAtlaParser::GetLand(int x, int y, int nPlane, BOOL AdjustForEdge)
     if (pPlane->Lands.Search(&dummy, idx))
         return (CLand*)pPlane->Lands.At(idx);
     else
-        return NULL;
+        return nullptr;
 }
 
 //-------------------------------------------------------------
@@ -3450,7 +3450,7 @@ CLand * CAtlaParser::GetLand(long LandId)
     int x, y, z;
 
     LandIdToCoord(LandId, x, y, z);
-    return GetLand(x, y, z, FALSE);
+    return GetLand(x, y, z, false);
 }
 
 
@@ -3477,7 +3477,7 @@ void CAtlaParser::ComposeLandStrCoord(CLand * pLand, std::string & LandStr)
 
 //-------------------------------------------------------------
 
-BOOL CAtlaParser::LandStrCoordToId(const char * landcoords, long & id)
+bool CAtlaParser::LandStrCoordToId(const char * landcoords, long & id)
 {
     std::string                 S;
     long                 x, y;
@@ -3488,27 +3488,27 @@ BOOL CAtlaParser::LandStrCoordToId(const char * landcoords, long & id)
     // xxx,yyy[,somewhere]
     landcoords = GetToken(S, landcoords, ',');
     if (!IsInteger(S.c_str()))
-        return FALSE;
+        return false;
     x = atol(S.c_str());
 
     // yyy[,somewhere]
     landcoords = GetToken(S, landcoords, ',');
     if (!IsInteger(S.c_str()))
-        return FALSE;
+        return false;
     y = atol(S.c_str());
 
 
-    if ( (NULL==landcoords) || (0==*landcoords) )
+    if ( (nullptr==landcoords) || (0==*landcoords) )
         landcoords = DEFAULT_PLANE;
 
     Dummy.Name = landcoords;
     if (m_PlanesNamed.Search(&Dummy, i))
         pPlane = (CPlane*)m_PlanesNamed.At(i);
     else
-        return FALSE;
+        return false;
 
     id = LandCoordToId(x, y, pPlane->Id);
-    return TRUE;
+    return true;
 }
 
 
@@ -3522,7 +3522,7 @@ CLand * CAtlaParser::GetLand(const char * landcoords) //  "48,52[,somewhere]"
     if (LandStrCoordToId(landcoords, id))
         return GetLand(id);
     else
-        return NULL;
+        return nullptr;
 }
 
 
@@ -3586,7 +3586,7 @@ void CAtlaParser::ComposeProductsLine(CLand * pLand, const char * eol, std::stri
 
 //-------------------------------------------------------------
 
-BOOL CAtlaParser::SaveOneHex(CFileWriter & Dest, CLand * pLand, CPlane * pPlane, SAVE_HEX_OPTIONS * pOptions)
+bool CAtlaParser::SaveOneHex(CFileWriter & Dest, CLand * pLand, CPlane * pPlane, SAVE_HEX_OPTIONS * pOptions)
 {
     CLand            * pLandExit;
     int                i;
@@ -3597,15 +3597,15 @@ BOOL CAtlaParser::SaveOneHex(CFileWriter & Dest, CLand * pLand, CPlane * pPlane,
     std::string sExits;
     CStruct          * pStruct;
     const char       * p;
-    BOOL               IsLinked;
-    BOOL               TurnNoMarkerWritten = FALSE;
+    bool               IsLinked;
+    bool               TurnNoMarkerWritten = false;
     CUnit            * pUnit;
     EValueType         type;
     const void       * value;
     int                nstr;
     CStruct          * pEdge;
 
-    IsLinked = FALSE;
+    IsLinked = false;
     sExits.clear();
     LandIdToCoord(pLand->Id, x0, y0, z);
     for (i=0; i<6; i++)
@@ -3625,13 +3625,13 @@ BOOL CAtlaParser::SaveOneHex(CFileWriter & Dest, CLand * pLand, CPlane * pPlane,
             case Northwest : y--; x--;   break;
             }
 
-            pLandExit = GetLand(x, y, z, TRUE);
+            pLandExit = GetLand(x, y, z, true);
             if ( pLandExit && (pLandExit->ExitBits&EntryFlags[i]))
             {
                 std::string sCoord;
 
                 if (pLandExit->Flags&LAND_VISITED)
-                    IsLinked = TRUE;
+                    IsLinked = true;
 
 //  Northeast : mountain (20,0) in Lautaro, contains Krod [city].
 
@@ -3657,7 +3657,7 @@ BOOL CAtlaParser::SaveOneHex(CFileWriter & Dest, CLand * pLand, CPlane * pPlane,
     }
 
     if ( (0==(pLand->Flags&LAND_VISITED)) && IsLinked)
-        return FALSE;
+        return false;
 
 
     p = pLand->Description.c_str();
@@ -3668,7 +3668,7 @@ BOOL CAtlaParser::SaveOneHex(CFileWriter & Dest, CLand * pLand, CPlane * pPlane,
 
         if (pOptions->WriteTurnNo > 0 && !TurnNoMarkerWritten && sLine.size() > 20)
         {
-            BOOL         SkipIt = FALSE;
+            bool         SkipIt = false;
             const char * p;
 
             p = sLine.c_str();
@@ -3676,7 +3676,7 @@ BOOL CAtlaParser::SaveOneHex(CFileWriter & Dest, CLand * pLand, CPlane * pPlane,
             {
                 if ('-' != *p)
                 {
-                    SkipIt = TRUE;
+                    SkipIt = true;
                     break;
                 }
                 p++;
@@ -3684,7 +3684,7 @@ BOOL CAtlaParser::SaveOneHex(CFileWriter & Dest, CLand * pLand, CPlane * pPlane,
             if (!SkipIt)
             {
                 sLine << ";" << pOptions->WriteTurnNo;
-                TurnNoMarkerWritten = TRUE;
+                TurnNoMarkerWritten = true;
             }
         }
 
@@ -3750,12 +3750,12 @@ BOOL CAtlaParser::SaveOneHex(CFileWriter & Dest, CLand * pLand, CPlane * pPlane,
     sLine << EOL_FILE << EOL_FILE;
     Dest.WriteBuf(sLine.c_str(), sLine.size());
 
-    return TRUE;
+    return true;
 }
 
 //-------------------------------------------------------------
 
-int  CAtlaParser::SaveOrders(const char * FNameOut, const char * password, BOOL decorate, int factid)
+int  CAtlaParser::SaveOrders(const char * FNameOut, const char * password, bool decorate, int factid)
 {
     CUnitsByHex   Coll;
     int           i, n, idx;
@@ -3770,7 +3770,7 @@ int  CAtlaParser::SaveOrders(const char * FNameOut, const char * password, BOOL 
     char          buf[64];
     struct tm     t;
     time_t        now;
-    CFaction    * pFaction = NULL;
+    CFaction    * pFaction = nullptr;
 
     if (Dest.Open(FNameOut))
     {
@@ -3898,7 +3898,7 @@ void CAtlaParser::CountMenForTheFaction(int FactionId)
 
 //-------------------------------------------------------------
 
-int CAtlaParser::LoadOrders  (CFileReader & F, int FactionId, BOOL GetComments)
+int CAtlaParser::LoadOrders  (CFileReader & F, int FactionId, bool GetComments)
 {
     std::string Line, S, No;
     const char  * p;
@@ -3915,7 +3915,7 @@ int CAtlaParser::LoadOrders  (CFileReader & F, int FactionId, BOOL GetComments)
         if (pUnit->FactionId == FactionId)
             pUnit->Orders.clear();
     }
-    pUnit = NULL;
+    pUnit = nullptr;
 
     while (F.GetNextLine(Line))
     {
@@ -3935,7 +3935,7 @@ int CAtlaParser::LoadOrders  (CFileReader & F, int FactionId, BOOL GetComments)
             if (m_Units.Search(&Dummy, idx))
                 pUnit = (CUnit*)m_Units.At(idx);
             else
-                pUnit = NULL;
+                pUnit = nullptr;
         }
         else
             if (0==stricmp(S.c_str(),"#atlantis"))
@@ -3957,8 +3957,8 @@ int CAtlaParser::LoadOrders  (CFileReader & F, int FactionId, BOOL GetComments)
                 }
     }
 
-    RunOrders(NULL);
-    m_OrdersLoaded = TRUE;
+    RunOrders(nullptr);
+    m_OrdersLoaded = true;
 
     return ERR_OK;
 }
@@ -4008,7 +4008,7 @@ int  CAtlaParser::LoadOrders  (const char * FNameIn, int & FactionId)
 
         F.Close();
         F.Open(FNameIn);
-        LoadOrders(F, FactionId, TRUE);
+        LoadOrders(F, FactionId, true);
         F.Close();
         return ERR_OK;
     }
@@ -4020,7 +4020,7 @@ int  CAtlaParser::LoadOrders  (const char * FNameIn, int & FactionId)
 void CAtlaParser::OrderErrFinalize()
 {
     if (gpDataHelper && !m_sOrderErrors.empty())
-        gpDataHelper->ReportError(m_sOrderErrors.c_str(), m_sOrderErrors.size(), TRUE);
+        gpDataHelper->ReportError(m_sOrderErrors.c_str(), m_sOrderErrors.size(), true);
 
     m_sOrderErrors.clear();
 }
@@ -4055,7 +4055,7 @@ void CAtlaParser::GenericErr(int Severity, const char * Msg)
         type = "Warning";
     Format(S, "%s : %s%s", type, Msg, EOL_SCR);
 
-    gpDataHelper->ReportError(S.c_str(), S.size(), FALSE);
+    gpDataHelper->ReportError(S.c_str(), S.size(), false);
 }
 
 //-------------------------------------------------------------
@@ -4068,9 +4068,9 @@ void CAtlaParser::GenericErr(int Severity, const char * Msg)
 }
 
 
-BOOL CAtlaParser::ShareSilver(CUnit * pMainUnit)
+bool CAtlaParser::ShareSilver(CUnit * pMainUnit)
 {
-    CLand             * pLand = NULL;
+    CLand             * pLand = nullptr;
     CUnit             * pUnit;
     int                 idx;
     long                unitmoney;
@@ -4078,7 +4078,7 @@ BOOL CAtlaParser::ShareSilver(CUnit * pMainUnit)
     long                n;
     EValueType          type;
     std::string Line;
-    BOOL                Changed = FALSE;
+    bool                Changed = false;
 
     do
     {
@@ -4137,13 +4137,13 @@ BOOL CAtlaParser::ShareSilver(CUnit * pMainUnit)
                 pMainUnit->Orders << "GIVE NEW " << (long)REVERSE_NEW_UNIT_ID(pUnit->Id) << " " << n << " SILV";
             else
                 pMainUnit->Orders << "GIVE " << pUnit->Id   << " " << n << " SILV";
-            Changed = TRUE;
+            Changed = true;
             if (mainmoney<=0)
                 break;
         }
         if (Changed)
             RunLandOrders(pLand);
-    } while (FALSE);
+    } while (false);
 
     OrderErrFinalize();
     return Changed;
@@ -4151,14 +4151,14 @@ BOOL CAtlaParser::ShareSilver(CUnit * pMainUnit)
 
 //-------------------------------------------------------------
 
-BOOL CAtlaParser::GenGiveEverything(CUnit * pFrom, const char * To)
+bool CAtlaParser::GenGiveEverything(CUnit * pFrom, const char * To)
 {
-    CLand             * pLand = NULL;
+    CLand             * pLand = nullptr;
     int                 no;
-    BOOL                Changed = FALSE;
+    bool                Changed = false;
     const char        * propname;
     int                 i;
-    BOOL                skipit;
+    bool                skipit;
     EValueType          type;
     long                amount;
     long                amountorg;
@@ -4202,7 +4202,7 @@ BOOL CAtlaParser::GenGiveEverything(CUnit * pFrom, const char * To)
         do
         {
             propname = pFrom->GetPropertyName(no++);
-            skipit   = FALSE;
+            skipit   = false;
 
             if (!propname)
                 break;
@@ -4211,7 +4211,7 @@ BOOL CAtlaParser::GenGiveEverything(CUnit * pFrom, const char * To)
             for (i=0; i<STD_UNIT_PROPS_COUNT; i++)
                 if (0==stricmp(propname, STD_UNIT_PROPS[i]))
                 {
-                    skipit = TRUE;
+                    skipit = true;
                     break;
                 }
             if (skipit)
@@ -4229,7 +4229,7 @@ BOOL CAtlaParser::GenGiveEverything(CUnit * pFrom, const char * To)
 //                        p += strlen(STD_UNIT_POSTFIXES[i]);
 //                        if (!*p)
 //                        {
-//                            skipit = TRUE;
+//                            skipit = true;
 //                            break;
 //                        }
 //                    }
@@ -4248,19 +4248,19 @@ BOOL CAtlaParser::GenGiveEverything(CUnit * pFrom, const char * To)
             // ignore strings
             if (!pFrom->GetProperty(propname, type, (const void *&)amountorg, eOriginal) || eLong!=type)
                 continue;
-            x = min(amount, amountorg);
+            x = std::min(amount, amountorg);
             if (x<=0)
                 continue;
 
             pFrom->Orders << "GIVE " << To << " " << x << " " << propname << EOL_SCR;
-            Changed = TRUE;
+            Changed = true;
 
         } while (propname);
 
         if (Changed)
             RunLandOrders(pLand);
     }
-    while (FALSE);
+    while (false);
 
     OrderErrFinalize();
     return Changed;
@@ -4268,17 +4268,17 @@ BOOL CAtlaParser::GenGiveEverything(CUnit * pFrom, const char * To)
 
 //-------------------------------------------------------------
 
-BOOL CAtlaParser::GenOrdersTeach(CUnit * pMainUnit)
+bool CAtlaParser::GenOrdersTeach(CUnit * pMainUnit)
 {
-    CLand             * pLand = NULL;
+    CLand             * pLand = nullptr;
     CUnit             * pUnit;
     int                 idx;
     EValueType          type;
     long                n1, n2;
     std::string Line;
     std::string                Skill;
-    BOOL                Changed  = FALSE;
-    BOOL                leader_checked = FALSE;
+    bool                Changed  = false;
+    bool                leader_checked = false;
     const void        * value;
 
 
@@ -4294,7 +4294,7 @@ BOOL CAtlaParser::GenOrdersTeach(CUnit * pMainUnit)
         if (!leader_checked && !pMainUnit->GetProperty(PRP_LEADER, type, value, eNormal) )
             break;
         else
-            leader_checked = TRUE;
+            leader_checked = true;
 
 
         RunLandOrders(pLand); // just in case...
@@ -4347,13 +4347,13 @@ BOOL CAtlaParser::GenOrdersTeach(CUnit * pMainUnit)
                             pMainUnit->Orders << "TEACH " << "NEW " << (long)REVERSE_NEW_UNIT_ID(pUnit->Id);
                         else
                             pMainUnit->Orders << "TEACH " << pUnit->Id;
-                        Changed = TRUE;
+                        Changed = true;
                     }
                 }
             }
         }
 
-    } while (FALSE);
+    } while (false);
 
     if (Changed)
         RunLandOrders(pLand); // just in case...
@@ -4363,20 +4363,20 @@ BOOL CAtlaParser::GenOrdersTeach(CUnit * pMainUnit)
 
 //-------------------------------------------------------------
 
-BOOL CAtlaParser::DiscardJunkItems(CUnit * pUnit, const char * junk)
+bool CAtlaParser::DiscardJunkItems(CUnit * pUnit, const char * junk)
 {
-    CLand             * pLand = NULL;
+    CLand             * pLand = nullptr;
     EValueType          type;
     long                value;
     std::string sJunkItem;
-    BOOL                Changed = FALSE;
+    bool                Changed = false;
 
     if (!pUnit || IS_NEW_UNIT(pUnit) || !pUnit->IsOurs )
-        return FALSE;
+        return false;
 
     pLand = GetLand(pUnit->LandId);
     if (!pLand)
-        return FALSE;
+        return false;
 
     RunLandOrders(pLand); // just in case...
 
@@ -4390,7 +4390,7 @@ BOOL CAtlaParser::DiscardJunkItems(CUnit * pUnit, const char * junk)
         if (!pUnit->Orders.empty())
             pUnit->Orders << EOL_SCR ;
         pUnit->Orders << "GIVE 0 " << value << " " << sJunkItem;
-        Changed = TRUE;
+        Changed = true;
     }
     if (Changed)
         RunLandOrders(pLand);
@@ -4401,28 +4401,28 @@ BOOL CAtlaParser::DiscardJunkItems(CUnit * pUnit, const char * junk)
 
 //-------------------------------------------------------------
 
-BOOL CAtlaParser::DetectSpies(CUnit * pUnit, long lonum, long hinum, long amount)
+bool CAtlaParser::DetectSpies(CUnit * pUnit, long lonum, long hinum, long amount)
 {
 
 #define DETECT_ONE_SPY                                                         \
 {                                                                              \
     pUnit->Orders << "GIVE " << no << " " << amount << " SILV ;ne"  << EOL_SCR;\
-    Changed = TRUE;                                                            \
+    Changed = true;                                                            \
     no++;                                                                      \
 }
 
-    CLand             * pLand = NULL;
-    BOOL                Changed = FALSE;
+    CLand             * pLand = nullptr;
+    bool                Changed = false;
     long                no;
     int                 idx = 0;
     CUnit             * pNext;
 
     if (!pUnit || IS_NEW_UNIT(pUnit) || !pUnit->IsOurs)
-        return FALSE;
+        return false;
 
     pLand = GetLand(pUnit->LandId);
     if (!pLand)
-        return FALSE;
+        return false;
 
     RunLandOrders(pLand); // just in case...
 
@@ -4490,7 +4490,7 @@ const char * CAtlaParser::ReadPropertyName(const char * src, std::string & Name)
 
 //-------------------------------------------------------------
 
-BOOL CAtlaParser::GetTargetUnitId(const char *& p, long FactionId, long & nId)
+bool CAtlaParser::GetTargetUnitId(const char *& p, long FactionId, long & nId)
 {
     std::string N1, N, X, Y;
     char                ch;
@@ -4502,33 +4502,33 @@ BOOL CAtlaParser::GetTargetUnitId(const char *& p, long FactionId, long & nId)
         // FACTION X NEW Y
         p = SkipSpaces(GetToken(X, p, " \t", ch, TRIM_ALL));  // X
         if (!IsInteger(X))
-            return FALSE;
+            return false;
         p = SkipSpaces(GetToken(N1, p, " \t", ch, TRIM_ALL));  // NEW
         if (0!=stricmp(N1.c_str(), "NEW"))
-            return FALSE;
+            return false;
         p = SkipSpaces(GetToken(Y, p, " \t", ch, TRIM_ALL));  // Y
         if (!IsInteger(Y))
-            return FALSE;
+            return false;
 
         if ( atol(gpDataHelper->GetConfString(SZ_SECT_COMMON, SZ_KEY_CHECK_NEW_UNIT_FACTION)))
             nId = NEW_UNIT_ID(atol(Y.c_str()), atol(X.c_str()));
         else
             nId = 0;
-        return TRUE;
+        return true;
     }
     if (0==stricmp("NEW", N1.c_str()))
     {
         p = SkipSpaces(GetToken(N1, p, " \t", ch, TRIM_ALL));
         if (!IsInteger(N1))
-            return FALSE;
+            return false;
         nId = NEW_UNIT_ID(atol(N1.c_str()), FactionId);
-        return TRUE;
+        return true;
     }
 
     if (!IsInteger(N1))
-        return FALSE;
+        return false;
     nId = atol(N1.c_str());
-    return TRUE;
+    return true;
 }
 
 //-------------------------------------------------------------
@@ -4593,7 +4593,7 @@ void CAtlaParser::RunLandOrders(CLand * pLand, const char * sCheckTeach)
     long                unitmoney;
     int                 mainidx;
     int                 sequence;
-    BOOL                errors = FALSE;
+    bool                errors = false;
     int                 idx;
     EValueType          type;
     const void        * value;
@@ -4601,8 +4601,8 @@ void CAtlaParser::RunLandOrders(CLand * pLand, const char * sCheckTeach)
     int                 XN=0, YN=0;     // saved current coords while new unit is processed
     int                 LocA3, LocA3N=0; // support for ArcadiaIII sailing
     char                ch;
-    BOOL                TeachCheckGlb = (BOOL)atoi(sCheckTeach?sCheckTeach:gpDataHelper->GetConfString(SZ_SECT_COMMON, SZ_KEY_CHECK_TEACH_LVL));
-    BOOL                skiperror;
+    bool                TeachCheckGlb = (bool)atoi(sCheckTeach?sCheckTeach:gpDataHelper->GetConfString(SZ_SECT_COMMON, SZ_KEY_CHECK_TEACH_LVL));
+    bool                skiperror;
     int                 nNestingMode; // Shar1 Support for TURN/ENDTURN
     long                order;
 
@@ -4620,7 +4620,7 @@ void CAtlaParser::RunLandOrders(CLand * pLand, const char * sCheckTeach)
         for (mainidx=0; mainidx<pLand->UnitsSeq.Count(); mainidx++)
         {
             nNestingMode = 0; // Shar1 Support for TURN/ENDTURN
-            pUnitMaster = NULL;
+            pUnitMaster = nullptr;
             pUnit       = (CUnit*)pLand->UnitsSeq.At(mainidx);
             if (IS_NEW_UNIT(pUnit))
                 continue;
@@ -4644,7 +4644,7 @@ void CAtlaParser::RunLandOrders(CLand * pLand, const char * sCheckTeach)
                     DelSubStr(Line, p-Line.c_str()-1, Line.size() - (p-Line.c_str()-1) );
                 }
                 else
-                    skiperror = FALSE;
+                    skiperror = false;
 
                 p    = SkipSpaces(GetToken(Cmd, Line.c_str(), " \t", ch, TRIM_ALL));
                 if ('@'==Cmd.c_str()[0])
@@ -4658,7 +4658,7 @@ void CAtlaParser::RunLandOrders(CLand * pLand, const char * sCheckTeach)
                     DelCh(Cmd, 0);
                     if (Cmd.empty()) // I do not know if putting spaces after '@' is legal... anyway
                         p    = SkipSpaces(GetToken(Cmd, p, " \t", ch, TRIM_ALL));
-                    skiperror = TRUE;
+                    skiperror = true;
                 }
 
                 if (Cmd.empty())
@@ -4709,17 +4709,17 @@ void CAtlaParser::RunLandOrders(CLand * pLand, const char * sCheckTeach)
 
                     case O_GIVE:
                         if (SQ_GIVE == sequence)
-                            RunOrder_Give(Line, ErrorLine, skiperror, pUnit, pLand, p, FALSE);
+                            RunOrder_Give(Line, ErrorLine, skiperror, pUnit, pLand, p, false);
                         break;
 
                     case O_GIVEIF:
                         if (SQ_GIVE == sequence)
-                            RunOrder_Give(Line, ErrorLine, skiperror, pUnit, pLand, p, TRUE);
+                            RunOrder_Give(Line, ErrorLine, skiperror, pUnit, pLand, p, true);
                         break;
 
                     case O_TAKE:
                         if (SQ_GIVE == sequence)
-                            RunOrder_Take(Line, ErrorLine, skiperror, pUnit, pLand, p, TRUE);
+                            RunOrder_Take(Line, ErrorLine, skiperror, pUnit, pLand, p, true);
                         break;
 
                     case O_SEND:
@@ -4771,7 +4771,7 @@ void CAtlaParser::RunLandOrders(CLand * pLand, const char * sCheckTeach)
                             pUnitNew->FactionId  = pUnit->FactionId;
                             pUnitNew->pFaction   = pUnit->pFaction;
                             pUnitNew->Flags      = pUnit->Flags;
-                            pUnitNew->IsOurs     = TRUE;
+                            pUnitNew->IsOurs     = true;
                             pUnitNew->Name        << "NEW " << N1;
                             pUnitNew->Description << "Created by " << pUnit->Id;
                             
@@ -4822,7 +4822,7 @@ void CAtlaParser::RunLandOrders(CLand * pLand, const char * sCheckTeach)
                                 OrderProcess_Teach(skiperror, pUnit);
 
                             pUnit       = pUnitMaster;
-                            pUnitMaster = NULL;
+                            pUnitMaster = nullptr;
                             X     = XN;
                             Y     = YN;
                             LocA3 = LocA3N;
@@ -5175,7 +5175,7 @@ void CAtlaParser::RunLandOrders(CLand * pLand, const char * sCheckTeach)
 
 //-------------------------------------------------------------
 
-void CAtlaParser::RunOrder_Study(std::string & Line, std::string & ErrorLine, BOOL skiperror, CUnit * pUnit, CLand * pLand, const char * params)
+void CAtlaParser::RunOrder_Study(std::string & Line, std::string & ErrorLine, bool skiperror, CUnit * pUnit, CLand * pLand, const char * params)
 {
     EValueType          type;
     long                n, n1, n2;
@@ -5251,13 +5251,13 @@ void CAtlaParser::RunOrder_Study(std::string & Line, std::string & ErrorLine, BO
 
         pUnit->StudyingSkill = SkillNaked;
         pUnit->StudyingSkill << PRP_SKILL_POSTFIX;
-    } while (FALSE);
+    } while (false);
 }
 
 
 //-------------------------------------------------------------
 
-void CAtlaParser::RunOrder_Name(std::string & Line, std::string & ErrorLine, BOOL skiperror, CUnit * pUnit, CLand * pLand, const char * params)
+void CAtlaParser::RunOrder_Name(std::string & Line, std::string & ErrorLine, bool skiperror, CUnit * pUnit, CLand * pLand, const char * params)
 {
     std::string                What, Name, NewName;
 //     long                id;
@@ -5293,21 +5293,21 @@ void CAtlaParser::RunOrder_Name(std::string & Line, std::string & ErrorLine, BOO
 //             pUnit->SetProperty(PRP_STRUCT_NAME,  eCharPtr, pStruct->Name.c_str(), eNormal);
 //         }
 
-    } while (FALSE);
+    } while (false);
 }
 
 
 //-------------------------------------------------------------
 
-BOOL CAtlaParser::CheckResourcesForProduction(CUnit * pUnit, CLand * pLand, std::string & Error)
+bool CAtlaParser::CheckResourcesForProduction(CUnit * pUnit, CLand * pLand, std::string & Error)
 {
-    BOOL                Ok = TRUE;
+    bool                Ok = true;
     unsigned int        x;
     int                 i;
     TProdDetails        details;
     CUnit             * pSharer;
     const char        * propname;
-    BOOL                SharerFound;
+    bool                SharerFound;
     EValueType          type;
     const void        * value;
     long                nlvl  = 0;
@@ -5327,13 +5327,13 @@ BOOL CAtlaParser::CheckResourcesForProduction(CUnit * pUnit, CLand * pLand, std:
         if (!pUnit->GetProperty(PRP_MEN, type, (const void *&)nmen, eNormal)  || (nmen<=0))
         {
             Error << " - There are no men in the unit!";
-            Ok = FALSE;
+            Ok = false;
         }
 
         if (details.skillname.empty() || details.months<=0)
         {
             Error << " - Production requirements for item '" << pUnit->ProducingItem << "' are not configured! ";
-            Ok = FALSE;
+            Ok = false;
         }
 
         // check skill level
@@ -5344,13 +5344,13 @@ BOOL CAtlaParser::CheckResourcesForProduction(CUnit * pUnit, CLand * pLand, std:
             if (nlvl < details.skilllevel)
             {
                 Error << " - Skill " << details.skillname << " level " << details.skilllevel << " is required for production";
-                Ok = FALSE;
+                Ok = false;
             }
         }
         else
         {
             Error << " - Skill " << details.skillname << " is required for production";
-            Ok = FALSE;
+            Ok = false;
         }
 
 
@@ -5365,7 +5365,7 @@ BOOL CAtlaParser::CheckResourcesForProduction(CUnit * pUnit, CLand * pLand, std:
 
         for (x=0; x<sizeof(details.resname)/sizeof(*details.resname); x++)
         {
-            SharerFound = FALSE;
+            SharerFound = false;
             if (!details.resname[x].empty())
             {
                 if (!pUnit->GetProperty(details.resname[x].c_str(), type, (const void *&)nres, eNormal) || eLong!=type )
@@ -5390,7 +5390,7 @@ BOOL CAtlaParser::CheckResourcesForProduction(CUnit * pUnit, CLand * pLand, std:
                             {
                                 if (0==stricmp(propname, details.resname[x].c_str()))
                                 {
-                                    SharerFound = TRUE;
+                                    SharerFound = true;
                                     break;
                                 }
 
@@ -5405,7 +5405,7 @@ BOOL CAtlaParser::CheckResourcesForProduction(CUnit * pUnit, CLand * pLand, std:
                             Error << " - " << details.resname[x] << " needed for production!";
                         else
                             Error << " - " << (nrequired - nres) << " more units of " << details.resname[x] << " needed for production at full capacity (" << ncanproduce << ")!";
-                        Ok = FALSE;
+                        Ok = false;
                     }
                 }
             }
@@ -5417,7 +5417,7 @@ BOOL CAtlaParser::CheckResourcesForProduction(CUnit * pUnit, CLand * pLand, std:
 
 //-------------------------------------------------------------
 
-void CAtlaParser::RunOrder_Produce(std::string & Line, std::string & ErrorLine, BOOL skiperror, CUnit * pUnit, CLand * pLand, const char * params)
+void CAtlaParser::RunOrder_Produce(std::string & Line, std::string & ErrorLine, bool skiperror, CUnit * pUnit, CLand * pLand, const char * params)
 {
     TProdDetails        details;
     const void        * value;
@@ -5456,15 +5456,15 @@ void CAtlaParser::RunOrder_Produce(std::string & Line, std::string & ErrorLine, 
             if (!CheckResourcesForProduction(pUnit, pLand, Error))
                 SHOW_WARN_CONTINUE(Error.c_str());
 
-    } while (FALSE);
+    } while (false);
 }
 
 
 //-------------------------------------------------------------
 
-BOOL CAtlaParser::GetItemAndAmountForGive(std::string & Line, std::string & ErrorLine, BOOL skiperror, CUnit * pUnit, CLand * pLand, const char * params, std::string & Item, int & amount, const char * command, CUnit * pUnit2)
+bool CAtlaParser::GetItemAndAmountForGive(std::string & Line, std::string & ErrorLine, bool skiperror, CUnit * pUnit, CLand * pLand, const char * params, std::string & Item, int & amount, const char * command, CUnit * pUnit2)
 {
-    BOOL                Ok = FALSE;
+    bool                Ok = false;
     std::string S1;
     char                ch;
     long                item_avail=0;
@@ -5532,15 +5532,15 @@ BOOL CAtlaParser::GetItemAndAmountForGive(std::string & Line, std::string & Erro
             break;
         }
 
-        Ok = TRUE;
-    } while (FALSE);
+        Ok = true;
+    } while (false);
 
     return Ok;
 }
 
 //-------------------------------------------------------------
 
-void CAtlaParser::RunOrder_Withdraw(std::string & Line, std::string & ErrorLine, BOOL skiperror, CUnit * pUnit, CLand * pLand, const char * params)
+void CAtlaParser::RunOrder_Withdraw(std::string & Line, std::string & ErrorLine, bool skiperror, CUnit * pUnit, CLand * pLand, const char * params)
 {
     EValueType          type;
     const void        * value;
@@ -5581,19 +5581,19 @@ void CAtlaParser::RunOrder_Withdraw(std::string & Line, std::string & ErrorLine,
 //            pUnit ->AddWeight(amount, weights, movenames, movecount);
 //        }
 
-    } while (FALSE);
+    } while (false);
 
 }
 
 //-------------------------------------------------------------
 
-void CAtlaParser::RunOrder_Give(std::string & Line, std::string & ErrorLine, BOOL skiperror, CUnit * pUnit, CLand * pLand, const char * params, BOOL IgnoreMissingTarget)
+void CAtlaParser::RunOrder_Give(std::string & Line, std::string & ErrorLine, bool skiperror, CUnit * pUnit, CLand * pLand, const char * params, bool IgnoreMissingTarget)
 {
     EValueType          type;
     long                n1;
     CBaseObject         Dummy;
     int                 idx;
-    CUnit             * pUnit2 = NULL;
+    CUnit             * pUnit2 = nullptr;
     const void        * value;
     const void        * value2;
 
@@ -5626,9 +5626,9 @@ void CAtlaParser::RunOrder_Give(std::string & Line, std::string & ErrorLine, BOO
                 SHOW_WARN_CONTINUE(" - Can not locate target unit");
         }
 
-        if (GetItemAndAmountForGive(Line, ErrorLine, skiperror, pUnit, pLand, params, Item, amount, "give", NULL) )
+        if (GetItemAndAmountForGive(Line, ErrorLine, skiperror, pUnit, pLand, params, Item, amount, "give", nullptr) )
         {
-            // NULL==pUnit2 is normal, always check!
+            // nullptr==pUnit2 is normal, always check!
 
             if (0==stricmp("UNIT", Item.c_str()))
             {
@@ -5675,16 +5675,16 @@ void CAtlaParser::RunOrder_Give(std::string & Line, std::string & ErrorLine, BOO
                 pUnit2->CalcWeightsAndMovement();
         }
 
-    } while (FALSE);
+    } while (false);
 }
 
 
 
 //-------------------------------------------------------------
 
-BOOL CAtlaParser::FindTargetsForSend(std::string & Line, std::string & ErrorLine, BOOL skiperror, CUnit * pUnit, CLand * pLand, const char *& params, CUnit *& pUnit2, CLand *& pLand2)
+bool CAtlaParser::FindTargetsForSend(std::string & Line, std::string & ErrorLine, bool skiperror, CUnit * pUnit, CLand * pLand, const char *& params, CUnit *& pUnit2, CLand *& pLand2)
 {
-    BOOL                Ok = FALSE;
+    bool                Ok = false;
     CBaseObject         Dummy;
     int                 idx;
     long                target_id;
@@ -5706,7 +5706,7 @@ BOOL CAtlaParser::FindTargetsForSend(std::string & Line, std::string & ErrorLine
         params = SkipSpaces(GetToken(S1, params, " \t", ch, TRIM_ALL));
         if (0==stricmp("DIRECTION", S1.c_str()))
         {
-            pUnit2 = NULL;
+            pUnit2 = nullptr;
             params = SkipSpaces(GetToken(S1, params, " \t", ch, TRIM_ALL));
             LandIdToCoord(pLand->Id, X, Y, Z);
 
@@ -5805,21 +5805,21 @@ BOOL CAtlaParser::FindTargetsForSend(std::string & Line, std::string & ErrorLine
         else
             SHOW_WARN_CONTINUE(" - Invalid SEND command");
 
-        Ok = TRUE;
-    } while (FALSE);
+        Ok = true;
+    } while (false);
 
     return Ok;
 }
 
 //-------------------------------------------------------------
 
-void CAtlaParser::RunOrder_Take(std::string & Line, std::string & ErrorLine, BOOL skiperror, CUnit * pUnit, CLand * pLand, const char * params, BOOL IgnoreMissingTarget)
+void CAtlaParser::RunOrder_Take(std::string & Line, std::string & ErrorLine, bool skiperror, CUnit * pUnit, CLand * pLand, const char * params, bool IgnoreMissingTarget)
 {
     EValueType          type;
     long                n1;
     CBaseObject         Dummy;
     int                 idx;
-    CUnit             * pUnit2 = NULL;
+    CUnit             * pUnit2 = nullptr;
     const void        * value;
     const void        * value2;
 
@@ -5900,15 +5900,15 @@ void CAtlaParser::RunOrder_Take(std::string & Line, std::string & ErrorLine, BOO
             }
         }
 
-    } while (FALSE);
+    } while (false);
 }
 
 //-------------------------------------------------------------
 
-void CAtlaParser::RunOrder_Send(std::string & Line, std::string & ErrorLine, BOOL skiperror, CUnit * pUnit, CLand * pLand, const char * params)
+void CAtlaParser::RunOrder_Send(std::string & Line, std::string & ErrorLine, bool skiperror, CUnit * pUnit, CLand * pLand, const char * params)
 {
-    CUnit             * pUnit2 = NULL;
-    CLand             * pLand2 = NULL;
+    CUnit             * pUnit2 = nullptr;
+    CLand             * pLand2 = nullptr;
     std::string                Item;
     int                 amount, effweight;
     int                 price = 0;
@@ -5941,7 +5941,7 @@ void CAtlaParser::RunOrder_Send(std::string & Line, std::string & ErrorLine, BOO
         if (!pLand2)
             SHOW_WARN_CONTINUE(" - Unable to locate target hex");
 
-        if (GetItemAndAmountForGive(Line, ErrorLine, skiperror, pUnit, pLand, params, Item, amount, "send", NULL) )
+        if (GetItemAndAmountForGive(Line, ErrorLine, skiperror, pUnit, pLand, params, Item, amount, "send", nullptr) )
         {
             if (!pUnit->GetProperty(Item.c_str(), type, value, eNormal) || (eLong!=type))
                 SHOW_WARN_CONTINUE(" - Can not send " << Item);
@@ -5979,7 +5979,7 @@ void CAtlaParser::RunOrder_Send(std::string & Line, std::string & ErrorLine, BOO
             }
         }
 
-    } while (FALSE);
+    } while (false);
 }
 
 
@@ -5997,9 +5997,9 @@ void CAtlaParser::AdjustSkillsAfterGivingMen(CUnit * pUnitGive, CUnit * pUnitTak
     char              * p;
     long                dayssrc, daystarg, newdays, newskill, mentarg, newdaysexp, newskillexp;
     EValueType          type;
-    BOOL                bWasSetGive, bWasSetTake;
-    const void        * valueGive = NULL;
-    const void        * valueTake = NULL;
+    bool                bWasSetGive, bWasSetTake;
+    const void        * valueGive = nullptr;
+    const void        * valueTake = nullptr;
 
     if (!gpDataHelper->IsMan(item.c_str()))
         return;
@@ -6127,7 +6127,7 @@ void CAtlaParser::AdjustSkillsAfterGivingMen(CUnit * pUnitGive, CUnit * pUnitTak
 
 //-------------------------------------------------------------
 
-void CAtlaParser::RunOrder_Buy(std::string & Line, std::string & ErrorLine, BOOL skiperror, CUnit * pUnit, CLand * pLand, const char * params)
+void CAtlaParser::RunOrder_Buy(std::string & Line, std::string & ErrorLine, bool skiperror, CUnit * pUnit, CLand * pLand, const char * params)
 {
     EValueType          type;
     std::string S1;
@@ -6223,13 +6223,13 @@ void CAtlaParser::RunOrder_Buy(std::string & Line, std::string & ErrorLine, BOOL
         }
         else
             SHOW_WARN_CONTINUE(" - Can not BUY that!");
-    } while (FALSE);
+    } while (false);
 
 }
 
 //-------------------------------------------------------------
 
-void CAtlaParser::RunOrder_Sell(std::string & Line, std::string & ErrorLine, BOOL skiperror, CUnit * pUnit, CLand * pLand, const char * params)
+void CAtlaParser::RunOrder_Sell(std::string & Line, std::string & ErrorLine, bool skiperror, CUnit * pUnit, CLand * pLand, const char * params)
 {
     EValueType          type;
     EValueType          type1;
@@ -6311,13 +6311,13 @@ void CAtlaParser::RunOrder_Sell(std::string & Line, std::string & ErrorLine, BOO
 //         if (gpDataHelper->GetItemWeights(S1.c_str(), weights, movenames, movecount))
 //             pUnit ->AddWeight(-n1, weights, movenames, movecount);
          pUnit->CalcWeightsAndMovement(); 
-    } while (FALSE);
+    } while (false);
 
 }
 
 //-------------------------------------------------------------
 
-void CAtlaParser::RunOrder_Promote(std::string & Line, std::string & ErrorLine, BOOL skiperror, CUnit * pUnit, CLand * pLand, const char * params)
+void CAtlaParser::RunOrder_Promote(std::string & Line, std::string & ErrorLine, bool skiperror, CUnit * pUnit, CLand * pLand, const char * params)
 {
     long                n1;
     long                id1=0, id2=0;
@@ -6337,8 +6337,8 @@ void CAtlaParser::RunOrder_Promote(std::string & Line, std::string & ErrorLine, 
         if (pLand->Units.Search(&Dummy, idx))
         {
             pUnit2 = (CUnit*)pLand->Units.At(idx);
-            params      = NULL;
-            p1     = NULL;
+            params      = nullptr;
+            p1     = nullptr;
 
             if (!pUnit->GetProperty(PRP_STRUCT_ID, type, (const void *&)id1, eNormal) )
                 SHOW_WARN_CONTINUE(" - The unit is not inside a struct");
@@ -6366,12 +6366,12 @@ void CAtlaParser::RunOrder_Promote(std::string & Line, std::string & ErrorLine, 
         }
         else
             SHOW_WARN_CONTINUE(" - Can not find unit " << n1)
-    } while (FALSE);
+    } while (false);
 }
 
 //-------------------------------------------------------------
 
-void CAtlaParser::RunOrder_Move(std::string & Line, std::string & ErrorLine, BOOL skiperror, CUnit * pUnit, CLand * pLand, const char * params, int & X, int & Y, int & LocA3, long order)
+void CAtlaParser::RunOrder_Move(std::string & Line, std::string & ErrorLine, bool skiperror, CUnit * pUnit, CLand * pLand, const char * params, int & X, int & Y, int & LocA3, long order)
 {
     int                 ID;
     int                 i, idx=0;
@@ -6468,7 +6468,7 @@ void CAtlaParser::RunOrder_Move(std::string & Line, std::string & ErrorLine, BOO
                     //OrderErr(1, pUnit->Id, sErr.c_str());
             }
         }
-    } while (FALSE);
+    } while (false);
 }
 
 //-------------------------------------------------------------
@@ -6530,21 +6530,21 @@ void CAtlaParser::RunOrder_Move(std::string & Line, std::string & ErrorLine, BOO
 
 // Special SAILing for Arcadia III.
 
-void CAtlaParser::RunOrder_SailAIII(std::string & Line, std::string & ErrorLine, BOOL skiperror, CUnit * pUnit, CLand * pLand, const char * params, int & X, int & Y, int & LocA3)
+void CAtlaParser::RunOrder_SailAIII(std::string & Line, std::string & ErrorLine, bool skiperror, CUnit * pUnit, CLand * pLand, const char * params, int & X, int & Y, int & LocA3)
 {
     int                 ID;
     int                 i, j;
     std::string                S1;
     char                ch;
     eDirection          Dir;
-    BOOL                GoodSail;
+    bool                GoodSail;
     std::string                SailPassed;
     CLand             * pNewLand;
 
 
     while (params && *params)
     {
-        GoodSail = FALSE;
+        GoodSail = false;
 
         params        = SkipSpaces(GetToken(S1, params, " \t", ch, TRIM_ALL));
         for (i=0; i<(int)sizeof(Directions)/(int)sizeof(const char*); i++)
@@ -6558,7 +6558,7 @@ void CAtlaParser::RunOrder_SailAIII(std::string & Line, std::string & ErrorLine,
                         X += NextLandLoc[j].dX;
                         Y += NextLandLoc[j].dY;
                         LocA3 = NextLandLoc[j].TargetLoc;
-                        GoodSail = TRUE;
+                        GoodSail = true;
                         break;
                     }
 
@@ -6601,17 +6601,17 @@ void CAtlaParser::RunOrder_SailAIII(std::string & Line, std::string & ErrorLine,
 
 //-------------------------------------------------------------
 
-void CAtlaParser::RunOrder_Teach(std::string & Line, std::string & ErrorLine, BOOL skiperror, CUnit * pUnit, CLand * pLand, const char * params, BOOL TeachCheckGlb)
+void CAtlaParser::RunOrder_Teach(std::string & Line, std::string & ErrorLine, bool skiperror, CUnit * pUnit, CLand * pLand, const char * params, bool TeachCheckGlb)
 {
     EValueType          type;
     long                n1, n2;
     int                 idx;
     CUnit             * pUnit2;
     CBaseObject         Dummy;
-    BOOL                our_unit;
+    bool                our_unit;
     std::string                Skill;
     const void        * value;
-    BOOL                leader_checked = FALSE;
+    bool                leader_checked = false;
 
 
     while (params && *params)
@@ -6621,7 +6621,7 @@ void CAtlaParser::RunOrder_Teach(std::string & Line, std::string & ErrorLine, BO
             SHOW_WARN_BREAK(" - Unit " << pUnit->Id << " is not a leader or hero");
         }
         else
-            leader_checked = TRUE;
+            leader_checked = true;
 
 
         if (!GetTargetUnitId(params, pUnit->FactionId, n1))
@@ -6704,7 +6704,7 @@ void CAtlaParser::RunOrder_Teach(std::string & Line, std::string & ErrorLine, BO
 
 //-------------------------------------------------------------
 
-void CAtlaParser::OrderProcess_Teach(BOOL skiperror, CUnit * pUnit)
+void CAtlaParser::OrderProcess_Teach(bool skiperror, CUnit * pUnit)
 {
     long          nstud = 0; // students count
     long          n1, n2;
@@ -6723,13 +6723,13 @@ void CAtlaParser::OrderProcess_Teach(BOOL skiperror, CUnit * pUnit)
         {
             if (!pUnit->StudyingSkill.empty())
             {
-                BOOL ItsOk = FALSE;
+                bool ItsOk = false;
                 // is it a freaking hero?
                 if (m_ArcadiaSkills &&
                     pUnit->GetProperty(PRP_LEADER, type, (const void *&)leadership, eNormal) &&
                     eCharPtr==type &&
                     0 == stricmp(leadership, SZ_HERO))
-                    ItsOk = TRUE;
+                    ItsOk = true;
 
                 if (!ItsOk)
                     SHOW_WARN_CONTINUE(" - can not teach and study at the same time");
@@ -6762,7 +6762,7 @@ void CAtlaParser::OrderProcess_Teach(BOOL skiperror, CUnit * pUnit)
             }
         }
     }
-    while (FALSE);
+    while (false);
 }
 
 //-------------------------------------------------------------
@@ -6785,10 +6785,10 @@ void CAtlaParser::RunPseudoComment(int sequence, CLand * pLand, CUnit * pUnit, c
                 // GET 100 silv
 
                 Command = src;
-                RunOrder_Withdraw(Command, S, FALSE, pUnit, pLand, p);
+                RunOrder_Withdraw(Command, S, false, pUnit, pLand, p);
             }
     }
-    while (FALSE);
+    while (false);
 }
 
 
@@ -6821,7 +6821,7 @@ void CAtlaParser::RunOrders(CLand * pLand, const char * sCheckTeach)
 
 //-------------------------------------------------------------
 
-BOOL CAtlaParser::ApplyDefaultOrders(BOOL EmptyOnly)
+bool CAtlaParser::ApplyDefaultOrders(bool EmptyOnly)
 {
     int           i;
     CUnit       * pUnit;
@@ -6829,8 +6829,8 @@ BOOL CAtlaParser::ApplyDefaultOrders(BOOL EmptyOnly)
     std::string OldOrder;
     const char  * pNew;
     const char  * pOld;
-    BOOL          Exists;
-    BOOL          Changed = FALSE;
+    bool          Exists;
+    bool          Changed = false;
 
     for (i=0; i<m_Units.Count(); i++)
     {
@@ -6851,7 +6851,7 @@ BOOL CAtlaParser::ApplyDefaultOrders(BOOL EmptyOnly)
                             if (!pUnit->Orders.empty())
                                 pUnit->Orders << EOL_SCR;
                             pUnit->Orders << NewOrder;
-                            Changed = TRUE;
+                            Changed = true;
                         }
                     }
                 }
@@ -6864,14 +6864,14 @@ BOOL CAtlaParser::ApplyDefaultOrders(BOOL EmptyOnly)
                     pNew = GetToken(NewOrder, pNew, '\n', TRIM_ALL);
                     if ( (!NewOrder.empty()) && (';'!=NewOrder.c_str()[0]) )
                     {
-                        Exists = FALSE;
+                        Exists = false;
                         pOld   = pUnit->Orders.c_str();
                         while (pOld)
                         {
                             pOld = GetToken(OldOrder, pOld, '\n', TRIM_ALL);
                             if (0==stricmp(OldOrder.c_str(), NewOrder.c_str()))
                             {
-                                Exists = TRUE;
+                                Exists = true;
                                 break;
                             }
                         }
@@ -6880,7 +6880,7 @@ BOOL CAtlaParser::ApplyDefaultOrders(BOOL EmptyOnly)
                             if (!pUnit->Orders.empty())
                                 pUnit->Orders << EOL_SCR;
                             pUnit->Orders << NewOrder;
-                            Changed = TRUE;
+                            Changed = true;
 
                         }
 
@@ -6890,7 +6890,7 @@ BOOL CAtlaParser::ApplyDefaultOrders(BOOL EmptyOnly)
         }
     }
     if (Changed)
-        RunOrders(NULL);
+        RunOrders(nullptr);
 
     return Changed;
 }
@@ -6968,7 +6968,7 @@ void WriteOneMageSkill(std::string & Line, const char * skill, CUnit * pUnit, co
     }
 }
 
-void CAtlaParser::WriteMagesCSV(const char * FName, BOOL vertical, const char * separator, int format)
+void CAtlaParser::WriteMagesCSV(const char * FName, bool vertical, const char * separator, int format)
 {
     CBaseCollById       Mages;
     CUnit             * pUnit;
@@ -6981,7 +6981,7 @@ void CAtlaParser::WriteMagesCSV(const char * FName, BOOL vertical, const char * 
     int                 i, n, postlen;
     std::string                S, Line;
     CFileWriter         Dest;
-    BOOL                IsMage;
+    bool                IsMage;
 
 
     postlen = strlen(PRP_SKILL_POSTFIX);
@@ -6989,7 +6989,7 @@ void CAtlaParser::WriteMagesCSV(const char * FName, BOOL vertical, const char * 
     {
         pUnit = (CUnit*)m_Units.At(idx);
 
-        IsMage   = FALSE;
+        IsMage   = false;
         i        = 0;
         propname = pUnit->GetPropertyName(i);
         while (propname)
@@ -6997,7 +6997,7 @@ void CAtlaParser::WriteMagesCSV(const char * FName, BOOL vertical, const char * 
             if (gpDataHelper->IsRawMagicSkill(propname))
             {
                 Mages.Insert(pUnit);
-                IsMage = TRUE;
+                IsMage = true;
                 break;
             }
             propname = pUnit->GetPropertyName(++i);

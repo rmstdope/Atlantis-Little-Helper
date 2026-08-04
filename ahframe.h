@@ -30,7 +30,7 @@ public:
 
     virtual void    Init(int layout, const char * szConfigSection);
     virtual void    Update();
-    virtual void    Done(BOOL SetClosedFlag);
+    virtual void    Done(bool SetClosedFlag);
 
     std::string            m_sConfigSection;
 

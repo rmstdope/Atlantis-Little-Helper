@@ -56,7 +56,7 @@ public:
 
     eEErr  InitUnitFilter(const char * userfilter, std::string & sPythonFilter);
     void   DoneUnitFilter();
-    eEErr  RunUnitFilter(CUnit * pUnit, BOOL & success);
+    eEErr  RunUnitFilter(CUnit * pUnit, bool & success);
 
 protected:
     eEErr  InitGeneric();
@@ -66,8 +66,8 @@ protected:
     void   GetCommonCode(std::string & code);
 
     CAtlaParser * m_pAtlantis;
-    BOOL          m_bInitUnitFilter;
-    BOOL          m_bInitGeneric;
+    bool          m_bInitUnitFilter;
+    bool          m_bInitGeneric;
 
 
     PyObject * m_pCode  ;

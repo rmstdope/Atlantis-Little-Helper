@@ -49,9 +49,9 @@ END_EVENT_TABLE()
 CEditsFrame::CEditsFrame(wxWindow * parent)
             :CAhFrame (parent, "Editor panes", (wxDEFAULT_FRAME_STYLE | wxCLIP_CHILDREN) & ~wxMINIMIZE_BOX)
 {
-    m_Splitter1= NULL;
-    m_Splitter2= NULL;
-    m_Splitter3= NULL;
+    m_Splitter1= nullptr;
+    m_Splitter2= nullptr;
+    m_Splitter3= nullptr;
 }
 
 //--------------------------------------------------------------------
@@ -88,10 +88,10 @@ void CEditsFrame::Init(int layout, const char * szConfigSection)
         m_Splitter2->SetBorderSize(0);
         m_Splitter3->SetBorderSize(0);
 
-        p1 = new CEditPane(m_Splitter1, "Hex description"        , FALSE, FONT_EDIT_DESCR);
-        p2 = new CEditPane(m_Splitter2, "Unit description"       , FALSE, FONT_EDIT_DESCR);
-        p3 = new CEditPane(m_Splitter3, "Orders"                 , FALSE, FONT_EDIT_ORDER);
-        p4 = new CEditPane(m_Splitter3, "Comments/Default orders", TRUE , FONT_EDIT_ORDER);
+        p1 = new CEditPane(m_Splitter1, "Hex description"        , false, FONT_EDIT_DESCR);
+        p2 = new CEditPane(m_Splitter2, "Unit description"       , false, FONT_EDIT_DESCR);
+        p3 = new CEditPane(m_Splitter3, "Orders"                 , false, FONT_EDIT_ORDER);
+        p4 = new CEditPane(m_Splitter3, "Comments/Default orders", true , FONT_EDIT_ORDER);
 
         SetPane(AH_PANE_MAP_DESCR    , p1);
         SetPane(AH_PANE_UNIT_DESCR   , p2);
@@ -123,7 +123,7 @@ void CEditsFrame::Init(int layout, const char * szConfigSection)
 
 //--------------------------------------------------------------------
 
-void CEditsFrame::Done(BOOL SetClosedFlag)
+void CEditsFrame::Done(bool SetClosedFlag)
 {
     switch (m_Layout)
     {

@@ -29,7 +29,7 @@ class CUnitPaneFltr: public CUnitPane
 public:
     CUnitPaneFltr(wxWindow *parent, wxWindowID id = list_units_hex_fltr);
     void         Update(CUnitFilterDlg * pFilter);
-    virtual void Done();
+    virtual void Done() override;
 
 
     void InsertUnitInit();
@@ -51,7 +51,7 @@ private:
     void OnPopupMenuIssueOrders(wxCommandEvent& event);
 
     int  m_ColClickedFltr;
-    BOOL m_IsUpdating;
+    bool m_IsUpdating;
     CBaseColl m_NewUnits;
 
     DECLARE_EVENT_TABLE()

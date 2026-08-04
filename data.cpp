@@ -36,7 +36,7 @@
 
 #include "ahapp.h"
 
-CGameDataHelper * gpDataHelper = NULL;
+CGameDataHelper * gpDataHelper = nullptr;
 
 const char * STRUCT_GATE    = "GATE";
 
@@ -83,7 +83,7 @@ const int SKILL_UNIT_POSTFIXES_COUNT = sizeof(SKILL_UNIT_POSTFIXES)/sizeof(*SKIL
 
 //=============================================================
 
-BOOL IsASkillRelatedProperty(const char * propname)
+bool IsASkillRelatedProperty(const char * propname)
 {
     int          i;
     const char * p;
@@ -92,9 +92,9 @@ BOOL IsASkillRelatedProperty(const char * propname)
     {
         p = strrchr(propname, SKILL_UNIT_POSTFIXES[i][0]);
         if (p && 0==strcmp(p, SKILL_UNIT_POSTFIXES[i]))
-            return TRUE;
+            return true;
     }
-    return FALSE;
+    return false;
 }
 
 //=============================================================
@@ -124,13 +124,13 @@ const char * CBaseObject::ResolveAlias(const char * alias)
 
 //-------------------------------------------------------------
 
-BOOL CBaseObject::GetProperty(const char  *  name,
+bool CBaseObject::GetProperty(const char  *  name,
                               EValueType   & type,
                               const void  *& value,
                               EPropertyType  proptype
                               )
 {
-    BOOL          Ok = TRUE;
+    bool          Ok = true;
 
     name = ResolveAlias(name);
 
@@ -152,7 +152,7 @@ BOOL CBaseObject::GetProperty(const char  *  name,
             value = Description.c_str();
         }
         else
-            Ok = FALSE;
+            Ok = false;
     }
     return Ok;
 }
@@ -242,14 +242,14 @@ void CAttitude::SetStance(int newstance)
 
 //-------------------------------------------------------------
 
-BOOL CAttitude::IsDeclaredAs(int attitude)
+bool CAttitude::IsDeclaredAs(int attitude)
 {
     return (Stance==attitude);
 }
 
 //-------------------------------------------------------------
 
-BOOL CAttitude::IsEqual(CAttitude * attitude)
+bool CAttitude::IsEqual(CAttitude * attitude)
 {
     return (attitude->IsDeclaredAs(Stance));
 }
@@ -262,12 +262,12 @@ CLand::CLand() : CBaseObject(), Units(32), UnitsSeq(32)
     AlarmFlags=0;
     EventFlags=0;
     guiUnit=0;
-    pPlane=NULL;
+    pPlane=nullptr;
     ExitBits=0;
     CoastBits=0;
     AtlaclientsLastTurnNo=0;
     guiColor=-1;
-    WeatherWillBeGood=FALSE;
+    WeatherWillBeGood=false;
     Wages = 0.0;
     MaxWages = 0;
     for(int i=0; i<=ATT_UNDECLARED; i++) Troops[i]=0;
@@ -294,7 +294,7 @@ void CLand::DebugPrint(std::string & sDest)
 
 //-------------------------------------------------------------
 
-BOOL CLand::AddUnit(CUnit * pUnit)
+bool CLand::AddUnit(CUnit * pUnit)
 {
     if (Units.Insert(pUnit))
     {
@@ -302,10 +302,10 @@ BOOL CLand::AddUnit(CUnit * pUnit)
         Flags |= LAND_UNITS;
         UnitsSeq.Insert(pUnit);
         pUnit->SetProperty(PRP_SEQUENCE, eLong, reinterpret_cast<void*>(static_cast<intptr_t>(UnitsSeq.Count())), eNormal);
-        return TRUE;
+        return true;
     }
     else
-        return FALSE;
+        return false;
 
 }
 
@@ -403,7 +403,7 @@ int CLand::GetNextNewUnitNo()
 
 CStruct * CLand::GetStructById(long id)
 {
-    CStruct     * pStruct = NULL;
+    CStruct     * pStruct = nullptr;
     CBaseObject   Dummy;
     int       i;
 
@@ -431,7 +431,7 @@ CStruct * CLand::AddNewStruct(CStruct * pNewStruct)
             // process links for shafts
 
             int  x1, x2, x3;
-            BOOL Link;
+            bool Link;
 
             x1   = FindSubStr(pNewStruct->Description, ";");
             x2   = FindSubStr(pNewStruct->Description, "links");
@@ -651,7 +651,7 @@ void CLand::RemoveEdgeStructs(int direction)
     for (int i=EdgeStructs.Count()-1; i>=0; i--)
     {
         pEdge = (CStruct*) EdgeStructs.At(i);
-        if((pEdge != NULL) && (pEdge->Location == direction%6))
+        if((pEdge != nullptr) && (pEdge->Location == direction%6))
         {
             EdgeStructs.AtFree(i);
         }
@@ -670,9 +670,9 @@ void CLand::AddNewEdgeStruct(const char * name, int direction)
 
 //=============================================================
 
-std::multimap<std::string,std::string> * CUnit::m_PropertyGroupsColl = NULL;
+std::multimap<std::string,std::string> * CUnit::m_PropertyGroupsColl = nullptr;
 std::string          CUnit::m_CustomFlagNames[UNIT_CUSTOM_FLAG_COUNT];
-BOOL          CUnit::m_CustomFlagNamesLoaded = FALSE;
+bool          CUnit::m_CustomFlagNamesLoaded = false;
 
 
 
@@ -692,7 +692,7 @@ CUnit::CUnit() : CBaseObject()
     Events.reserve(32);
     IsOurs        = false;
     FactionId     = 0;
-    pFaction      = NULL;
+    pFaction      = nullptr;
     LandId        = 0;
     Teaching      = 0.0;
     pMovement     = nullptr;
@@ -809,7 +809,7 @@ void CUnit::ResetNormalProperties()
 void CUnit::AddWeight(int nitems, int * weights, const char ** movenames, int nweights)
 {
     int  i;
-    int  NW = min(nweights, MOVE_MODE_MAX);
+    int  NW = std::min(nweights, MOVE_MODE_MAX);
 
     for (i=0; i<NW; i++)
         Weight[i] += nitems*weights[i];
@@ -822,7 +822,7 @@ void CUnit::CalcWeightsAndMovement()
     int           idx;
     const char  * propname;
     int         * weights;
-    const char ** movenames = NULL;
+    const char ** movenames = nullptr;
     int           movecount;
     EValueType    type;
     const void  * n;
@@ -862,7 +862,7 @@ void CUnit::CalcWeightsAndMovement()
     {
         // cannot move at all, maybe wagons will help?
         // First, find out how many horses and wagons do we have
-        // Then, redestribute weights based on min(horses, wagons).
+        // Then, redestribute weights based on std::min(horses, wagons).
         // We do not do it in the preliminary calc because it is expensive
         int nHorses=0, nWagons=0;
         idx      = 0;
@@ -879,7 +879,7 @@ void CUnit::CalcWeightsAndMovement()
             }
             propname = GetPropertyName(++idx);
         }
-        int nAdjust = min(nHorses, nWagons);
+        int nAdjust = std::min(nHorses, nWagons);
         if (nAdjust>0)
             Weight[1] += nAdjust*gpDataHelper->WagonCapacity();
     }
@@ -940,13 +940,13 @@ void CUnit::CheckWeight(std::string & sErr)
 
 //-------------------------------------------------------------
 
-BOOL CUnit::GetProperty(const char  *  name,
+bool CUnit::GetProperty(const char  *  name,
                         EValueType   & type,
                         const void  *& value,
                         EPropertyType  proptype
                         )
 {
-    BOOL         Ok = TRUE;
+    bool         Ok = true;
 
     name = ResolveAlias(name);
 
@@ -954,7 +954,7 @@ BOOL CUnit::GetProperty(const char  *  name,
     {
         type  = eLong;
         value = (void*)Id;
-        return TRUE;
+        return true;
     }
 
     // Custom and Standard flags
@@ -1086,14 +1086,14 @@ BOOL CUnit::GetProperty(const char  *  name,
                 value = (void*)(long)floor(Teaching);
 
             if (Teaching <= 0)
-                Ok = FALSE;
+                Ok = false;
         }
 
 
 
 
         else
-            Ok = FALSE;
+            Ok = false;
     }
 
     return Ok;
@@ -1115,7 +1115,7 @@ void CUnit::LoadCustomFlagNames()
             sKey << (long)i;
             m_CustomFlagNames[i] = gpApp->GetConfig(SZ_SECT_UNIT_FLAG_NAMES, sKey.c_str());
         }
-        m_CustomFlagNamesLoaded = TRUE;
+        m_CustomFlagNamesLoaded = true;
     }
 }
 
@@ -1125,7 +1125,7 @@ void CUnit::ResetCustomFlagNames()
 {
     int i;
 
-    m_CustomFlagNamesLoaded = FALSE;
+    m_CustomFlagNamesLoaded = false;
     for (i=0; i<UNIT_CUSTOM_FLAG_COUNT; i++)
         m_CustomFlagNames[i].clear();
 }
@@ -1137,7 +1137,7 @@ const char * CUnit::GetCustomFlagName(int no)
     if (m_CustomFlagNamesLoaded && no>=0 && no<UNIT_CUSTOM_FLAG_COUNT)
         return m_CustomFlagNames[no].c_str();
     else
-        return NULL;
+        return nullptr;
 }
 
 //-------------------------------------------------------------
@@ -1200,7 +1200,7 @@ int CBaseCollById::Compare(void * pItem1, void * pItem2) const
     return 0;
 }
 
-BOOL CBaseCollById::Insert(void * pItem)
+bool CBaseCollById::Insert(void * pItem)
 {
     int lo = 0, hi = (int)m_items.size();
     while (lo < hi)
@@ -1209,13 +1209,13 @@ BOOL CBaseCollById::Insert(void * pItem)
         int cmp = Compare(m_items[mid], pItem);
         if      (cmp < 0) lo = mid + 1;
         else if (cmp > 0) hi = mid;
-        else              return FALSE; // duplicate
+        else              return false; // duplicate
     }
     m_items.insert(m_items.begin() + lo, (CBaseObject*)pItem);
-    return TRUE;
+    return true;
 }
 
-BOOL CBaseCollById::Search(void * pItem, int & nIndex) const
+bool CBaseCollById::Search(void * pItem, int & nIndex) const
 {
     int lo = 0, hi = (int)m_items.size();
     while (lo < hi)
@@ -1241,7 +1241,7 @@ int  CBaseCollByName::Compare(void * pItem1, void * pItem2) const
 //-------------------------------------------------------------
 // CProductColl: sorted by ShortName, owns items
 
-BOOL CProductColl::Insert(void * pItem)
+bool CProductColl::Insert(void * pItem)
 {
     int lo = 0, hi = (int)m_items.size();
     while (lo < hi)
@@ -1250,13 +1250,13 @@ BOOL CProductColl::Insert(void * pItem)
         int cmp = Compare(m_items[mid], pItem);
         if      (cmp < 0) lo = mid + 1;
         else if (cmp > 0) hi = mid;
-        else              return FALSE;
+        else              return false;
     }
     m_items.insert(m_items.begin() + lo, (CProduct*)pItem);
-    return TRUE;
+    return true;
 }
 
-BOOL CProductColl::Search(void * pItem, int & nIndex) const
+bool CProductColl::Search(void * pItem, int & nIndex) const
 {
     int lo = 0, hi = (int)m_items.size();
     while (lo < hi)
@@ -1273,7 +1273,7 @@ BOOL CProductColl::Search(void * pItem, int & nIndex) const
 //-------------------------------------------------------------
 // CUnitsByHex: sorted by LandId+Id, does NOT own
 
-BOOL CUnitsByHex::Insert(void * pItem)
+bool CUnitsByHex::Insert(void * pItem)
 {
     int lo = 0, hi = (int)m_items.size();
     while (lo < hi)
@@ -1282,13 +1282,13 @@ BOOL CUnitsByHex::Insert(void * pItem)
         int cmp = Compare(m_items[mid], pItem);
         if      (cmp < 0) lo = mid + 1;
         else if (cmp > 0) hi = mid;
-        else              return FALSE;
+        else              return false;
     }
     m_items.insert(m_items.begin() + lo, (CUnit*)pItem);
-    return TRUE;
+    return true;
 }
 
-BOOL CUnitsByHex::Search(void * pItem, int & nIndex) const
+bool CUnitsByHex::Search(void * pItem, int & nIndex) const
 {
     int lo = 0, hi = (int)m_items.size();
     while (lo < hi)
@@ -1312,7 +1312,7 @@ CPlane::~CPlane()
 //-------------------------------------------------------------
 // CTaxProdDetailsCollByFaction: sorted by FactionId, owns items
 
-BOOL CTaxProdDetailsCollByFaction::Insert(void * pItem)
+bool CTaxProdDetailsCollByFaction::Insert(void * pItem)
 {
     int lo = 0, hi = (int)m_items.size();
     while (lo < hi)
@@ -1321,13 +1321,13 @@ BOOL CTaxProdDetailsCollByFaction::Insert(void * pItem)
         int cmp = Compare(m_items[mid], pItem);
         if      (cmp < 0) lo = mid + 1;
         else if (cmp > 0) hi = mid;
-        else              return FALSE;
+        else              return false;
     }
     m_items.insert(m_items.begin() + lo, (CTaxProdDetails*)pItem);
-    return TRUE;
+    return true;
 }
 
-BOOL CTaxProdDetailsCollByFaction::Search(void * pItem, int & nIndex) const
+bool CTaxProdDetailsCollByFaction::Search(void * pItem, int & nIndex) const
 {
     int lo = 0, hi = (int)m_items.size();
     while (lo < hi)
@@ -1393,12 +1393,12 @@ void SplitQualifiedPropertyName(const char * fullname, std::string & Prefix, std
 
 //--------------------------------------------------------------------------
 
-BOOL EvaluateBaseObjectByBoxes(CBaseObject * pObj, std::string * Property, eCompareOp * CompareOp, std::string * sValue, long * lValue, int count)
+bool EvaluateBaseObjectByBoxes(CBaseObject * pObj, std::string * Property, eCompareOp * CompareOp, std::string * sValue, long * lValue, int count)
 {
     int i;
     EValueType       type;
     const void     * value;
-    BOOL             ok = TRUE;
+    bool             ok = true;
 
     for (i=0; i<count; i++)
     {
@@ -1451,7 +1451,7 @@ BOOL EvaluateBaseObjectByBoxes(CBaseObject * pObj, std::string * Property, eComp
                 break;
 
             default:
-                ok = FALSE;
+                ok = false;
             }
             if (!ok)
                 break;

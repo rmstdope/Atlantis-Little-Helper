@@ -45,23 +45,23 @@ public:
     CConfigFile();
     ~CConfigFile();
 
-    BOOL Load(const char * szFName);
-    BOOL Save(const char * szFName);
+    bool Load(const char * szFName);
+    bool Save(const char * szFName);
     const char * GetByName(const char * szSection, const char * szName);
-    void         SetByName(const char * szSection, const char * szName, const char * szNewValue, const char * szComment=NULL);
+    void         SetByName(const char * szSection, const char * szName, const char * szNewValue, const char * szComment=nullptr);
 
     int          GetFirstInSection(const char * szSection, const char *& szName, const char *& szValue);
     int          GetNextInSection (int idx, const char * szSection, const char *& szName, const char *& szValue);
 
     void         RemoveSection(const char * szSection);
-    BOOL         GetNextSection(const char * szPrevSection, const char *& szNextSection);
+    bool         GetNextSection(const char * szPrevSection, const char *& szNextSection);
 
 private:
     // Internal sorted-vector API matching the old CSortedCollection interface
     int   Count() const { return (int)m_items.size(); }
     void* At(int i) const { return (i >= 0 && i < (int)m_items.size()) ? m_items[i] : nullptr; }
-    BOOL  Insert(void* pItem);
-    BOOL  Search(void* pItem, int& nIndex) const;
+    bool  Insert(void* pItem);
+    bool  Search(void* pItem, int& nIndex) const;
     void  AtFree(int i) { FreeItem(m_items[i]); m_items.erase(m_items.begin()+i); }
     void  FreeAll() { for (auto p : m_items) FreeItem(p); m_items.clear(); }
 

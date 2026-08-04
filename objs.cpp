@@ -168,14 +168,14 @@ TPropertyHolder::~TPropertyHolder()
 
 //-------------------------------------------------------------------
 
-BOOL TPropertyHolder::GetJustProperty(const char    *  name,
+bool TPropertyHolder::GetJustProperty(const char    *  name,
                                       EValueType     & valuetype,
                                       const void    *& value,
                                       EPropertyType    proptype 
                                      )       
 {
     TProperty * pProp = m_Properties.find(name);
-    if (!pProp) return FALSE;
+    if (!pProp) return false;
 
     valuetype = pProp->m_type;
     switch (proptype)
@@ -186,9 +186,9 @@ BOOL TPropertyHolder::GetJustProperty(const char    *  name,
     case eOriginal:
         value = (valuetype == eCharPtr) ? (const void*)pProp->m_strValueOrg.c_str() : pProp->m_valueorg;
         break;
-    default:        value = NULL; return FALSE;
+    default:        value = nullptr; return false;
     }
-    return TRUE;
+    return true;
 }
 
 //-------------------------------------------------------------------
@@ -196,24 +196,24 @@ BOOL TPropertyHolder::GetJustProperty(const char    *  name,
 const char * TPropertyHolder::GetPropertyName(int no)
 {
     TProperty * pProp = m_Properties.at(no);
-    return pProp ? pProp->m_name.c_str() : NULL;
+    return pProp ? pProp->m_name.c_str() : nullptr;
 }
 
 //-------------------------------------------------------------------
 
-BOOL TPropertyHolder::GetProperty(const char    *  name,
+bool TPropertyHolder::GetProperty(const char    *  name,
                                   EValueType     & valuetype,
                                   const void    *& value,
                                   EPropertyType    proptype 
                                   )       
 {
-    BOOL Ok = FALSE;
+    bool Ok = false;
 
     name = ResolveAlias(name);
 
     if (GetJustProperty(name, valuetype, value, proptype))
     {
-        Ok = TRUE;
+        Ok = true;
     }
     else
     {
@@ -232,7 +232,7 @@ BOOL TPropertyHolder::GetProperty(const char    *  name,
                     // Use intptr_t as the safe intermediary for pointer<->integer round-trips.
                     sum      += static_cast<long>(reinterpret_cast<intptr_t>(x));
                     valuetype = eLong;
-                    Ok        = TRUE;
+                    Ok        = true;
                 }
             }
             if (Ok)
@@ -308,7 +308,7 @@ void TPropertyHolder::ResetNormalProperties()
 
 void TPropertyHolderColl::ClearKeys()
 {
-    for (int i = 0; i < min(m_KeyCount, MAX_PROP_COLL_KEYS); i++)
+    for (int i = 0; i < std::min(m_KeyCount, MAX_PROP_COLL_KEYS); i++)
         m_Key[i].clear();
     m_KeyCount = 0;
 }
@@ -318,7 +318,7 @@ void TPropertyHolderColl::ClearKeys()
 void TPropertyHolderColl::SetSortMode(const char ** keys, int keycount)
 {
     ClearKeys();
-    for (int i = 0; i < min(keycount, MAX_PROP_COLL_KEYS); i++)
+    for (int i = 0; i < std::min(keycount, MAX_PROP_COLL_KEYS); i++)
         if (keys[i] && *keys[i])
             m_Key[m_KeyCount++] = keys[i];
 
@@ -332,13 +332,13 @@ int TPropertyHolderColl::Compare(TPropertyHolder * pItem1, TPropertyHolder * pIt
 {
     int               n, x;
     const void      * p1,  * p2;
-    BOOL              Ok1,   Ok2;
+    bool              Ok1,   Ok2;
     EValueType        t1,    t2; 
 
     if (!pItem1) return !pItem2 ? 0 : -1;
     if (!pItem2) return 1;
 
-    for (n = 0; n < min(m_KeyCount, MAX_PROP_COLL_KEYS); n++)
+    for (n = 0; n < std::min(m_KeyCount, MAX_PROP_COLL_KEYS); n++)
     {
         Ok1 = ((TPropertyHolder*)pItem1)->GetProperty(m_Key[n].c_str(), t1, p1);
         Ok2 = ((TPropertyHolder*)pItem2)->GetProperty(m_Key[n].c_str(), t2, p2);

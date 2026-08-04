@@ -45,7 +45,7 @@ class CEdgeStructProperties
 public:
     CEdgeStructProperties()
     {
-        pen = NULL;
+        pen = nullptr;
     }
     ~CEdgeStructProperties()
     {
@@ -69,25 +69,25 @@ public:
     virtual ~CMapPane();
     virtual void Init(CAhFrame * pParentFrame);
     virtual void Done();
-    BOOL     SetHexSize(int HexSizeIdx);  // was size really changed?
+    bool     SetHexSize(int HexSizeIdx);  // was size really changed?
     void     GetHexCenter(int NoX, int NoY, int & WinX, int & WinY);
-    BOOL     ValidHexNo(int NoX, int NoY);
+    bool     ValidHexNo(int NoX, int NoY);
     //void     SelectHex(int NoX, int NoY);
-    void     SetSelection(int nx, int ny, CUnit * pUnit, CPlane * pPlane, BOOL Anyway);
-    BOOL     EnsureLandVisible(int nx, int ny, int nz, BOOL Anyway);
+    void     SetSelection(int nx, int ny, CUnit * pUnit, CPlane * pPlane, bool Anyway);
+    bool     EnsureLandVisible(int nx, int ny, int nz, bool Anyway);
     void     Center();
     void     SavePlaneConfig();
     void     LoadPlaneConfig();
     void     ApplyFonts();
     void     ApplyColors();
     void     ApplyIcons();
-    void     RedrawTracksForUnit(CPlane * pPlane, CUnit * pUnit, wxDC * pDC, BOOL DoDrawCitiesAndWeather);
+    void     RedrawTracksForUnit(CPlane * pPlane, CUnit * pUnit, wxDC * pDC, bool DoDrawCitiesAndWeather);
     void     OnToolbarCmd(wxCommandEvent& event);
-    BOOL     IsToolActive(wxUpdateUIEvent& event);
+    bool     IsToolActive(wxUpdateUIEvent& event);
 //  void     CleanCities() {    m_pCities->DeleteAll(); };
-    void     GetSelectedOrAllHexes(CBaseColl & Hexes, BOOL Selected);
-    BOOL     HexIsSelected(CLand * pLand);
-    BOOL     HaveSelection();
+    void     GetSelectedOrAllHexes(CBaseColl & Hexes, bool Selected);
+    bool     HexIsSelected(CLand * pLand);
+    bool     HaveSelection();
     void     RemoveRectangle();
     void     MarkFoundHexes(CHexFilterDlg * pFilter);
     void     UnMarkFoundHexes();
@@ -110,7 +110,7 @@ public:
     long        m_SelHexY;
     long        m_SelPlane;
 
-    BOOL        m_bAdvancedIcons;
+    bool        m_bAdvancedIcons;
 
     std::vector<long>   m_HexSizes;
 
@@ -123,8 +123,8 @@ protected:
     void      GetHexNo(int & NoX, int & NoY, int WinX, int WinY);
     void      DrawHex         (int NoX, int NoY, wxDC * pDC, CLand * pLand, CPlane * pPlane, wxRect * prect);
     void      DrawOneHex      (int NoX, int NoY, int x0, int y0, wxDC * pDC, CLand * pLand, CPlane * pPlane);
-    void      DrawHexBorder   (int NoX, int NoY, wxDC * pDC, CLand * pLand, BOOL FullBorder, CPlane * pPlane, wxRect * prect, int DrawPhase, BOOL AutoEmpty);
-    void      DrawOneHexBorder(int x0, int y0,   wxDC * pDC, BOOL IsSelected, BOOL FullBorder, wxPen ** pPens, int ExitBits);
+    void      DrawHexBorder   (int NoX, int NoY, wxDC * pDC, CLand * pLand, bool FullBorder, CPlane * pPlane, wxRect * prect, int DrawPhase, bool AutoEmpty);
+    void      DrawOneHexBorder(int x0, int y0,   wxDC * pDC, bool IsSelected, bool FullBorder, wxPen ** pPens, int ExitBits);
     void      DrawHexTest     (int NoX, int NoY, wxDC * pDC, CLand * pLand) ;
     void      DrawCitiesAndWeather      (wxDC * pDC, wxRect * pRect, CPlane * pPlane);
     void      DrawOneHexWeatherLine(int NoX, int NoY, wxDC * pDC, int DrawBits);
@@ -146,9 +146,9 @@ protected:
     void      DrawSingleTrack(int X, int Y, int wx, int wy, wxDC * pDC, CUnit * pUnit, CPlane * pPlane, int copyno);
     void      DrawTrackArrow(wxDC * pDC, int wx0, int wy0, int wx, int wy);
     void      CenterClick(wxPoint point);
-    wxBrush * GetLandBrush(CLand * pLand, BOOL GetHatched);
+    wxBrush * GetLandBrush(CLand * pLand, bool GetHatched);
     CEdgeStructProperties * GetEdgeProps(const char * name);
-    //BOOL      GetSelectedHexes(int & x1, int & y1, int & x2, int & y2 );
+    //bool      GetSelectedHexes(int & x1, int & y1, int & x2, int & y2 );
 
     void      ApplyOneColor(wxColour & cr, const char * name);
 //    void      ApplyOneEdgeColor(const char * name, const char * value);
@@ -177,8 +177,8 @@ protected:
     bool      ShouldDrawRectangle();
     void      PaintRectangle(wxDC * pDC);
 
-    void      DrawShieldIcon(wxDC * pDC, int x, int y, wxColour pGuardColor, wxColour pDarkColor, BOOL large, BOOL mark);
-    void      DrawFlagIcon(wxDC * pDC, int x, int y, wxColour FlagColor, wxColor DarkColor, BOOL large, BOOL presence);
+    void      DrawShieldIcon(wxDC * pDC, int x, int y, wxColour pGuardColor, wxColour pDarkColor, bool large, bool mark);
+    void      DrawFlagIcon(wxDC * pDC, int x, int y, wxColour FlagColor, wxColor DarkColor, bool large, bool presence);
 
     wxPen        * m_pPen;
     wxPen        * m_pPenWall;
@@ -198,7 +198,7 @@ protected:
     wxBrush      * m_pBrushRed  ;
     wxColour     * m_pUnitColor[ATT_UNDECLARED];
     wxColour     * m_pDarkColor[ATT_UNDECLARED];
-    BOOL           m_Hatch;
+    bool           m_Hatch;
     int            m_Detail;
     int            m_HexIcons[7];
     int            SymLeft, SymBottom;

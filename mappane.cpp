@@ -56,7 +56,7 @@ const double     cos30               = sqrt(3.0)/2;
 const double     tan30               = 1/sqrt(3.0);
 
 static wxPoint   glb_PopupPoint;
-CLand          * glb_pPopupLand = NULL;
+CLand          * glb_pPopupLand = nullptr;
 
 #define          MAX_DP_BORDER      1
 
@@ -163,9 +163,9 @@ CMapPane::CMapPane(wxWindow * parent, wxWindowID id, int layout)
     m_MinSelMen        = 0;
     m_pCities          = new CBaseCollById(32);
     m_pTrackHexes      = new std::vector<long>();
-    m_pPopupLand       = NULL;
+    m_pPopupLand       = nullptr;
     m_UnknownColorIdx  = -1;
-    m_Hatch            = FALSE;
+    m_Hatch            = false;
 
     m_Rect_IsPaused    = false;
     m_Rect_IsDragging  = false;
@@ -176,7 +176,7 @@ CMapPane::CMapPane(wxWindow * parent, wxWindowID id, int layout)
 
     m_RingRadius       = 0;
 
-    m_bAdvancedIcons   = FALSE;
+    m_bAdvancedIcons   = false;
 }
 
 //--------------------------------------------------------------------------
@@ -284,7 +284,7 @@ void CMapPane::SavePlaneConfig()
 
     if (gpApp->m_pAtlantis)
     {
-        CLand * pLand = gpApp->m_pAtlantis->GetLand(m_SelHexX, m_SelHexY, m_SelPlane, TRUE);
+        CLand * pLand = gpApp->m_pAtlantis->GetLand(m_SelHexX, m_SelHexY, m_SelPlane, true);
         if (pLand)
             gpApp->SetConfig(sSection.c_str(), SZ_KEY_UNIT_SEL, pLand->guiUnit);
     }
@@ -314,7 +314,7 @@ void CMapPane::LoadPlaneConfig()
 
 void CMapPane::ApplyFonts()
 {
-    Refresh(FALSE);
+    Refresh(false);
 }
 
 //-------------------------------------------------------------------------
@@ -355,7 +355,7 @@ void CMapPane::ApplyFonts()
 
 void CMapPane::ApplyOneColor(wxColour & cr, const char * name)
 {
-    wxBrush    * pBrush = NULL;
+    wxBrush    * pBrush = nullptr;
     wxBitmap     bmp;
     std::string         S;
     CFileReader  F;
@@ -535,12 +535,12 @@ void CMapPane::ApplyColors()
 //    }
 
 
-    Refresh(FALSE);
+    Refresh(false);
 }
 
 //--------------------------------------------------------------------------
 
-wxBrush * CMapPane::GetLandBrush(CLand * pLand, BOOL GetHatched)
+wxBrush * CMapPane::GetLandBrush(CLand * pLand, bool GetHatched)
 {
     int          idx, i;
     const char * name;
@@ -653,7 +653,7 @@ CEdgeStructProperties * CMapPane::GetEdgeProps(const char * name)
 
 //--------------------------------------------------------------------------
 
-inline BOOL CMapPane::ValidHexNo(int NoX, int NoY)
+inline bool CMapPane::ValidHexNo(int NoX, int NoY)
 {
     // sum of coordinates must be even
 
@@ -770,12 +770,12 @@ inline void CMapPane::AtlaToWin(int & WinX, int & WinY, long   AtlaX, long   Atl
 
 //--------------------------------------------------------------------------
 
-BOOL CMapPane::SetHexSize(int HexSizeIdx)
+bool CMapPane::SetHexSize(int HexSizeIdx)
 {
   //  wxRect rect;
     long CX, CY;
     long CXOld, CYOld;
-    BOOL Changed;
+    bool Changed;
     int  width, height;
     int  OldIdx   = m_HexSizeIdx;
     int  OldSize       = m_HexSize; //(long)m_HexSizes.At(m_HexSizeIdx);
@@ -1173,7 +1173,7 @@ void CMapPane::DrawUnitColumn(wxDC * pDC, int x0, int y0, int height)
 //--------------------------------------------------------------------------
 
 #define SET_ROAD_PEN(attr)                                              \
-    BadRoad = FALSE;                                                    \
+    BadRoad = false;                                                    \
     for (i=0; i<pLand->Structs.Count(); i++)                            \
     {                                                                   \
         pStruct = (CStruct*)pLand->Structs.At(i);                       \
@@ -1193,7 +1193,7 @@ void CMapPane::DrawRoads(wxDC * pDC, CLand * pLand, int x0, int y0)
     int           x2, y2;
     int           i;
     CStruct     * pStruct;
-    BOOL          BadRoad;
+    bool          BadRoad;
 
     if (pLand && (pLand->Flags&LAND_STR_ROAD_N))
     {
@@ -1448,13 +1448,13 @@ void CMapPane::DrawUnits(wxDC * pDC, CLand * pLand, wxPoint * point)
         GetNextIconPos(point, BOTTOM_LEFT_CORNER);
     
         // show flag icon for guards' stance
-        BOOL mark = pLand->AlarmFlags&PRESENCE_OWN;
+        bool mark = pLand->AlarmFlags&PRESENCE_OWN;
         if (pLand->AlarmFlags&GUARDED)
         {
             if(pLand->AlarmFlags&GUARDED_BY_OWN)
             {
                 color = ATT_FRIEND2;
-                mark=FALSE;
+                mark=false;
             }
             else if (pLand->AlarmFlags&GUARDED_BY_FRIEND) color = ATT_FRIEND1;
             else if (pLand->AlarmFlags&GUARDED_BY_ENEMY)  color = ATT_ENEMY;
@@ -1465,7 +1465,7 @@ void CMapPane::DrawUnits(wxDC * pDC, CLand * pLand, wxPoint * point)
             if(pLand->AlarmFlags&CLAIMED_BY_OWN)
             {
                 color = ATT_FRIEND2;
-                mark=FALSE;
+                mark=false;
             }
             else if (pLand->AlarmFlags&CLAIMED_BY_FRIEND) color = ATT_FRIEND1;
             else if (pLand->AlarmFlags&CLAIMED_BY_ENEMY)  color = ATT_ENEMY;
@@ -1818,7 +1818,7 @@ void CMapPane::DrawHexFlags(wxDC * pDC, CLand * pLand, int x0, int y0)
 
 void CMapPane::GetNextIconPos(wxPoint * point, int Position)
 {
-    BOOL reverse=FALSE;
+    bool reverse=false;
     int x1,y1,x2,y2;
     int spacer = m_HexSize / 4;
     if(spacer < 2) spacer = 2;
@@ -1840,7 +1840,7 @@ void CMapPane::GetNextIconPos(wxPoint * point, int Position)
             x2 = point[2].x - ICON_SIZE - (spacer / 4);
             y1 = point[2].y + spacer + ICON_SIZE;
             y2 = y1;
-            reverse=TRUE;
+            reverse=true;
             increment_x = - ICON_SIZE - (spacer / 4) - 1;
             break;
         case(RIGHT_CORNER):
@@ -1848,7 +1848,7 @@ void CMapPane::GetNextIconPos(wxPoint * point, int Position)
             x2 = point[3].x - (spacer / 2) - ICON_SIZE - 1;
             y1 = point[3].y + (ICON_SIZE / 2) + 1;
             y2 = y1;
-            reverse = TRUE;
+            reverse = true;
             increment_x = - ICON_SIZE - (spacer / 4) - 1;
             break;
         case(LEFT_CORNER):
@@ -1868,7 +1868,7 @@ void CMapPane::GetNextIconPos(wxPoint * point, int Position)
             x2 = point[4].x - ICON_SIZE - (spacer / 4);
             y1 = point[4].y - spacer;
             y2 = y1;
-            reverse=TRUE;
+            reverse=true;
             increment_x = - ICON_SIZE - (spacer / 4) - 1;
             break;
         case(CENTER): // for consistency purposes
@@ -1960,13 +1960,13 @@ void CMapPane::DrawOneHex(int NoX, int NoY, int x0, int y0, wxDC * pDC, CLand * 
         pDC->SetPen(*m_pPen);
 
     // Hexes
-    pBrush = GetLandBrush(pLand, FALSE);
+    pBrush = GetLandBrush(pLand, false);
     pDC->SetBrush(*pBrush);
     pDC->DrawPolygon(7, point, 0, 0, wxWINDING_RULE);
 
     if (m_Hatch && pLand && (0==(pLand->Flags&LAND_VISITED)))
     {
-        pBrush = GetLandBrush(pLand, TRUE);
+        pBrush = GetLandBrush(pLand, true);
         pDC->SetBrush(*pBrush);
         pDC->DrawPolygon(7, point, 0, 0, wxWINDING_RULE);
     }
@@ -2008,7 +2008,7 @@ void CMapPane::DrawOneHex(int NoX, int NoY, int x0, int y0, wxDC * pDC, CLand * 
 
 //--------------------------------------------------------------------------
 
-void CMapPane::DrawShieldIcon(wxDC * pDC, int x, int y, wxColour pGuardColor, wxColour pDarkColor, BOOL large, BOOL mark)
+void CMapPane::DrawShieldIcon(wxDC * pDC, int x, int y, wxColour pGuardColor, wxColour pDarkColor, bool large, bool mark)
 {
         if (large)
         {
@@ -2085,7 +2085,7 @@ void CMapPane::DrawShieldIcon(wxDC * pDC, int x, int y, wxColour pGuardColor, wx
 
 //--------------------------------------------------------------------------
 
-void CMapPane::DrawFlagIcon(wxDC * pDC, int x, int y, wxColour FlagColor, wxColor DarkColor, BOOL large, BOOL presence)
+void CMapPane::DrawFlagIcon(wxDC * pDC, int x, int y, wxColour FlagColor, wxColor DarkColor, bool large, bool presence)
 {
         if (large)
         {
@@ -2222,7 +2222,7 @@ void CMapPane::DrawHex(int NoX, int NoY, wxDC * pDC, CLand * pLand, CPlane * pPl
 
 //--------------------------------------------------------------------------
 
-void CMapPane::DrawOneHexBorder(int x0, int y0, wxDC * pDC, BOOL IsSelected, BOOL FullBorder, wxPen ** pPens, int ExitBits)
+void CMapPane::DrawOneHexBorder(int x0, int y0, wxDC * pDC, bool IsSelected, bool FullBorder, wxPen ** pPens, int ExitBits)
 {
     int  i;
     int  IsExit;
@@ -2261,7 +2261,7 @@ void CMapPane::DrawOneHexBorder(int x0, int y0, wxDC * pDC, BOOL IsSelected, BOO
 
 //--------------------------------------------------------------------------
 
-void CMapPane::DrawHexBorder(int NoX, int NoY, wxDC * pDC, CLand * pLand, BOOL FullBorder, CPlane * pPlane, wxRect * prect, int DrawPhase, BOOL AutoEmpty)
+void CMapPane::DrawHexBorder(int NoX, int NoY, wxDC * pDC, CLand * pLand, bool FullBorder, CPlane * pPlane, wxRect * prect, int DrawPhase, bool AutoEmpty)
 {
     if (!ValidHexNo(NoX, NoY))
         return;
@@ -2277,7 +2277,7 @@ void CMapPane::DrawHexBorder(int NoX, int NoY, wxDC * pDC, CLand * pLand, BOOL F
             return;
 
 
-    BOOL          IsSelected = (NoX==m_SelHexX && NoY==m_SelHexY);
+    bool          IsSelected = (NoX==m_SelHexX && NoY==m_SelHexY);
     wxPen        * pPen;
     wxPen        * Pens[2];
     int           x0, y0;  // hex center
@@ -2334,7 +2334,7 @@ void CMapPane::DrawHexBorder(int NoX, int NoY, wxDC * pDC, CLand * pLand, BOOL F
                 case Northwest : y--; x--;   break;
                 }
 
-                pLand = gpApp->m_pAtlantis->GetLand(x, y, m_SelPlane, TRUE);
+                pLand = gpApp->m_pAtlantis->GetLand(x, y, m_SelPlane, true);
                 if ( pLand && (pLand->Flags&LAND_VISITED) )
                 {
                     if (pLand->ExitBits&EntryFlags[i])
@@ -2733,7 +2733,7 @@ void CMapPane::OnPaint(wxPaintEvent &WXUNUSED(event))
         while (++nx <= nx2)
             for (ny=ny1-1; ny<=ny2+1; ny++)
             {
-                pLand = gpApp->m_pAtlantis->GetLand(nx, ny, m_SelPlane, TRUE);
+                pLand = gpApp->m_pAtlantis->GetLand(nx, ny, m_SelPlane, true);
                 if ((m_ShowState & SHOW_NAMES)
                        &&(m_Detail>=NAME_DETAIL)&&(pLand && !pLand->CityName.empty()))
                     m_pCities->Insert(pLand);
@@ -2748,8 +2748,8 @@ void CMapPane::OnPaint(wxPaintEvent &WXUNUSED(event))
             while (++nx <= nx2)
                 for (ny=ny1-1; ny<=ny2+1; ny++)
                 {
-                    pLand = gpApp->m_pAtlantis->GetLand(nx, ny, m_SelPlane, TRUE);
-                    DrawHexBorder(nx, ny, &dc, pLand, FALSE, pPlane, &rect, MAX_DP_BORDER /*dp*/, FALSE);
+                    pLand = gpApp->m_pAtlantis->GetLand(nx, ny, m_SelPlane, true);
+                    DrawHexBorder(nx, ny, &dc, pLand, false, pPlane, &rect, MAX_DP_BORDER /*dp*/, false);
                 }
     /*
         }
@@ -2757,7 +2757,7 @@ void CMapPane::OnPaint(wxPaintEvent &WXUNUSED(event))
     }
     else // small hexes
     {
-        pbrush = GetLandBrush(NULL, FALSE);
+        pbrush = GetLandBrush(nullptr, false);
         dc.SetBrush(*pbrush);
         dc.SetPen  (*wxTRANSPARENT_PEN);
         dc.DrawRectangle(0, 0, width, height);
@@ -2773,14 +2773,14 @@ void CMapPane::OnPaint(wxPaintEvent &WXUNUSED(event))
             }
     }
 
-    pLand = gpApp->m_pAtlantis->GetLand(m_SelHexX, m_SelHexY, m_SelPlane, TRUE);
+    pLand = gpApp->m_pAtlantis->GetLand(m_SelHexX, m_SelHexY, m_SelPlane, true);
     DrawEdge(&dc, pPlane);
-    DrawHexBorder(m_SelHexX, m_SelHexY, &dc, pLand, TRUE, pPlane, &rect, pLand?MAX_DP_BORDER:0, FALSE);
+    DrawHexBorder(m_SelHexX, m_SelHexY, &dc, pLand, true, pPlane, &rect, pLand?MAX_DP_BORDER:0, false);
 
     DrawRing(&dc, &rect, pPlane);
 
     pUnit = gpApp->GetSelectedUnit();
-    RedrawTracksForUnit(pPlane, pUnit, &dc, FALSE);
+    RedrawTracksForUnit(pPlane, pUnit, &dc, false);
 
     DrawCitiesAndWeather(&dc, &rect, pPlane);
     PaintRectangle(&dc);
@@ -2801,7 +2801,7 @@ void CMapPane::DrawCoordPanes(wxDC * pDC, int mapwidth, int mapheight, CPlane * 
     wxCoord   w, h, descent, ext;
     wxCoord   txtx, txty;
     int       x, y, nx, ny ;
-    wxBrush * pBrush = GetLandBrush(NULL, FALSE);
+    wxBrush * pBrush = GetLandBrush(nullptr, false);
     char      buf[32];
 
 
@@ -2825,7 +2825,7 @@ void CMapPane::DrawCoordPanes(wxDC * pDC, int mapwidth, int mapheight, CPlane * 
     pDC->GetTextExtent(wxT("8"), &w, &h, &descent, &ext);
     txty = mapheight + (COORD_PANE_HEIGHT-h)/2;
     nx--;
-    while (TRUE)
+    while (true)
     {
         nx++;
         GetHexCenter(nx, ny, x, y);
@@ -2842,7 +2842,7 @@ void CMapPane::DrawCoordPanes(wxDC * pDC, int mapwidth, int mapheight, CPlane * 
 
     // vertical pane
     ny--;
-    while (TRUE)
+    while (true)
     {
         ny++;
         GetHexCenter(nx, ny, x, y);
@@ -2898,12 +2898,12 @@ void CMapPane::SelectHex(int NoX, int NoY)
 
 //--------------------------------------------------------------------------
 
-void CMapPane::RedrawTracksForUnit(CPlane * pPlane, CUnit * pUnit, wxDC * pDC, BOOL DoDrawCitiesAndWeather)
+void CMapPane::RedrawTracksForUnit(CPlane * pPlane, CUnit * pUnit, wxDC * pDC, bool DoDrawCitiesAndWeather)
 {
     int            i, X, Y, Z;
     int            wx0, wy0, dx;
     long           HexId;
-    BOOL           CloseDC = FALSE;
+    bool           CloseDC = false;
     CLand        * pLand;
     wxRect         rect;
     int            copyno=0;
@@ -2912,9 +2912,9 @@ void CMapPane::RedrawTracksForUnit(CPlane * pPlane, CUnit * pUnit, wxDC * pDC, B
     if (!pPlane)
         return;
 
-    if (NULL==pDC)
+    if (nullptr==pDC)
     {
-        CloseDC = TRUE;
+        CloseDC = true;
         pDC = new wxClientDC(this);
     }
     GetClientSize(&rect.width, &rect.height);
@@ -2947,12 +2947,12 @@ void CMapPane::RedrawTracksForUnit(CPlane * pPlane, CUnit * pUnit, wxDC * pDC, B
             LandIdToCoord(HexId, X, Y, Z);
             pLand = gpApp->m_pAtlantis->GetLand(HexId);
 
-            DrawHexBorder(X, Y, pDC, pLand, TRUE, pPlane, &rect, dp, TRUE);
+            DrawHexBorder(X, Y, pDC, pLand, true, pPlane, &rect, dp, true);
         }
     m_pTrackHexes->clear();
 
-    pLand = gpApp->m_pAtlantis->GetLand(m_SelHexX, m_SelHexY, m_SelPlane, TRUE);
-    DrawHexBorder(m_SelHexX, m_SelHexY, pDC, pLand, TRUE, pPlane, &rect, pLand?MAX_DP_BORDER:0, TRUE);
+    pLand = gpApp->m_pAtlantis->GetLand(m_SelHexX, m_SelHexY, m_SelPlane, true);
+    DrawHexBorder(m_SelHexX, m_SelHexY, pDC, pLand, true, pPlane, &rect, pLand?MAX_DP_BORDER:0, true);
 
 
     pDC->SetPen(*m_pPenSel);
@@ -2995,7 +2995,7 @@ void CMapPane::DrawSingleTrack(int X, int Y, int wx, int wy, wxDC * pDC, CUnit *
     long           HexId;
     int            wx0, wy0;
     int            wx_a, wy_a, wx0_a, wy0_a;
-    BOOL           Arcadia3Sail = FALSE;
+    bool           Arcadia3Sail = false;
     CStruct      * pStruct;
     CLand        * pLand;
     EValueType     type;
@@ -3003,7 +3003,7 @@ void CMapPane::DrawSingleTrack(int X, int Y, int wx, int wy, wxDC * pDC, CUnit *
     int            LocA3;
 
     if (pUnit->pMovement && pUnit->pMoveA3Points && pUnit->pMoveA3Points->size() == pUnit->pMovement->size())
-        Arcadia3Sail = TRUE;
+        Arcadia3Sail = true;
 
     if (Arcadia3Sail && pUnit->GetProperty(PRP_STRUCT_ID, type, (const void *&)n1) && eLong==type)
     {
@@ -3021,7 +3021,7 @@ void CMapPane::DrawSingleTrack(int X, int Y, int wx, int wy, wxDC * pDC, CUnit *
 
     if (!pUnit->pMovement) {
         // TODO: Investigate. I am unsure why pMovement would ever be 
-        // NULL, but it might be mutually exclusive with pMoveA3Points?
+        // nullptr, but it might be mutually exclusive with pMoveA3Points?
         return;
     }
     for (i=0; i<pUnit->pMovement->size(); i++)
@@ -3180,9 +3180,9 @@ void CMapPane::Center()
 
 //--------------------------------------------------------------------------
 
-BOOL CMapPane::EnsureLandVisible(int nx, int ny, int nz, BOOL Anyway)
+bool CMapPane::EnsureLandVisible(int nx, int ny, int nz, bool Anyway)
 {
-    BOOL NeedRefresh     = FALSE;
+    bool NeedRefresh     = false;
     int  wx, wy;
     int  width, height;
 
@@ -3192,7 +3192,7 @@ BOOL CMapPane::EnsureLandVisible(int nx, int ny, int nz, BOOL Anyway)
         SavePlaneConfig();
         m_SelPlane=nz;
         LoadPlaneConfig();
-        NeedRefresh=TRUE;
+        NeedRefresh=true;
     }
 
     if (NeedRefresh || (m_SelHexX!=nx) || (m_SelHexY!=ny) || Anyway)
@@ -3208,25 +3208,25 @@ BOOL CMapPane::EnsureLandVisible(int nx, int ny, int nz, BOOL Anyway)
         if (wx-m_HexSize < 0)
         {
             m_AtlaX0 -= (0 - (wx-m_HexSize) + m_HexSize);
-            NeedRefresh = TRUE;
+            NeedRefresh = true;
         }
         else
             if ((wx+m_HexSize > width))
             {
                 m_AtlaX0 += (wx+m_HexSize - width + m_HexSize);
-                NeedRefresh = TRUE;
+                NeedRefresh = true;
             }
 
         if (wy-m_HexHalfHeight < 0)
         {
             m_AtlaY0 -= (0  - (wy-m_HexHalfHeight) + m_HexHalfHeight);
-            NeedRefresh = TRUE;
+            NeedRefresh = true;
         }
         else
             if ((wy+m_HexHalfHeight > height))
             {
                 m_AtlaY0 += (wy+m_HexHalfHeight - height + m_HexHalfHeight);
-                NeedRefresh = TRUE;
+                NeedRefresh = true;
             }
     }
     return NeedRefresh;
@@ -3234,7 +3234,7 @@ BOOL CMapPane::EnsureLandVisible(int nx, int ny, int nz, BOOL Anyway)
 
 //--------------------------------------------------------------------------
 
-void CMapPane::SetSelection(int nx, int ny, CUnit * pUnit, CPlane * pPlane, BOOL Anyway)
+void CMapPane::SetSelection(int nx, int ny, CUnit * pUnit, CPlane * pPlane, bool Anyway)
 {
     int           oldx, oldy;
     int           x, y;
@@ -3264,23 +3264,23 @@ void CMapPane::SetSelection(int nx, int ny, CUnit * pUnit, CPlane * pPlane, BOOL
         for (x=oldx-1; x<=oldx+1; x++)
             for (y=oldy-2; y<=oldy+2; y++)
             {
-                pLand = gpApp->m_pAtlantis->GetLand(x, y, m_SelPlane, TRUE);
+                pLand = gpApp->m_pAtlantis->GetLand(x, y, m_SelPlane, true);
                 DrawHex      (x, y, &dc, pLand, pPlane, &rect);
             }
         for (dp=0; dp<=MAX_DP_BORDER; dp++)
             for (x=oldx-1; x<=oldx+1; x++)
                 for (y=oldy-2; y<=oldy+2; y++)
                 {
-                    pLand = gpApp->m_pAtlantis->GetLand(x, y, m_SelPlane, TRUE);
-                    DrawHexBorder(x, y, &dc, pLand, TRUE,  pPlane, &rect, dp, TRUE);
+                    pLand = gpApp->m_pAtlantis->GetLand(x, y, m_SelPlane, true);
+                    DrawHexBorder(x, y, &dc, pLand, true,  pPlane, &rect, dp, true);
                 }
 
-        pLand = gpApp->m_pAtlantis->GetLand(nx, ny, m_SelPlane, TRUE);
+        pLand = gpApp->m_pAtlantis->GetLand(nx, ny, m_SelPlane, true);
         DrawHex      (nx, ny, &dc, pLand, pPlane, &rect);
-        DrawHexBorder(nx, ny, &dc, pLand, TRUE,  pPlane, &rect, pLand?MAX_DP_BORDER:0, TRUE);
+        DrawHexBorder(nx, ny, &dc, pLand, true,  pPlane, &rect, pLand?MAX_DP_BORDER:0, true);
         DrawEdge(&dc, pPlane);
 
-        RedrawTracksForUnit(pPlane, pUnit, &dc, FALSE);
+        RedrawTracksForUnit(pPlane, pUnit, &dc, false);
         DrawCitiesAndWeather(&dc, &rect, pPlane);
         gpApp->OnMapSelectionChange();
         
@@ -3426,15 +3426,15 @@ void CMapPane::PaintRectangle(wxDC * pDC)
 //--------------------------------------------------------------------------
 
 /*
-BOOL CMapPane::GetSelectedHexes(int & x1, int & y1, int & x2, int & y2 )
+bool CMapPane::GetSelectedHexes(int & x1, int & y1, int & x2, int & y2 )
 {
     int       xx;
-    BOOL      ToTheRight;  // drawn from left to right
-    BOOL      EdgeCrossed;
+    bool      ToTheRight;  // drawn from left to right
+    bool      EdgeCrossed;
     CPlane  * pPlane = (CPlane*)gpApp->m_pAtlantis->m_Planes.At(m_SelPlane);
 
     if (m_Rect_x1==m_Rect_x2 || m_Rect_y1==m_Rect_y2)
-        return FALSE;   // no selection
+        return false;   // no selection
 
     GetHexNo(x1, y1, m_Rect_x1, m_Rect_y1);
     GetHexNo(x2, y2, m_Rect_x2, m_Rect_y2);
@@ -3455,29 +3455,29 @@ BOOL CMapPane::GetSelectedHexes(int & x1, int & y1, int & x2, int & y2 )
         xx = y1; y1 = y2; y2 = xx;
     }
 
-    return TRUE;
+    return true;
 }
 */
 
 //--------------------------------------------------------------------------
 
-BOOL CMapPane::HexIsSelected(CLand * pLand)
+bool CMapPane::HexIsSelected(CLand * pLand)
 {
     int x,y,z;
     int wx,wy;
 
     if (!pLand)
-        return FALSE;
+        return false;
 
     if (0==(pLand->Flags&LAND_VISITED))
-        return FALSE; // non-visited hexes does not have any value
+        return false; // non-visited hexes does not have any value
 
     if (m_Rect_x1==m_Rect_x2 || m_Rect_y1==m_Rect_y2)
-        return FALSE;   // no selection
+        return false;   // no selection
 
     CPlane * pPlaneCrnt = (CPlane*)gpApp->m_pAtlantis->m_Planes.At(m_SelPlane);
     if (pPlaneCrnt != pLand->pPlane)
-        return FALSE;
+        return false;
 
     LandIdToCoord(pLand->Id, x,y,z);
     GetHexCenter(x,y, wx, wy);
@@ -3487,14 +3487,14 @@ BOOL CMapPane::HexIsSelected(CLand * pLand)
         (m_Rect_y1 < m_Rect_y2 && wy > m_Rect_y1 && wy < m_Rect_y2 ||
          m_Rect_y1 > m_Rect_y2 && wy < m_Rect_y1 && wy > m_Rect_y2)
          )
-        return TRUE;
+        return true;
     else
-        return FALSE;
+        return false;
 }
 
 //--------------------------------------------------------------------------
 
-void CMapPane::GetSelectedOrAllHexes(CBaseColl & Hexes, BOOL Selected)
+void CMapPane::GetSelectedOrAllHexes(CBaseColl & Hexes, bool Selected)
 {
     int      np,nl;
     CPlane * pPlane;
@@ -3531,7 +3531,7 @@ void CMapPane::GetSelectedOrAllHexes(CBaseColl & Hexes, BOOL Selected)
 
 //--------------------------------------------------------------------------
 
-BOOL CMapPane::HaveSelection()
+bool CMapPane::HaveSelection()
 {
     return (m_Rect_x1!=m_Rect_x2 && m_Rect_y1!=m_Rect_y2);
 }
@@ -3552,7 +3552,7 @@ void CMapPane::OnMouseEvent(wxMouseEvent& event)
         StartRectangle(xpos, ypos);
         GetHexNo(nx, ny, xpos, ypos);
         nx = NormalizeHexX(nx, pPlane);
-        SetSelection(nx, ny, gpApp->GetSelectedUnit(), pPlane, FALSE);
+        SetSelection(nx, ny, gpApp->GetSelectedUnit(), pPlane, false);
     }
 
     else if (event.LeftUp())
@@ -3588,7 +3588,7 @@ void CMapPane::OnMouseEvent(wxMouseEvent& event)
         m_PopupPoint.y = ypos;
 
         GetHexNo(nx, ny, xpos, ypos);
-        m_pPopupLand   = gpApp->m_pAtlantis->GetLand(nx, ny, m_SelPlane, TRUE);
+        m_pPopupLand   = gpApp->m_pAtlantis->GetLand(nx, ny, m_SelPlane, true);
 
         if (m_pPopupLand)
         {
@@ -3636,7 +3636,7 @@ void CMapPane::CenterClick(wxPoint point)
 
     RemoveRectangle();
     NormalizeCoordinates(pPlane, &rect);
-    Refresh(FALSE, NULL);
+    Refresh(false, nullptr);
 }
 
 //--------------------------------------------------------------------------
@@ -3699,7 +3699,7 @@ void CMapPane::MarkFoundHexes(CHexFilterDlg * pFilter)
     else
     {
         Msg << "=====================" << EOL_SCR << LandList;
-        gpApp->ShowError(Msg.c_str(), Msg.size(), TRUE);
+        gpApp->ShowError(Msg.c_str(), Msg.size(), true);
     }
 }
 
@@ -3731,7 +3731,7 @@ void CMapPane::FindHexes()
     UnMarkFoundHexes(); // yes, we need a way to just clean the old marks!
     if (wxID_OK == dlg.ShowModal())
         MarkFoundHexes(&dlg);
-    Refresh(FALSE);
+    Refresh(false);
 }
 
 //--------------------------------------------------------------------------
@@ -3769,8 +3769,8 @@ void CMapPane::OnPopupMenuFlag(wxCommandEvent& WXUNUSED(event))
             return;
         }
 
-//        gpApp->m_LandFlagsChanged = TRUE;
-        Refresh(FALSE);
+//        gpApp->m_LandFlagsChanged = true;
+        Refresh(false);
         gpApp->OnMapSelectionChange();
     }
 }
@@ -3805,7 +3805,7 @@ void CMapPane::OnPopupWhoMovesHere(wxCommandEvent & event)
     long     HexId;
 
     pCurPlane = (CPlane*)gpApp->m_pAtlantis->m_Planes.At(m_SelPlane);
-    pCurLand  = gpApp->m_pAtlantis->GetLand(m_SelHexX, m_SelHexY, m_SelPlane, TRUE);
+    pCurLand  = gpApp->m_pAtlantis->GetLand(m_SelHexX, m_SelHexY, m_SelPlane, true);
     
     if (pCurLand)
         HexId = pCurLand->Id;  // maybe GetLand produces better Id, so use it if awailable?
@@ -3821,7 +3821,7 @@ void CMapPane::OnPopupFinancial   (wxCommandEvent & event)
 {
     CLand  * pCurLand;
 
-    pCurLand  = gpApp->m_pAtlantis->GetLand(m_SelHexX, m_SelHexY, m_SelPlane, TRUE);
+    pCurLand  = gpApp->m_pAtlantis->GetLand(m_SelHexX, m_SelHexY, m_SelPlane, true);
     gpApp->ShowLandFinancial(pCurLand);
 }
 
@@ -3831,7 +3831,7 @@ void CMapPane::OnPopupNewHex(wxCommandEvent & event)
 {
     CPlane * pPlane   = (CPlane*)gpApp->m_pAtlantis->m_Planes.At(m_SelPlane);
     gpApp->AddTempHex(m_SelHexX, m_SelHexY, m_SelPlane);
-    SetSelection(m_SelHexX, m_SelHexY, NULL /*gpApp->GetSelectedUnit()*/, pPlane, TRUE);
+    SetSelection(m_SelHexX, m_SelHexY, nullptr /*gpApp->GetSelectedUnit()*/, pPlane, true);
 }
 
 
@@ -3842,7 +3842,7 @@ void CMapPane::OnPopupDeleteHex(wxCommandEvent & event)
 {
     CPlane * pPlane   = (CPlane*)gpApp->m_pAtlantis->m_Planes.At(m_SelPlane);
     gpApp->DelTempHex(m_SelHexX, m_SelHexY, m_SelPlane);
-    SetSelection(m_SelHexX, m_SelHexY, NULL /*gpApp->GetSelectedUnit()*/, pPlane, TRUE);
+    SetSelection(m_SelHexX, m_SelHexY, nullptr /*gpApp->GetSelectedUnit()*/, pPlane, true);
 }
 
 //--------------------------------------------------------------------------
@@ -3866,7 +3866,7 @@ void CMapPane::OnPopupDistanceRing(wxCommandEvent & event)
 
     DrawRing(&dc, &rect, pPlane);*/
     
-    Refresh(FALSE, NULL);
+    Refresh(false, nullptr);
 }
 
 //--------------------------------------------------------------------------
@@ -3888,7 +3888,7 @@ void CMapPane::OnToolbarCmd(wxCommandEvent& event)
         if (SetHexSize(m_HexSizeIdx+1))
         {
             RemoveRectangle();
-            Refresh(FALSE, NULL);
+            Refresh(false, nullptr);
         }
         break;
 
@@ -3896,7 +3896,7 @@ void CMapPane::OnToolbarCmd(wxCommandEvent& event)
         if (SetHexSize(m_HexSizeIdx-1))
         {
             RemoveRectangle();
-            Refresh(FALSE, NULL);
+            Refresh(false, nullptr);
         }
         break;
 
@@ -3904,25 +3904,25 @@ void CMapPane::OnToolbarCmd(wxCommandEvent& event)
         SetHexSize(0);
         Center();
         RemoveRectangle();
-        Refresh(FALSE, NULL);
+        Refresh(false, nullptr);
         break;
 
     case tool_prevzoom  :
         if (SetHexSize(m_HexSizeIdxOld))
         {
             RemoveRectangle();
-            Refresh(FALSE, NULL);
+            Refresh(false, nullptr);
         }
         break;
 
     case tool_showcoord :
         m_ShowState ^= SHOW_COORD;
-        Refresh(FALSE, NULL);
+        Refresh(false, nullptr);
         break;
     
     case tool_shownames :
         m_ShowState ^= SHOW_NAMES;
-        Refresh(FALSE, NULL);
+        Refresh(false, nullptr);
         break;
 
     case tool_planeup   :
@@ -3931,7 +3931,7 @@ void CMapPane::OnToolbarCmd(wxCommandEvent& event)
             SavePlaneConfig();
             m_SelPlane--;
             LoadPlaneConfig();
-            Refresh(FALSE, NULL);
+            Refresh(false, nullptr);
             gpApp->OnMapSelectionChange();
         }
         break;
@@ -3942,7 +3942,7 @@ void CMapPane::OnToolbarCmd(wxCommandEvent& event)
             SavePlaneConfig();
             m_SelPlane++;
             LoadPlaneConfig();
-            Refresh(FALSE, NULL);
+            Refresh(false, nullptr);
             gpApp->OnMapSelectionChange();
         }
         break;
@@ -3971,9 +3971,9 @@ void CMapPane::OnToolbarCmd(wxCommandEvent& event)
 
 //--------------------------------------------------------------------------
 
-BOOL CMapPane::IsToolActive(wxUpdateUIEvent& event)
+bool CMapPane::IsToolActive(wxUpdateUIEvent& event)
 {
-    BOOL Ok = FALSE;
+    bool Ok = false;
     int  i;
 
     switch (event.GetId())
@@ -3987,7 +3987,7 @@ BOOL CMapPane::IsToolActive(wxUpdateUIEvent& event)
         break;
 
     case tool_centerout :
-        Ok = TRUE;
+        Ok = true;
         break;
 
     case tool_prevzoom  :
@@ -3995,19 +3995,19 @@ BOOL CMapPane::IsToolActive(wxUpdateUIEvent& event)
         break;
 
     case tool_showcoord :
-        Ok = TRUE;
+        Ok = true;
         if (m_ShowState & SHOW_COORD)
-            event.Check(TRUE);
+            event.Check(true);
         else
-            event.Check(FALSE);
+            event.Check(false);
         break;
         
     case tool_shownames :
-        Ok = TRUE;
+        Ok = true;
         if (m_ShowState & SHOW_NAMES)
-            event.Check(TRUE);
+            event.Check(true);
         else
-            event.Check(FALSE);
+            event.Check(false);
         break;
 
     case tool_planeup   :
@@ -4035,7 +4035,7 @@ BOOL CMapPane::IsToolActive(wxUpdateUIEvent& event)
         break;
 
     case tool_findhex:
-        Ok = TRUE;
+        Ok = true;
         break;
 
     }

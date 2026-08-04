@@ -72,7 +72,7 @@ void   CPythonEmbedder::DoneUnitFilter()
 
 //-------------------------------------------------------------------------
 
-eEErr  CPythonEmbedder::RunUnitFilter(CUnit * pUnit, BOOL & success)
+eEErr  CPythonEmbedder::RunUnitFilter(CUnit * pUnit, bool & success)
 {
     return E_PY_DISABLED;
 }

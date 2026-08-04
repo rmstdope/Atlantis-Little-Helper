@@ -28,9 +28,9 @@ public:
     virtual void Init(CAhFrame * pParentFrame, const char * szConfigSection, const char * szConfigSectionHdr);
     virtual void Done();
     void         Update(CLand * pLand);
-    virtual void ApplyFonts();
+    virtual void ApplyFonts() override;
     CUnit      * GetUnit(long index);
-    virtual void Sort();
+    virtual void Sort() override;
     void         SelectUnit(long UnitId);
     void         SelectNextUnit();
     void         SelectPrevUnit();

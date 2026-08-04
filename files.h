@@ -35,17 +35,17 @@ public:
     CFileReader();
     ~CFileReader();
 
-    BOOL Open(const char * szFName);
+    bool Open(const char * szFName);
     void Close();
 
-    BOOL GetNextChar(char & ch);
-    BOOL GetNextLine(std::string & s);
+    bool GetNextChar(char & ch);
+    bool GetNextLine(std::string & s);
 
     void QueueChar(char ch);
     void QueueString(const char * p, int n=0);
 
 protected:
-    BOOL ReadMore();
+    bool ReadMore();
 
     FILE   * m_f;
     size_t   m_nPos;
@@ -63,13 +63,13 @@ public:
     CFileWriter();
     ~CFileWriter();
 
-    BOOL Open(const char * szFName, const char * szMode = "wb");
+    bool Open(const char * szFName, const char * szMode = "wb");
     void Close();
 
-    BOOL WriteBuf(const char * szData, long nDataSize);
+    bool WriteBuf(const char * szData, long nDataSize);
 
 protected:
-    BOOL Flush();
+    bool Flush();
 
     FILE   * m_f;
     std::string     m_s;

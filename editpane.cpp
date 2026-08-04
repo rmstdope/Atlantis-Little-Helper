@@ -89,13 +89,13 @@ END_EVENT_TABLE()
 
 //--------------------------------------------------------------------
 
-CEditPane::CEditPane(wxWindow* parent, const char * header, BOOL editable, int WhichFont)
+CEditPane::CEditPane(wxWindow* parent, const char * header, bool editable, int WhichFont)
           :wxPanel(parent, -1, wxDefaultPosition, wxDefaultSize)
 {
-    m_pSource       = NULL;   
-    m_pChanged      = NULL; 
+    m_pSource       = nullptr;   
+    m_pChanged      = nullptr; 
                    
-    m_pHeader       = (header && *header)?(new wxStaticText(this, -1, wxString::FromAscii(header), wxDefaultPosition, wxDefaultSize, wxALIGN_CENTRE | wxST_NO_AUTORESIZE )):NULL;
+    m_pHeader       = (header && *header)?(new wxStaticText(this, -1, wxString::FromAscii(header), wxDefaultPosition, wxDefaultSize, wxALIGN_CENTRE | wxST_NO_AUTORESIZE )):nullptr;
     m_HdrHeight     = 0;
     m_WhichFont     = WhichFont;
     m_pEditor       = new CEditorForPane(this);
@@ -122,7 +122,7 @@ void CEditPane::Init()
 
 //--------------------------------------------------------------------
 
-void CEditPane::SetSource(std::string * pSource, BOOL * pChanged)
+void CEditPane::SetSource(std::string * pSource, bool * pChanged)
 {
     m_pSource   = pSource; 
     m_pChanged  = pChanged;
@@ -137,23 +137,23 @@ void CEditPane::Update()
 
 //--------------------------------------------------------------------
 
-BOOL CEditPane::SaveModifications()
+bool CEditPane::SaveModifications()
 {
     if (m_pEditor->IsModified())
     {
         if (m_pSource)
             *m_pSource = m_pEditor->GetValue().mb_str();
         if (m_pChanged)
-            *m_pChanged = TRUE;
+            *m_pChanged = true;
         m_pEditor->DiscardEdits();
 
 		if (!m_pSource && !m_pChanged)
-			return FALSE;
+			return false;
 
-        return TRUE;
+        return true;
     }
     else
-        return FALSE;
+        return false;
 }
 
 //--------------------------------------------------------------------
@@ -182,7 +182,7 @@ void CEditPane::ApplyFonts()
 
 //--------------------------------------------------------------------
 
-void CEditPane::SetReadOnly(BOOL ReadOnly)
+void CEditPane::SetReadOnly(bool ReadOnly)
 {
     if (m_pEditor)
     {
