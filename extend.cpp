@@ -17,8 +17,6 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include "stdhdr.h"
-
 #include "string_utils.h"
 #include "cfgfile.h"
 #include "files.h"
@@ -26,8 +24,6 @@
 #include "consts.h"
 #include "consts_ah.h"
 #include "objs.h"
-
-#include "ahapp.h"
 
 #include "extend.h"
 
@@ -85,7 +81,8 @@ void   CPythonEmbedder::ShowError(const char * msg, int msglen)
     if (msglen<=0)
         msglen = strlen(msg);
 
-    gpApp->ShowError (msg, msglen, true);
+    if (m_errorCallback)
+        m_errorCallback(msg, msglen);
 }
 
 
@@ -150,18 +147,13 @@ extern "C" PyObject * unitfltr_getproperty(PyObject *self, PyObject* args)
 
     if (!gpUnit->GetProperty(propname, type, value, eNormal) )
     {
-        // make default empty value
-        {
-            auto it__ = gpApp->m_pAtlantis->m_UnitPropertyTypes.find(propname);
-            if (it__ != gpApp->m_pAtlantis->m_UnitPropertyTypes.end())
-            {
-                type = (EValueType)it__->second;
-                if (eLong == type) value = 0;
-                else               value = "";
-            }
-            else
-                Py_RETURN_NONE;
-        }
+        // make default empty value based on property type registry
+        if (!m_pAtlantis) Py_RETURN_NONE;
+        auto it__ = m_pAtlantis->m_UnitPropertyTypes.find(propname);
+        if (it__ == m_pAtlantis->m_UnitPropertyTypes.end())
+            Py_RETURN_NONE;
+        type = (EValueType)it__->second;
+        value = (eLong == type) ? 0 : reinterpret_cast<const void*>("");
     }
 
     if (eLong==type)
@@ -199,7 +191,6 @@ eEErr  CPythonEmbedder::InitUnitFilter(const char * userfilter, std::string & sP
     std::string         sToken;
     const char * p = userfilter;
     char         ch;
-    int          idx;
     std::string         sCommand;
 
     sPythonFilter.clear();
@@ -225,7 +216,7 @@ eEErr  CPythonEmbedder::InitUnitFilter(const char * userfilter, std::string & sP
         if (!sToken.empty() && '\"' == sToken.c_str()[0] && '\"' == sToken.c_str()[sToken.size()-1])
             ToLower(sToken);
 
-        if (gpApp->m_pAtlantis->m_UnitPropertyNames.Search((void*)sToken.c_str(), idx))
+        if (m_pAtlantis && m_pAtlantis->m_UnitPropertyNames.find(sToken) != m_pAtlantis->m_UnitPropertyNames.end())
             sCommand << SZ_ALH_UNIT_FILTER_MODULE << "." << SZ_ALH_UNIT_FILTER_FN_GET_PROPERTY << "(\"" << sToken << "\")";
         else
             sCommand << sToken;

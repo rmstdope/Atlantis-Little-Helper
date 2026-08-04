@@ -22,6 +22,7 @@
 
 #include "data.h"
 #include "stl_helpers.h"
+#include "cfgfile.h"
 #include <vector>
 #include <set>
 #include <unordered_map>
@@ -175,6 +176,7 @@ public:
     int               m_CrntFactionId;
     std::string              m_CrntFactionPwd;
     std::vector<long>     m_OurFactions;
+    CConfigFile     * m_pConfig = nullptr;   // set by CAhApp after construction
     CBaseObject       m_Events;
     CBaseObject       m_SecurityEvents;
     CBaseObject       m_HexEvents;

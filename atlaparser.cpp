@@ -5168,7 +5168,7 @@ void CAtlaParser::RunLandOrders(CLand * pLand, const char * sCheckTeach)
         }   // units loop
     }   // phases loop
     pLand->CalcStructsLoad();
-    pLand->SetFlagsFromUnits();
+    pLand->SetFlagsFromUnits(this);
     OrderErrFinalize();
 }
 

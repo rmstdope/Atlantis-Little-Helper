@@ -27,6 +27,8 @@
 #include <string>
 #include <memory>
 #include "stl_helpers.h"
+#include "cfgfile.h"
+#include "atlaparser.h"
 
 enum
 {
@@ -134,6 +136,7 @@ public:
     void                 SetConfig(const char * szSection, const char * szName, const char * szNewValue);
     void                 SetConfig(const char * szSection, const char * szName, long lNewValue);
     const char         * GetConfig(const char * szSection, const char * szName);
+    CConfigFile        * GetConfigFile(const char * szSection);   // returns config file owning szSection
     int                  GetSectionFirst(const char * szSection, const char *& szName, const char *& szValue);
     int                  GetSectionNext (int idx, const char * szSection, const char *& szName, const char *& szValue);
     void                 RemoveSection(const char * szSection);

@@ -3685,7 +3685,7 @@ void CMapPane::MarkFoundHexes(CHexFilterDlg * pFilter)
         for (i=0; i<pPlane->Lands.Count(); i++)
         {
             pLand = (CLand*)pPlane->Lands.At(i);
-            if ( EvaluateBaseObjectByBoxes(pLand, Property, CompareOp, sValue, lValue, HEX_SIMPLE_FLTR_COUNT))
+            if ( EvaluateBaseObjectByBoxes(pLand, Property, CompareOp, sValue, lValue, HEX_SIMPLE_FLTR_COUNT, gpApp->m_pAtlantis.get()))
             {
                 gpApp->m_pAtlantis->ComposeLandStrCoord(pLand, sCoord);
                 LandList << pLand->TerrainType << " (" << sCoord << ")" << EOL_SCR;

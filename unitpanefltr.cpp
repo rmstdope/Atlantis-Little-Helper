@@ -104,6 +104,7 @@ void CUnitPaneFltr::Update(CUnitFilterDlg * pFilter)
     std::string             S;
     bool             bUsePython = false;
     CPythonEmbedder  Python(gpApp->m_pAtlantis.get());
+    Python.SetErrorCallback([](const char* msg, int len){ gpApp->ShowError(msg, len, true); });
     eEErr            rcPy = E_OK;
     std::string             sPythonText, sRealPythonText;
     std::string             sConfSect;
@@ -282,7 +283,7 @@ void CUnitPaneFltr::Update(CUnitFilterDlg * pFilter)
                         break; // execution must never fail!
                 }
                 else
-                    ok = EvaluateBaseObjectByBoxes(pUnit, Property, CompareOp, sValue, lValue, UNIT_SIMPLE_FLTR_COUNT);
+                    ok = EvaluateBaseObjectByBoxes(pUnit, Property, CompareOp, sValue, lValue, UNIT_SIMPLE_FLTR_COUNT, gpApp->m_pAtlantis.get());
     
                 if (ok)
                 {

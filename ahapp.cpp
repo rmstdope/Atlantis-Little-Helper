@@ -102,6 +102,7 @@ CAhApp::CAhApp() : m_HexDescrSrc    (),
     m_FontDescr[FONT_ERR_DLG   ]  = "Messages and Errors";
 
     m_pAtlantis.reset(new CAtlaParser(&ThisGameDataHelper));
+    m_pAtlantis->m_pConfig = &m_Config[CONFIG_FILE_CONFIG];
     m_Brightness_Delta = 0;
     m_nStdoutLastPos = 0;
     m_nStderrLastPos = 0;
@@ -147,6 +148,7 @@ bool CAhApp::OnInit()
     m_Config[CONFIG_FILE_STATE ].Load(SZ_CONFIG_STATE_FILE);
 
     UpgradeConfigFiles();
+    CUnit::LoadCustomFlagNames(GetConfigFile(SZ_SECT_UNIT_FLAG_NAMES));
 
     m_layout = atol(GetConfig(SZ_SECT_COMMON, SZ_KEY_LAYOUT));
     if (m_layout<0)
@@ -795,6 +797,13 @@ const char * CAhApp::GetConfig(const char * szSection, const char * szName)
     if (nullptr==p)
         p = "";
     return p;
+}
+
+//-------------------------------------------------------------------------
+
+CConfigFile * CAhApp::GetConfigFile(const char * szSection)
+{
+    return &m_Config[GetConfigFileNo(szSection)];
 }
 
 //-------------------------------------------------------------------------
@@ -2551,7 +2560,7 @@ void CAhApp::PostLoadReport()
             for (i=0; i<pPlane->Lands.Count(); i++)
             {
                 ((CLand*)pPlane->Lands.At(i))->CalcStructsLoad();
-                ((CLand*)pPlane->Lands.At(i))->SetFlagsFromUnits(); // maybe not needed here...
+                ((CLand*)pPlane->Lands.At(i))->SetFlagsFromUnits(m_pAtlantis.get()); // maybe not needed here...
             }
         }
     }
@@ -2665,6 +2674,7 @@ int  CAhApp::LoadReport  (const char * FNameIn, bool Join)
                 m_Reports.insert(reportIt, std::move(cachedCurrent));
             }
             m_pAtlantis.reset(new CAtlaParser(&ThisGameDataHelper));
+            m_pAtlantis->m_pConfig = &m_Config[CONFIG_FILE_CONFIG];
         }
 
         if (!Join)
@@ -3076,6 +3086,7 @@ void CAhApp::SwitchToYearMon(long YearMon)
             });
         m_pAtlantis = std::move(*reportIt);
         m_Reports.erase(reportIt);
+        if (m_pAtlantis) m_pAtlantis->m_pConfig = &m_Config[CONFIG_FILE_CONFIG];
         PostLoadReport();
     }
     else
@@ -3263,6 +3274,7 @@ bool CAhApp::GetPrevTurnReport(CAtlaParser *& pPrevTurn)
 
         if (!m_FirstLoad && !Join)
             m_pAtlantis = new CAtlaParser(&ThisGameDataHelper);
+            m_pAtlantis->m_pConfig = &m_Config[CONFIG_FILE_CONFIG];
 
         if (!Join)
         {
