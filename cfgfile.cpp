@@ -21,6 +21,7 @@
 #include <string.h>
 #include "cfgfile.h"
 #include "files.h"
+#include "string_utils.h"
 #include "compat.h"
 
 
@@ -59,17 +60,7 @@ CConfigFile::~CConfigFile()
 void CConfigFile::FreeItem(void * pItem)
 {
     if (pItem)
-    {
-        if (((CONFIG_PARAM*)pItem)->szSection)
-            free ( (void*)((CONFIG_PARAM*)pItem)->szSection );
-        if (((CONFIG_PARAM*)pItem)->szName)
-            free ( (void*)((CONFIG_PARAM*)pItem)->szName );
-        if (((CONFIG_PARAM*)pItem)->szValue)
-            free ( (void*)((CONFIG_PARAM*)pItem)->szValue );
-        if (((CONFIG_PARAM*)pItem)->szComment)
-            free ( (void*)((CONFIG_PARAM*)pItem)->szComment );
-        free (pItem);
-    }
+        delete ((CONFIG_PARAM*)pItem);
 }
 
 //---------------------------------------------------------------------------------
@@ -78,11 +69,13 @@ int  CConfigFile::Compare (void * pItem1, void * pItem2) const
 {
     int x;
 
-    x = SafeCmp( ((CONFIG_PARAM*)pItem1)->szSection, ((CONFIG_PARAM*)pItem2)->szSection);
+    x = SafeCmp(((CONFIG_PARAM*)pItem1)->szSection.c_str(),
+                ((CONFIG_PARAM*)pItem2)->szSection.c_str());
     if (x!=0)
         return x;
     else
-        return SafeCmp( ((CONFIG_PARAM*)pItem1)->szName, ((CONFIG_PARAM*)pItem2)->szName );
+        return SafeCmp(((CONFIG_PARAM*)pItem1)->szName.c_str(),
+                       ((CONFIG_PARAM*)pItem2)->szName.c_str());
 }
 
 //---------------------------------------------------------------------------------
@@ -129,32 +122,15 @@ CONFIG_PARAM * NewParam(const char * szSection, const char * szName, const char 
     if (!szValue)
         return NULL;
 
-    pPrm = (CONFIG_PARAM*)malloc(sizeof(CONFIG_PARAM));
-    if (szSection && *szSection)
-    {
-        pPrm->szSection  = strdup(szSection);
-        pPrm->SectionLen = strlen(szSection);
-    }
-    else
-    {
-        pPrm->szSection  = NULL;
-        pPrm->SectionLen = 0;
-    }
-    
-    pPrm->szName      = strdup(szName);
-    pPrm->szValue     = strdup(szValue);
-    pPrm->NameLen     = strlen(szName);
-    pPrm->ValueLen    = strlen(szValue); 
-    if (szComment && *szComment)
-    {
-        pPrm->szComment   = strdup(szComment);
-        pPrm->CommentLen  = strlen(szComment); 
-    }
-    else
-    {
-        pPrm->szComment   = NULL;
-        pPrm->CommentLen  = 0; 
-    }
+    pPrm = new CONFIG_PARAM();
+    pPrm->szSection  = (szSection && *szSection) ? szSection : "";
+    pPrm->szName     = szName;
+    pPrm->szValue    = szValue;
+    pPrm->szComment  = (szComment && *szComment) ? szComment : "";
+    pPrm->SectionLen = (int)pPrm->szSection.size();
+    pPrm->NameLen    = (int)pPrm->szName.size();
+    pPrm->ValueLen   = (int)pPrm->szValue.size();
+    pPrm->CommentLen = (int)pPrm->szComment.size();
 
     return pPrm;
 }
@@ -167,10 +143,10 @@ BOOL CConfigFile::Load(const char * szFName)
     BOOL                Ok;
     char                ch;
     enum                EState {start, name, value, sect, cmnt} State;
-    CStr                Name(128);
-    CStr                Value(128);
-    CStr                Section(128);
-    CStr                Comment(128);
+    std::string         Name;
+    std::string         Value;
+    std::string         Section;
+    std::string         Comment;
     CONFIG_PARAM      * pPrm;
 
     FreeAll();
@@ -188,13 +164,13 @@ BOOL CConfigFile::Load(const char * szFName)
                          case '\t':
                          case ' ' : break;
                          case '#' :
-                         case ';' : Comment.AddCh(ch);
+                         case ';' : AddCh(Comment, ch);
                                     State = cmnt;
                                     break;
                          case '[' : State = sect;
-                                    Section.Empty();
+                                    Section.clear();
                                     break;
-                         default  : Name.AddCh(ch);
+                         default  : AddCh(Name, ch);
                                     State = name;
                          }
                          break;
@@ -203,32 +179,32 @@ BOOL CConfigFile::Load(const char * szFName)
                          {
                          case '=' : State = value;
                                     break;
-                         case '\n': Name.Empty();
+                         case '\n': Name.clear();
                                     State=start;
                                     break;
-                         default  : Name.AddCh(ch);
+                         default  : AddCh(Name, ch);
                          }
                          break;
             
             case value:  switch (ch)
                          {
-                         case '\n': Section.TrimLeft (TRIM_ALL);
-                                    Section.TrimRight(TRIM_ALL);
-                                    Name   .TrimLeft (TRIM_ALL);
-                                    Name   .TrimRight(TRIM_ALL);
-                                    Value  .TrimLeft (TRIM_ALL);
-                                    Value  .TrimRight(TRIM_ALL);
-                                    Comment.TrimLeft (TRIM_ALL);
-                                    Comment.TrimRight(TRIM_ALL);
-                                    pPrm = NewParam(Section.GetData(), Name.GetData(), Value.GetData(), Comment.GetData());
+                         case '\n': TrimLeft (Section, TRIM_ALL);
+                                    TrimRight(Section, TRIM_ALL);
+                                    TrimLeft (Name, TRIM_ALL);
+                                    TrimRight(Name, TRIM_ALL);
+                                    TrimLeft (Value, TRIM_ALL);
+                                    TrimRight(Value, TRIM_ALL);
+                                    TrimLeft (Comment, TRIM_ALL);
+                                    TrimRight(Comment, TRIM_ALL);
+                                    pPrm = NewParam(Section.c_str(), Name.c_str(), Value.c_str(), Comment.c_str());
                                     if (pPrm && !Insert(pPrm))
                                         FreeItem(pPrm);
                                     State = start;
-                                    Name.Empty();
-                                    Value.Empty();
-                                    Comment.Empty();
+                                    Name.clear();
+                                    Value.clear();
+                                    Comment.clear();
                                     break;
-                         default :  Value.AddCh(ch);
+                         default :  AddCh(Value, ch);
                          }
                          break;
             
@@ -236,16 +212,16 @@ BOOL CConfigFile::Load(const char * szFName)
                          {
                          case ']':  State = start;
                                     break;
-                         default :  Section.AddCh(ch);
+                         default :  AddCh(Section, ch);
                          }
                          break;
 
             case cmnt:   switch (ch)
                          {
-                         case '\n': Comment.AddCh(ch);
+                         case '\n': AddCh(Comment, ch);
                                     State = start;
                                     break;
-                         default  : Comment.AddCh(ch);
+                         default  : AddCh(Comment, ch);
                          }
                          break;
 
@@ -253,14 +229,14 @@ BOOL CConfigFile::Load(const char * szFName)
             }
         }
 
-    if (!Name.IsEmpty())
+    if (!Name.empty())
     {
-        Section.TrimLeft(TRIM_ALL);    
-        Section.TrimRight(TRIM_ALL);   
-        Name.TrimRight(TRIM_ALL);
-        Value.TrimLeft(TRIM_ALL);
-        Value.TrimRight(TRIM_ALL);
-        pPrm = NewParam(Section.GetData(), Name.GetData(), Value.GetData(), Comment.GetData());
+        TrimLeft(Section, TRIM_ALL);
+        TrimRight(Section, TRIM_ALL);
+        TrimRight(Name, TRIM_ALL);
+        TrimLeft(Value, TRIM_ALL);
+        TrimRight(Value, TRIM_ALL);
+        pPrm = NewParam(Section.c_str(), Name.c_str(), Value.c_str(), Comment.c_str());
         if (pPrm && !Insert(pPrm))
             FreeItem(pPrm);
     }
@@ -282,7 +258,7 @@ BOOL CConfigFile::Save(const char * szFName)
     int                 MinNameLen = 0x7FFFFFFF;
     char                Spaces[]   = "                                   ";
     int                 nSpaces; 
-    CStr                CrntSection;
+    std::string         CrntSection;
 
     Ok =  F.Open(szFName);
     if (Ok)
@@ -292,8 +268,8 @@ BOOL CConfigFile::Save(const char * szFName)
             pParam = (CONFIG_PARAM*)At(i);
 
             // do not use empty/spaces only strings
-            n = strlen(pParam->szValue);
-            if ( (0==n) || (strspn(pParam->szValue, " \t\r\n")==(size_t)n) )
+            n = (int)pParam->szValue.size();
+            if ( (0==n) || (strspn(pParam->szValue.c_str(), " \t\r\n")==(size_t)n) )
                 continue;
 
             if (pParam->NameLen > MaxNameLen)
@@ -307,39 +283,39 @@ BOOL CConfigFile::Save(const char * szFName)
             pParam = (CONFIG_PARAM*)At(i);
 
             // do not store empty/spaces only strings
-            n = strlen(pParam->szValue);
-            if ( (0==n) || (strspn(pParam->szValue, " \t\r\n")==(size_t)n) )
+            n = (int)pParam->szValue.size();
+            if ( (0==n) || (strspn(pParam->szValue.c_str(), " \t\r\n")==(size_t)n) )
                 continue;
 
-            if ( (0!=SafeCmp(pParam->szSection, CrntSection.GetData())) && (pParam->szSection) )
+            if ( (0!=SafeCmp(pParam->szSection.c_str(), CrntSection.c_str())) && !pParam->szSection.empty() )
             {
                 CrntSection = pParam->szSection;
                 if (Ok)
                     Ok = F.WriteBuf(EOL_CFG, sizeof(EOL_CFG)-1) &&
                          F.WriteBuf("[", 1)  &&
-                         F.WriteBuf(pParam->szSection, pParam->SectionLen) &&
+                         F.WriteBuf(pParam->szSection.c_str(), pParam->SectionLen) &&
                          F.WriteBuf("]", 1) &&
                          F.WriteBuf(EOL_CFG, sizeof(EOL_CFG)-1) &&
                          F.WriteBuf(EOL_CFG, sizeof(EOL_CFG)-1) ;
             }
 
-            if (Ok && pParam->szComment)
+            if (Ok && !pParam->szComment.empty())
                 Ok = F.WriteBuf(EOL_CFG, sizeof(EOL_CFG)-1) &&
-                     F.WriteBuf(pParam->szComment, pParam->CommentLen) &&
+                     F.WriteBuf(pParam->szComment.c_str(), pParam->CommentLen) &&
                      F.WriteBuf(EOL_CFG, sizeof(EOL_CFG)-1);
 
             nSpaces = MinNameLen+sizeof(Spaces)-1 - pParam->NameLen;
             if (nSpaces + pParam->NameLen > MaxNameLen)
                 nSpaces = MaxNameLen - pParam->NameLen;
             if (Ok)
-                Ok = F.WriteBuf(pParam->szName, pParam->NameLen);
+                Ok = F.WriteBuf(pParam->szName.c_str(), pParam->NameLen);
             
             if (Ok && (nSpaces>0))
                 Ok = F.WriteBuf(Spaces, nSpaces);
 
             if (Ok)
                 Ok = F.WriteBuf(" = ", 3) &&
-                     F.WriteBuf(pParam->szValue, pParam->ValueLen) &&
+                     F.WriteBuf(pParam->szValue.c_str(), pParam->ValueLen) &&
                      F.WriteBuf(EOL_CFG, sizeof(EOL_CFG)-1);
 
             if (!Ok)
@@ -365,7 +341,7 @@ const char * CConfigFile::GetByName(const char * szSection, const char * szName)
     if (Search(&Test, i))
     {
         pPrm = (CONFIG_PARAM*)At(i);
-        return pPrm->szValue;
+        return pPrm->szValue.c_str();
     }
     else
         return NULL;
@@ -387,10 +363,8 @@ void CConfigFile::SetByName(const char * szSection, const char * szName, const c
         else
         {
             pPrm = (CONFIG_PARAM*)At(i);
-            if (pPrm->szValue)
-                free((void*)(pPrm->szValue));
-            pPrm->szValue = strdup(szNewValue);
-            pPrm->ValueLen= strlen(szNewValue); 
+            pPrm->szValue = szNewValue;
+            pPrm->ValueLen= (int)pPrm->szValue.size();
         }
     }
     else
@@ -414,10 +388,10 @@ int CConfigFile::GetFirstInSection(const char * szSection, const char *& szName,
     Search(&Test, i);
 
     pPrm = (CONFIG_PARAM*)At(i);
-    if (pPrm && (0==stricmp(szSection, pPrm->szSection)) )
+    if (pPrm && (0==stricmp(szSection, pPrm->szSection.c_str())) )
     {
-        szName = pPrm->szName;
-        szValue= pPrm->szValue;
+        szName = pPrm->szName.c_str();
+        szValue= pPrm->szValue.c_str();
         return i+1;
     }
     else
@@ -433,10 +407,10 @@ int CConfigFile::GetNextInSection (int idx, const char * szSection, const char *
 
     p    = At(idx);
     pPrm = (CONFIG_PARAM*)p;
-    if (pPrm && (0==stricmp(szSection, pPrm->szSection)) )
+    if (pPrm && (0==stricmp(szSection, pPrm->szSection.c_str())) )
     {
-        szName = pPrm->szName;
-        szValue= pPrm->szValue;
+        szName = pPrm->szName.c_str();
+        szValue= pPrm->szValue.c_str();
         return idx+1;
     }
     else
@@ -455,7 +429,7 @@ void CConfigFile::RemoveSection(const char * szSection)
     Search(&Test, idx);
 
     pPrm = (CONFIG_PARAM*)At(idx);
-    while (pPrm && (0==stricmp(szSection, pPrm->szSection)) )
+    while (pPrm && (0==stricmp(szSection, pPrm->szSection.c_str())) )
     {
         AtFree(idx);
         pPrm = (CONFIG_PARAM*)At(idx);
@@ -466,31 +440,27 @@ void CConfigFile::RemoveSection(const char * szSection)
 
 BOOL CConfigFile::GetNextSection(const char * szPrevSection, const char *& szNextSection)
 {
-    CStr           S;
-    char         * p;
+    std::string    S;
     int            n;
     CONFIG_PARAM * pPrm, Test;
     int            i; 
 
     S = szPrevSection;
-    n = S.GetLength();
+    n = (int)S.size();
 
     if (n>0)
     {
-        p = S.AllocExtraBuf(2);
-        p[0] = 1;
-        p[1] = 0;
-        S.UseExtraBuf(1);
+        S.push_back(1);
     }
 
-    Test.szSection = S.GetData();
+    Test.szSection = S;
     Test.szName    = "";
     Search(&Test, i);
 
     pPrm = (CONFIG_PARAM*)At(i);
     if (pPrm)
     {
-        szNextSection = pPrm->szSection;
+        szNextSection = pPrm->szSection.c_str();
         return TRUE;
     }
 
@@ -498,4 +468,3 @@ BOOL CConfigFile::GetNextSection(const char * szPrevSection, const char *& szNex
 }
 
 //---------------------------------------------------------------------------------
-
