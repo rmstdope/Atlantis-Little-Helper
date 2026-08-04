@@ -183,7 +183,7 @@ void CListPane::SetData(eSelMode selmode, long seldata, BOOL FullUpdate)
             {
                 layoutitem = m_pLayout->At(col);
 
-                info.m_text.clear();
+                info.m_text.Clear();
                 info.m_col= col;
 
                 if (dataitem->GetProperty(layoutitem->m_Name, valuetype, value ))
@@ -259,4 +259,3 @@ void CListPane::Sort()
 }
 
 //------------------------------------------------------------------------
-

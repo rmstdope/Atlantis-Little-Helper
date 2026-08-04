@@ -112,7 +112,7 @@ void CFileReader::QueueString(const char * p, int n)
 
 //---------------------------------------------------------------------
 
-int CFileReader::GetNextLine(std::string & s)
+BOOL CFileReader::GetNextLine(std::string & s)
 {
     char ch;
 

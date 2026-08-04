@@ -446,7 +446,7 @@ void CExportMagesCSVDlg::OnButton(wxCommandEvent& event)
             m_nFormat = 1;
         else if (m_pRadio3->GetValue())
             m_nFormat = 2;
-        S.clear();
+        S.Empty();
         S << m_nFormat;
         gpApp->SetConfig(m_sConfigSection.c_str(), SZ_KEY_FORMAT, S.mb_str());
 
@@ -783,4 +783,3 @@ void ShowMessageBoxSwitchable(const char * szTitle, const char * szMessage, cons
 }
 
 //==========================================================================
-

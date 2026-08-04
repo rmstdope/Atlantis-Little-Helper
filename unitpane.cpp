@@ -438,7 +438,7 @@ void CUnitPane::OnIdle(wxIdleEvent& event)
 
             choice = wxGetSingleChoice(message, caption, NUM_SORTS-1, choices, m_pParent);
 
-            if (!choice.empty())
+            if (!choice.IsEmpty())
             {
                 int key;
                 if (0==stricmp(choice.mb_str(), "primary"))
