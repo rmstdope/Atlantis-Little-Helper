@@ -166,10 +166,17 @@ public:
 
     // Collection-like API used by callers
     size_t            Count()   const { return m_items.size(); }
-    TPropertyHolder * At(int i) const { return m_items[i]; }
+    TPropertyHolder * At(int i) const
+    {
+        return (i >= 0 && i < (int)m_items.size()) ? m_items[i] : NULL;
+    }
 
     void AtInsert(int i, TPropertyHolder * p) { m_items.insert(m_items.begin()+i, p); }
-    void AtDelete(int i)                      { m_items.erase(m_items.begin()+i); }
+    void AtDelete(int i)
+    {
+        if (i >= 0 && i < (int)m_items.size())
+            m_items.erase(m_items.begin()+i);
+    }
     void DeleteAll()                          { m_items.clear(); }
 
 protected:
@@ -184,4 +191,3 @@ protected:
 //-------------------------------------------------------------------
 
 #endif
-

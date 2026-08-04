@@ -15,7 +15,7 @@ CPPFLAGS = @CPPFLAGS@
 #LIBS_PYTHON =-lpython2.2
 
 
-OBJECTS     = collection.o cfgfile.o cstr.o files.o hash.o objs.o\
+OBJECTS     = cfgfile.o cstr.o files.o objs.o\
               data.o errs.o atlaparser.o \
               ahapp.o ahframe.o consts_ah.o editpane.o \
               editsframe.o extend.o extend_no.o \
