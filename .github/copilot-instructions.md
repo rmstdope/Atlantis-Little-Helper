@@ -70,8 +70,8 @@ When asking questions to the user, always try to use the question UI/tool with p
 ### Build system
 
 - The project builds via autoconf (`configure.in` -> `configure`, `Makefile.in` -> `Makefile`), but the committed `Makefile` is hand-maintained and tracked directly in git rather than regenerated per checkout. It currently hardcodes macOS ARM64 + Homebrew wxWidgets 3.3 paths (`/opt/homebrew/...`), so it works as-is on that exact platform without running `./configure`, but is not portable.
-- `Makefile.in` (the actual autoconf template) is missing the `test`/`bin/parser-tests` targets that only exist in the committed `Makefile` (added directly, not via the template, in PR #19). Running `./configure` fresh regenerates `Makefile` from `Makefile.in` and will silently drop `make test` until `Makefile.in` is updated to match. Keep both in sync when changing test build wiring.
 - CI's `test` job (macOS) relies on the committed `Makefile` as-is (no `./configure` step). CI's `build` matrix jobs run `./configure --with-python=no` fresh on each platform (needed for portable wx-config-derived flags) and only build `bin/ah` (the `all` target), not the test suite.
+- Application sources live under `src/` (moved there from the repo root in issue 35, ahead of the Meson/Ninja migration in issue 34). `config.h` (autoconf-generated) and the `bitmaps/*.xpm` resource files intentionally stayed at the repo root rather than moving into `src/`, since they're build/resource artifacts, not application source. `src/mapframe.cpp`, `src/ahframe.cpp`, and `src/extend.h` still `#include` them by bare relative name, so both `Makefile` and `Makefile.in` carry an explicit `-I.` (repo root) alongside `-Isrc` (see `SRC_INCLUDES`) so the compiler's same-directory-then-`-I` fallback still finds them. Keep this in mind if either file's location changes again.
 
 ### Platform portability
 
