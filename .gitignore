@@ -35,3 +35,4 @@ build/
 
 # Committed test fixtures are exempt from the game-file ignores above
 !tests/fixtures/*.ord
+!tests/fixtures/*.cfg
