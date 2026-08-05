@@ -30,6 +30,7 @@
 #include "cfgfile.h"
 #include "atlaparser.h"
 #include "configmanager.h"
+#include "gamerules.h"
 
 enum
 {
@@ -106,16 +107,6 @@ void GetFileFromPath(const char * path, std::string & file);
 
 //-------------------------------------------------------------------------------
 
-struct ItemWeights
-{
-    char * name;
-    int  * weights;
-};
-
-
-
-//-------------------------------------------------------------------------------
-
 class CAhApp : public wxApp
 {
 public:
@@ -133,22 +124,6 @@ public:
     void                 FrameClosing(CAhFrame * pFrame);
 
     void                 ShowError (const char * msg, int msglen, bool ignore_disabled);
-    long                 GetStudyCost   (const char * skill);
-    const char         * ResolveAlias   (const char * alias);
-    long                 GetStructAttr  (const char * kind, long & MaxLoad, long & MinSailingPower);
-    bool                 GetItemWeights (const char * item, int *& weights, const char **& movenames, int & movecount );
-    void                 GetMoveNames(const char **& movenames);
-
-    bool                 GetOrderId     (const char * order, long & id);
-    bool                 IsTradeItem    (const char * item);
-    bool                 IsMan          (const char * item);
-    bool                 IsMagicSkill   (const char * skill);
-    const char *         GetWeatherLine (bool IsCurrent, bool IsGood, int Zone);
-    void                 GetProdDetails (const char * item, TProdDetails & details);
-    long                 GetMaxRaceSkillLevel(const char * race, const char * skill, const char * leadership, bool IsArcadiaSkillSystem);
-    bool                 CanSeeAdvResources(const char * skillname, const char * terrain, std::vector<long> & Levels, std::vector<std::string> & Resources);
-    int                  GetAttitudeForFaction(int id);
-    void                 SetAttitudeForFaction(int id, int attitude);
 
 
 
@@ -226,6 +201,7 @@ public:
 
     std::unique_ptr<CAtlaParser> m_pAtlantis;
     std::unique_ptr<ConfigManager> m_pConfigManager;
+    std::unique_ptr<GameRules> m_pGameRules;
 
     CAhFrame           * m_Frames[AH_FRAME_COUNT];
     wxWindow           * m_Panes [AH_PANE_COUNT ];
@@ -268,7 +244,6 @@ private:
     void                 SetMapFrameTitle();
     void                 StdRedirectInit();
     void                 StdRedirectDone();
-    void                 InitMoveModes();
     void                 SelectTempUnit(CUnit * pUnit);
 
 
@@ -281,20 +256,10 @@ private:
     long                 m_SelUnitIdx;
     int                  m_layout;
     bool                 m_DisableErrs;
-    std::vector<std::string> m_MoveModes;
-    std::vector<const char*> m_MoveModesRaw;
-    std::vector<ItemWeights*> m_ItemWeights;
     bool                 m_OrdersAreChanged;
     std::string                 m_sTitle;
-    std::unordered_map<std::string, long> m_OrderHash;
-    std::unordered_map<std::string, long> m_TradeItemsHash;
-    std::unordered_map<std::string, long> m_MenHash;
-    std::unordered_map<std::string, long> m_MaxSkillHash;
-    std::unordered_map<std::string, long> m_MagicSkillsHash;
     int                  m_nStdoutLastPos;
     int                  m_nStderrLastPos;
-    CBaseColl            m_Attitudes;
-    std::set<std::string, CaseInsensitiveLess> m_WaterTerrainNames;
 
 };
 

@@ -17,6 +17,7 @@ ah_sources = files(
   'src/errs.cpp',
   'src/atlaparser.cpp',
   'src/configmanager.cpp',
+  'src/gamerules.cpp',
   'src/ahapp.cpp',
   'src/ahframe.cpp',
   'src/consts_ah.cpp',
@@ -60,7 +61,6 @@ test_sources = files(
   'tests/model_regression_tests.cpp',
   'tests/config_regression_tests.cpp',
   'tests/file_io_regression_tests.cpp',
-  'tests/game_data_helper_stub.cpp',
 )
 
 # HAVE_PYTHON is passed directly as a compile define rather than through a
