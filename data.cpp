@@ -630,6 +630,9 @@ void CLand::CalcStructsLoad()
     EValueType          type;
     const void        * value;
 
+    for (i=0; i<Structs.Count(); i++)
+        ((CStruct*)Structs.At(i))->Load = 0;
+
     for (i=Units.Count()-1; i>=0; i--)
     {
         pUnit = (CUnit*)UnitsSeq.At(i);
@@ -650,10 +653,11 @@ void CLand::CalcStructsLoad()
 void CLand::RemoveEdgeStructs(int direction)
 {
     CStruct * pEdge;
+    int normalizedDir = ((direction % 6) + 6) % 6;
     for (int i=EdgeStructs.Count()-1; i>=0; i--)
     {
         pEdge = (CStruct*) EdgeStructs.At(i);
-        if((pEdge != nullptr) && (pEdge->Location == direction%6))
+        if((pEdge != nullptr) && (pEdge->Location == normalizedDir))
         {
             EdgeStructs.AtFree(i);
         }
@@ -666,7 +670,7 @@ void CLand::AddNewEdgeStruct(const char * name, int direction)
     CStruct * pEdge = new CStruct;
 
     pEdge->Kind     = name;
-    pEdge->Location = direction % 6;
+    pEdge->Location = ((direction % 6) + 6) % 6;
     EdgeStructs.Insert(pEdge);
 }
 
