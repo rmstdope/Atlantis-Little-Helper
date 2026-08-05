@@ -31,6 +31,9 @@ bin
 ah.stderr
 ah.stdout
 
+# Meson build directory
+build/
+
 # Game files
 *.cfg
 *.his

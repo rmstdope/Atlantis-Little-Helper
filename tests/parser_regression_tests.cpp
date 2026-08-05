@@ -240,10 +240,34 @@ private:
     };
 };
 
+// Saves/restores the process-global gpDataHelper around a test. CAtlaParser's
+// constructor points gpDataHelper at this harness's own `helper` member; without
+// restoring it here, gpDataHelper is left dangling at a destroyed stack address
+// once this harness goes out of scope, corrupting whichever test runs next in
+// this binary (see the identical guard/comment in model_regression_tests.cpp).
+class ScopedDataHelper
+{
+public:
+    explicit ScopedDataHelper(CGameDataHelper * helper) : previous(gpDataHelper)
+    {
+        gpDataHelper = helper;
+    }
+    ~ScopedDataHelper()
+    {
+        gpDataHelper = previous;
+    }
+
+private:
+    CGameDataHelper * previous;
+};
+
 struct ParserHarness
 {
-    ParserHarness() : parser(&helper) {}
+    ParserHarness() : dataHelperGuard(&helper), parser(&helper) {}
 
+    // Declared before `helper`/`parser` so it is destroyed *after* them,
+    // restoring gpDataHelper only once both are gone.
+    ScopedDataHelper dataHelperGuard;
     TestGameDataHelper helper;
     CAtlaParser parser;
 };

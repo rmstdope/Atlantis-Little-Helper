@@ -341,11 +341,16 @@ TEST_CASE("CUnit CheckWeight clears the overload when a higher move mode still w
 TEST_CASE("CLand AddUnit inserts into Units and UnitsSeq, sets LandId, LAND_UNITS flag, and PRP_SEQUENCE", "[model]")
 {
     ScopedDataHelper guard(nullptr);
-    CLand land;
-    land.Id = 100;
+    // CUnit locals are declared before CLand: land holds raw (non-owning) pointers
+    // to them, so land must be destroyed first - reverse-declaration-order
+    // destruction only gives that if land is declared *after* the units it will
+    // point at (destroying it earlier via CLand-first ordering reads through
+    // already-destroyed CUnit stack storage in ~CLand).
     CUnit unit1, unit2;
     unit1.Id = 1;
     unit2.Id = 2;
+    CLand land;
+    land.Id = 100;
 
     REQUIRE(land.AddUnit(&unit1));
     REQUIRE(land.AddUnit(&unit2));
@@ -366,10 +371,10 @@ TEST_CASE("CLand AddUnit inserts into Units and UnitsSeq, sets LandId, LAND_UNIT
 TEST_CASE("CLand AddUnit rejects a duplicate unit Id", "[model]")
 {
     ScopedDataHelper guard(nullptr);
-    CLand land;
     CUnit unit1, unit2;
     unit1.Id = 5;
     unit2.Id = 5;
+    CLand land;
 
     REQUIRE(land.AddUnit(&unit1));
     CHECK_FALSE(land.AddUnit(&unit2));
@@ -380,9 +385,9 @@ TEST_CASE("CLand AddUnit rejects a duplicate unit Id", "[model]")
 TEST_CASE("CLand RemoveUnit unlinks from Units and UnitsSeq but does not free the unit", "[model]")
 {
     ScopedDataHelper guard(nullptr);
-    CLand land;
     CUnit unit1;
     unit1.Id = 7;
+    CLand land;
     REQUIRE(land.AddUnit(&unit1));
 
     land.RemoveUnit(&unit1);
@@ -395,10 +400,10 @@ TEST_CASE("CLand RemoveUnit unlinks from Units and UnitsSeq but does not free th
 TEST_CASE("CLand RemoveUnit on a unit that was never added is a no-op", "[model]")
 {
     ScopedDataHelper guard(nullptr);
-    CLand land;
     CUnit unit1, unit2;
     unit1.Id = 1;
     unit2.Id = 2;
+    CLand land;
     REQUIRE(land.AddUnit(&unit1));
 
     land.RemoveUnit(&unit2);
@@ -410,9 +415,9 @@ TEST_CASE("CLand RemoveUnit on a unit that was never added is a no-op", "[model]
 TEST_CASE("CLand LAND_UNITS flag stays set after the last unit is removed", "[model]")
 {
     ScopedDataHelper guard(nullptr);
-    CLand land;
     CUnit unit1;
     unit1.Id = 1;
+    CLand land;
     REQUIRE(land.AddUnit(&unit1));
 
     land.RemoveUnit(&unit1);
@@ -427,14 +432,14 @@ TEST_CASE("CLand LAND_UNITS flag stays set after the last unit is removed", "[mo
 TEST_CASE("CLand CalcStructsLoad sums occupant Weight[0] via PRP_STRUCT_ID", "[model]")
 {
     ScopedDataHelper guard(nullptr);
+    CUnit unit1, unit2;
+    unit1.Id = 1;
+    unit2.Id = 2;
     CLand land;
     CStruct * pStruct = new CStruct();
     pStruct->Id = 10;
     land.AddNewStruct(pStruct);
 
-    CUnit unit1, unit2;
-    unit1.Id = 1;
-    unit2.Id = 2;
     unit1.Weight[0] = 30;
     unit2.Weight[0] = 20;
     unit1.SetProperty(PRP_STRUCT_ID, eLong, AsPtr(10));
@@ -450,13 +455,13 @@ TEST_CASE("CLand CalcStructsLoad sums occupant Weight[0] via PRP_STRUCT_ID", "[m
 TEST_CASE("CLand CalcStructsLoad is idempotent across repeated calls", "[model]")
 {
     ScopedDataHelper guard(nullptr);
+    CUnit unit1;
+    unit1.Id = 1;
     CLand land;
     CStruct * pStruct = new CStruct();
     pStruct->Id = 10;
     land.AddNewStruct(pStruct);
 
-    CUnit unit1;
-    unit1.Id = 1;
     unit1.Weight[0] = 40;
     unit1.SetProperty(PRP_STRUCT_ID, eLong, AsPtr(10));
     REQUIRE(land.AddUnit(&unit1));
