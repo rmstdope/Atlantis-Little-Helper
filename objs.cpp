@@ -124,6 +124,9 @@ TProperty * TPropertyColl::find(const char * name) const
 void TPropertyColl::insert(TProperty * p)
 {
     if (!p || p->m_name.empty()) return;
+    auto it = m_map.find(p->m_name);
+    if (it != m_map.end() && it->second != p)
+        delete it->second;
     m_map[p->m_name] = p;
 }
 

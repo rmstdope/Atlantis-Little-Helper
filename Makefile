@@ -27,6 +27,8 @@ OBJECTS     = cfgfile.o string_utils.o files.o objs.o\
 
 TARGETS     = bin/ah
 TEST_OBJECTS = obj/tests/parser_regression_tests.o \
+               obj/tests/property_regression_tests.o \
+               obj/tests/model_regression_tests.o \
                obj/tests/game_data_helper_stub.o \
                obj/string_utils.o obj/files.o obj/cfgfile.o obj/objs.o \
                obj/data.o obj/errs.o obj/consts_ah.o obj/atlaparser.o

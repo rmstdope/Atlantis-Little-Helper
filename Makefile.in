@@ -26,18 +26,38 @@ OBJECTS     = cfgfile.o string_utils.o files.o objs.o\
               unitpanefltr.o unitsplitdlg.o utildlgs.o
 
 TARGETS     = bin/ah
+TEST_OBJECTS = obj/tests/parser_regression_tests.o \
+               obj/tests/property_regression_tests.o \
+               obj/tests/model_regression_tests.o \
+               obj/tests/game_data_helper_stub.o \
+               obj/string_utils.o obj/files.o obj/cfgfile.o obj/objs.o \
+               obj/data.o obj/errs.o obj/consts_ah.o obj/atlaparser.o
+TEST_TARGET  = bin/parser-tests
+
+CXXFLAGS_TEST = $(CXXFLAGS) -DALH_TESTING
+TEST_CPPFLAGS = $(CPPFLAGS) -I. -Itests
 
 
 all: $(TARGETS)
 
+dirs:
+	mkdir -p bin obj obj/tests
+
 bin/ah: $(patsubst %.o,obj/%.o,$(OBJECTS))
 	$(CXX) -s $(LDFLAGS) -o $@ $(patsubst %.o,obj/%.o,$(OBJECTS)) $(LIBS)
 
-test: $(TARGETS)
-	test -e $(TARGETS)
+bin/parser-tests: $(TEST_OBJECTS)
+	$(CXX) $(LDFLAGS) -o $@ $(TEST_OBJECTS) $(LIBS)
+
+test: dirs $(TEST_TARGET)
+	./$(TEST_TARGET)
 
 clean:
 	rm -f $(patsubst %.o,obj/%.o,$(OBJECTS)) $(TARGETS)
+	rm -f $(TEST_OBJECTS) $(TEST_TARGET)
 
 $(patsubst %.o,obj/%.o,$(OBJECTS)): obj/%.o: %.cpp
 	$(CXX) -c $(CXXFLAGS) $(CPPFLAGS) $(DEFS) -o $@ $<
+
+obj/tests/%.o: tests/%.cpp | dirs
+	$(CXX) -c $(CXXFLAGS_TEST) $(TEST_CPPFLAGS) $(DEFS) -o $@ $<
