@@ -8,20 +8,7 @@ on:
 
 jobs:
   test:
-    runs-on: macos-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v5
-
-      - name: Install wxWidgets
-        run: brew install wxwidgets
-
-      - name: Run tests
-        run: make -j$(getconf _NPROCESSORS_ONLN) test
-
-  build:
-    name: build (${{ matrix.name }})
+    name: test (${{ matrix.name }})
     strategy:
       fail-fast: false
       matrix:
@@ -38,21 +25,24 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Install wxWidgets (macOS)
+      - name: Install wxWidgets and Meson (macOS)
         if: runner.os == 'macOS'
-        run: brew install wxwidgets
+        run: brew install wxwidgets meson ninja
 
-      - name: Install wxWidgets (Linux)
+      - name: Install wxWidgets and Meson (Linux)
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwxgtk3.2-dev
+          sudo apt-get install -y libwxgtk3.2-dev meson ninja-build
 
-      - name: Build
-        run: |
-          ./configure --with-python=no
-          mkdir -p obj bin
-          make -j$(getconf _NPROCESSORS_ONLN)
+      - name: Setup
+        run: meson setup build
+
+      - name: Compile
+        run: meson compile -C build
 
       - name: Verify binary was produced
-        run: test -e bin/ah
+        run: test -e build/ah
+
+      - name: Test
+        run: meson test -C build --print-errorlogs
