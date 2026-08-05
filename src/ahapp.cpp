@@ -19,6 +19,10 @@
 
 #include "stdhdr.h"
 
+#ifdef __WXMAC__
+extern "C" void ForceAppLightMode(void);
+#endif
+
 #include "wx/splitter.h"
 #include "wx/listctrl.h"
 //#include "wx/resource.h"
@@ -125,6 +129,9 @@ bool CAhApp::OnInit()
     int               sectidx;
     std::set<std::pair<std::string,std::string>> CollDedup;
 
+#ifdef __WXMAC__
+    ForceAppLightMode();
+#endif
 
     gpApp = this;
 

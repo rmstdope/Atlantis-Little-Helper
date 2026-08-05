@@ -2,13 +2,21 @@ project('atlantis-little-helper', 'cpp',
   version: '2.8.0',
   default_options: ['cpp_std=c++17', 'warning_level=0'])
 
+if host_machine.system() == 'darwin'
+  add_languages('objcpp', required: true, native: false)
+endif
+
 wx_dep = dependency('wxwidgets')
 
 root_inc = include_directories('.')
 src_inc = include_directories('src')
 tests_inc = include_directories('tests')
 
-ah_sources = files(
+ah_sources = []
+if host_machine.system() == 'darwin'
+  ah_sources += files('src/macos_appearance.mm')
+endif
+ah_sources += files(
   'src/cfgfile.cpp',
   'src/string_utils.cpp',
   'src/files.cpp',
