@@ -199,7 +199,7 @@ bool TPropertyHolder::GetJustProperty(const char    *  name,
 const char * TPropertyHolder::GetPropertyName(int no)
 {
     TProperty * pProp = m_Properties.at(no);
-    return pProp ? pProp->m_name.c_str() : nullptr;
+    return pProp ? pProp->m_name.c_str() : "";
 }
 
 //-------------------------------------------------------------------

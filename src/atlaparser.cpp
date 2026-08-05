@@ -4217,7 +4217,7 @@ bool CAtlaParser::GenGiveEverything(CUnit * pFrom, const char * To)
             propname = pFrom->GetPropertyName(no++);
             skipit   = false;
 
-            if (!propname)
+            if (!*propname)
                 break;
 
             // ignore standard properties
@@ -4268,7 +4268,7 @@ bool CAtlaParser::GenGiveEverything(CUnit * pFrom, const char * To)
             pFrom->Orders << "GIVE " << To << " " << x << " " << propname << EOL_SCR;
             Changed = true;
 
-        } while (propname);
+        } while (*propname);
 
         if (Changed)
             RunLandOrders(pLand);
@@ -5222,7 +5222,7 @@ void CAtlaParser::RunOrder_Study(std::string & Line, std::string & ErrorLine, bo
         // find min max skill level for the unit
         no = 0;
         racename = pUnit->GetPropertyName(no);
-        while (racename)
+        while (*racename)
         {
             if (gpDataHelper->IsMan(racename))
             {
@@ -5399,7 +5399,7 @@ bool CAtlaParser::CheckResourcesForProduction(CUnit * pUnit, CLand * pLand, std:
                         {
                             no = 0;
                             propname = pSharer->GetPropertyName(no);
-                            while (propname)
+                            while (*propname)
                             {
                                 if (0==stricmp(propname, details.resname[x].c_str()))
                                 {
@@ -6058,7 +6058,7 @@ void CAtlaParser::AdjustSkillsAfterGivingMen(CUnit * pUnitGive, CUnit * pUnitTak
     {
         idx      = 0;
         propname_days = tmpunits[i]->GetPropertyName(idx);
-        while (propname_days)
+        while (*propname_days)
         {
             S = propname_days;
             if (FindSubStrR(S, PRP_SKILL_DAYS_POSTFIX) == S.size()-postlen)
@@ -7005,7 +7005,7 @@ void CAtlaParser::WriteMagesCSV(const char * FName, bool vertical, const char * 
         IsMage   = false;
         i        = 0;
         propname = pUnit->GetPropertyName(i);
-        while (propname)
+        while (*propname)
         {
             if (gpDataHelper->IsRawMagicSkill(propname))
             {
@@ -7020,7 +7020,7 @@ void CAtlaParser::WriteMagesCSV(const char * FName, bool vertical, const char * 
         {
             i        = 0;
             propname = pUnit->GetPropertyName(i);
-            while (propname)
+            while (*propname)
             {
                 if (pUnit->GetProperty(propname, type, value, eNormal) && (eLong==type) )
                 {
@@ -7122,7 +7122,7 @@ void CAtlaParser::LookupAdvancedResourceVisibility(CUnit * pUnit, CLand * pLand)
     postlen = strlen(PRP_SKILL_POSTFIX);
     propidx = 0;
     propname = pUnit->GetPropertyName(propidx);
-    while (propname)
+    while (*propname)
     {
         if (pUnit->GetProperty(propname, type, value, eNormal) && (eLong==type) )
         {
