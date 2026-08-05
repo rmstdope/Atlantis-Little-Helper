@@ -66,21 +66,45 @@ test_sources = files(
 # else worth regenerating a header for.
 py_opt = get_option('python')
 ah_extra_args = []
+ah_deps = [wx_dep]
 if py_opt.allowed()
   cc = meson.get_compiler('cpp')
-  if not cc.has_header('Python.h')
-    error('python option enabled but Python.h was not found. This project\'s embedded ' +
-          'Python support only works against Python 2 headers, which are not available ' +
-          'on modern systems (see README) - matches the pre-existing --with-python limitation.')
+  py_fail_msg = ('python option enabled but no working Python 2 installation was found ' +
+                 '(Python.h identifying itself as PY_MAJOR_VERSION 2, plus a matching ' +
+                 'libpythonX.Y, are both required). This project\'s embedded Python support ' +
+                 'only works against Python 2, which is not available on modern systems ' +
+                 '(see README) - matches the pre-existing --with-python limitation.')
+
+  # A bare has_header('Python.h') check is not enough: a machine with only
+  # Python 3 headers installed (the common case today) would satisfy it and
+  # then fail later with a raw, confusing compile/link error - defeating the
+  # point of failing fast here. Confirm it is genuinely Python 2 via
+  # PY_MAJOR_VERSION, and confirm a matching library actually links, before
+  # ever adding -DHAVE_PYTHON.
+  python2_ok = cc.has_header('Python.h')
+  py_major = ''
+  if python2_ok
+    py_major = cc.get_define('PY_MAJOR_VERSION', prefix: '#include <Python.h>')
+    python2_ok = py_major == '2'
   endif
+  py2_lib = []
+  if python2_ok
+    py_minor = cc.get_define('PY_MINOR_VERSION', prefix: '#include <Python.h>')
+    py2_lib = cc.find_library('python' + py_major + '.' + py_minor, required: false)
+    python2_ok = py2_lib.found()
+  endif
+  if not python2_ok
+    error(py_fail_msg)
+  endif
+
   ah_extra_args += ['-DHAVE_PYTHON']
+  ah_deps += [py2_lib]
 endif
 
 executable('ah', ah_sources,
   include_directories: [root_inc, src_inc],
   cpp_args: ah_extra_args,
-  link_args: ['-s'],
-  dependencies: [wx_dep])
+  dependencies: ah_deps)
 
 parser_tests_exe = executable('parser-tests', test_sources + shared_sources,
   include_directories: [root_inc, src_inc, tests_inc],
