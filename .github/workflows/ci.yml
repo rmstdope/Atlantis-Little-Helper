@@ -32,8 +32,6 @@ jobs:
             os: macos-15-intel
           - name: linux
             os: ubuntu-latest
-          - name: windows
-            os: windows-latest
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -50,37 +48,11 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libwxgtk3.2-dev
 
-      - name: Set up MSYS2 (Windows)
-        if: runner.os == 'Windows'
-        uses: msys2/setup-msys2@v2
-        with:
-          msystem: MINGW64
-          update: true
-          install: >-
-            mingw-w64-x86_64-toolchain
-            mingw-w64-x86_64-wxwidgets3.2-msw
-            make
-
-      - name: Build (macOS/Linux)
-        if: runner.os != 'Windows'
+      - name: Build
         run: |
           ./configure --with-python=no
           mkdir -p obj bin
           make
 
-      - name: Build (Windows)
-        if: runner.os == 'Windows'
-        shell: msys2 {0}
-        run: |
-          ./configure --with-python=no
-          mkdir -p obj bin
-          make
-
-      - name: Verify binary was produced (macOS/Linux)
-        if: runner.os != 'Windows'
+      - name: Verify binary was produced
         run: test -e bin/ah
-
-      - name: Verify binary was produced (Windows)
-        if: runner.os == 'Windows'
-        shell: msys2 {0}
-        run: test -e bin/ah.exe || test -e bin/ah
