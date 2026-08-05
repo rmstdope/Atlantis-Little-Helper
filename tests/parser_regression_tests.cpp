@@ -5,55 +5,17 @@
 #include "consts.h"
 #include "consts_ah.h"
 #include "atlaparser.h"
+#include "test_helpers.h"
 
 #include <algorithm>
 #include <array>
 #include <cctype>
-#include <cstdio>
-#include <fstream>
-#include <iterator>
 #include <map>
-#include <stdexcept>
 #include <string>
-#include <unistd.h>
 #include <vector>
 
 namespace
 {
-class TempFile
-{
-public:
-    explicit TempFile(const std::string & contents)
-    {
-        char pattern[] = "/tmp/alh-parser-XXXXXX";
-        const int fd = mkstemp(pattern);
-        if (fd < 0)
-            throw std::runtime_error("mkstemp failed");
-
-        path_ = pattern;
-        close(fd);
-
-        std::ofstream out(path_);
-        if (!out)
-            throw std::runtime_error("failed to open temp file");
-        out << contents;
-    }
-
-    ~TempFile()
-    {
-        if (!path_.empty())
-            unlink(path_.c_str());
-    }
-
-    const std::string & path() const
-    {
-        return path_;
-    }
-
-private:
-    std::string path_;
-};
-
 class TestGameDataHelper : public CGameDataHelper
 {
 public:
@@ -282,13 +244,6 @@ static bool hasAttitudeCall(const std::vector<std::pair<int, int>> & calls, int 
     return std::find(calls.begin(), calls.end(), std::make_pair(id, attitude)) != calls.end();
 }
 
-static std::string readFile(const std::string & path)
-{
-    std::ifstream in(path);
-    if (!in)
-        throw std::runtime_error("failed to open file: " + path);
-    return std::string((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
-}
 }
 
 TEST_CASE("ParseFactionInfo captures faction id and year", "[parser]")

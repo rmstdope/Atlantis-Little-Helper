@@ -243,7 +243,8 @@ bool CFileWriter::Open(const char * szFName, const char * szMode)
 {
     Close();
 
-    m_f = fopen(szFName, szMode);
+    if (szFName && *szFName)
+        m_f = fopen(szFName, szMode);
 
     return (nullptr != m_f);
 }

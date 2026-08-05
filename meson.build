@@ -57,6 +57,8 @@ test_sources = files(
   'tests/parser_regression_tests.cpp',
   'tests/property_regression_tests.cpp',
   'tests/model_regression_tests.cpp',
+  'tests/config_regression_tests.cpp',
+  'tests/file_io_regression_tests.cpp',
   'tests/game_data_helper_stub.cpp',
 )
 
