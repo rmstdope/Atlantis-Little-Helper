@@ -155,7 +155,13 @@ bool IsInteger(const char * s)
         n++;
         s++;
     }
+
     return true;
+}
+
+static void AssignToken(std::string & dest, const char * src)
+{
+    dest = src ? src : "";
 }
 
 //======================================================================
@@ -1303,7 +1309,7 @@ plain (5,39) in Partry, contains Drimnin [city], 3217 peasants (high
                     p = GetToken(S1, p, '[', TRIM_ALL);
                     p = GetToken(S2, p, ']', TRIM_ALL);
                     p = GetToken(N2, p, '$', TRIM_ALL);
-                    N2= p;
+                    N2 = p ? p : "0";
                     n2= atol(N2.c_str());
 
                     if ((!S2.empty()) && (n2>0) )
@@ -1517,15 +1523,18 @@ int CAtlaParser::ParseTerrain(CLand * pMotherLand, int ExitDir, std::string & Fi
     x = atol(S.c_str());
 
     // yyy[,somewhere]) bla-bla-bla
-    p = GetToken(S, p, ")", ch);
+    p = GetToken(S, p, ",)", ch);
     if (!IsInteger(S.c_str()))
         goto Exit;
     y = atol(S.c_str());
     if (','==ch)
-        // we have a plane name
+    {
         p = GetToken(PlaneName, p, ')');
+        if (!p)
+            AssignToken(PlaneName, DEFAULT_PLANE);
+    }
     else
-        PlaneName = DEFAULT_PLANE;
+        AssignToken(PlaneName, DEFAULT_PLANE);
 
     if (!p)
         goto Exit;
@@ -1533,10 +1542,12 @@ int CAtlaParser::ParseTerrain(CLand * pMotherLand, int ExitDir, std::string & Fi
     p = SkipSpaces(GetToken(S, SkipSpaces(p), ' ', TRIM_ALL));
     if (0!=stricmp(S.c_str(),"in"))
         goto Exit;
-    GetToken(LandName, p, ",.", ch, TRIM_ALL);
+    p = GetToken(LandName, p, ",.", ch, TRIM_ALL);
+    if (!p)
+        goto Exit;
 
     // Remove Arcadia III reference to edge location for sailing events
-    if (strchr(LandName.c_str(), '('))
+    if (const char * lp = LandName.c_str(); lp && strchr(lp, '('))
     {
         int x = strchr(LandName.c_str(), '(') - LandName.c_str();
         DelSubStr(LandName, x, LandName.size()-x);
@@ -1689,7 +1700,9 @@ int CAtlaParser::ParseTerrain(CLand * pMotherLand, int ExitDir, std::string & Fi
     // Unfortunately, Arno in his latest game shows restricted description for hexes
     // through which your scout pass if there are no stationary units in the hex.
     
-    ComposeHexDescriptionForArnoGame(pLand->Description.c_str(), TempDescr.c_str(), CompositeDescr);
+    ComposeHexDescriptionForArnoGame(pLand->Description.empty() ? "" : pLand->Description.c_str(),
+                                     TempDescr.empty() ? "" : TempDescr.c_str(),
+                                     CompositeDescr);
     pLand->Description = CompositeDescr;
     TrimRight(pLand->Description, TRIM_ALL);
     AnalyzeTerrain(nullptr, pLand, false, ExitDir, pLand->Description);
@@ -7102,6 +7115,9 @@ void CAtlaParser::LookupAdvancedResourceVisibility(CUnit * pUnit, CLand * pLand)
     int                 i, idx;
     CProduct            Dummy;
     CProduct          * pProd;
+
+    if (!pUnit || !pLand)
+        return;
 
     postlen = strlen(PRP_SKILL_POSTFIX);
     propidx = 0;

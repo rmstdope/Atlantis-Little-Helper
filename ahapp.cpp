@@ -1518,7 +1518,8 @@ void CAhApp::SetOrdersChanged(bool Changed)
 {
     m_OrdersAreChanged = Changed;
 
-    SetMapFrameTitle();
+    if (!m_sTitle.empty())
+        SetMapFrameTitle();
 }
 
 
@@ -2606,12 +2607,15 @@ void CAhApp::PostLoadReport()
     if (pUnitPane)
         pUnitPane->m_pCurLand = nullptr; // force the unit pane to do full update
 
+    long savedUnitId = 0;
     // Restore the last selected unit in the selected hex
     if (pMapPane && m_pAtlantis)
     {
         std::string   sSection;
         sSection << "PLANE_" << pMapPane->m_SelPlane;
-        long savedUnitId = atol(GetConfig(sSection.c_str(), SZ_KEY_UNIT_SEL));
+        const char * savedUnitStr = GetConfig(sSection.c_str(), SZ_KEY_UNIT_SEL);
+        if (savedUnitStr && *savedUnitStr)
+            savedUnitId = atol(savedUnitStr);
         if (savedUnitId)
         {
             CLand * pLand = m_pAtlantis->GetLand(pMapPane->m_SelHexX, pMapPane->m_SelHexY, pMapPane->m_SelPlane, true);
@@ -2692,7 +2696,6 @@ int  CAhApp::LoadReport  (const char * FNameIn, bool Join)
         // Append unit group property names here so they are available while parsing
         for (auto & upg__ : m_UnitPropertyGroups)
             SET_UNIT_PROP_NAME(upg__.first.c_str(), eLong)
-
 
         err = m_pAtlantis->ParseRep(FName.c_str(), Join, false);
         switch (err)
