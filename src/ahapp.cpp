@@ -4745,7 +4745,7 @@ void CAhApp::FindTradeRoutes()
         
         idx      = 0;
         propnameprice = pSellLand->GetPropertyName(idx);
-        while (propnameprice)
+        while (*propnameprice)
         {
             if (pSellLand->GetProperty(propnameprice, type, value, eOriginal) && 
                 eLong==type && 
