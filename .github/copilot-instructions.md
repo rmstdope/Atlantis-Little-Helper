@@ -65,12 +65,13 @@ When asking questions to the user, always try to use the question UI/tool with p
 
 ## Repository-specific guidance
 
-- Always keep README.md up to date with major changes to the project, especially if they affect how to build the roms
+- Always keep README.md up to date with major changes to the project, especially if they affect how to build it. `doc/readme.html` also has user-facing build/installation content mixed in with feature/gameplay docs - check it too when the build process changes, since it's easy to forget in favor of the more obvious README.md.
 
 ### Build system
 
 - The project builds via Meson/Ninja (`meson.build`/`meson_options.txt`, both at the repo root) - the only build system in the repo. The old autotools/Make build and stale VC6 project files were removed in issue 34's final sub-issue once Meson was proven CI-authoritative; check git history from before that point if you need to reference the old build. `meson setup build && meson compile -C build` produces `build/ah` and `build/parser-tests` on macOS (arm64 and Intel) and Linux.
 - Application sources live under `src/` (moved there from the repo root in issue 35, ahead of the Meson/Ninja migration in issue 34). The `bitmaps/*.xpm` resource files intentionally stayed at the repo root rather than moving into `src/`, since they're resource artifacts, not application source; `src/mapframe.cpp` and `src/ahframe.cpp` still `#include` them by bare relative name, so `meson.build` carries `include_directories('.')` (repo root) alongside `include_directories('src')` for this reason.
+- `meson.build`'s `dependency('wxwidgets')` deliberately has no `modules:` kwarg. Meson then calls `wx-config` with no module arguments, which defers entirely to `wx-config`'s own default module set - verified to produce byte-identical `--cflags`/`--libs` output to the old autoconf-driven build on this machine. Don't add an explicit module list without re-verifying this still holds on all 3 CI platforms; wx-config's defaults can differ between macOS Homebrew wx 3.3 and Ubuntu apt's wx 3.2, so a hardcoded list risks silently diverging from one of them.
 
 ### Platform portability
 
@@ -81,6 +82,8 @@ When asking questions to the user, always try to use the question UI/tool with p
 - Parser regression tests live in `tests/parser_regression_tests.cpp` (Catch2, vendored at `tests/catch.hpp`), run via `meson test -C build`. Fixture files live in `tests/fixtures/*.rep`/`*.ord` - mostly real, sanitized (passwords replaced with a placeholder) excerpts from historical game reports, not synthetic.
 - `meson.build`'s `test('parser-tests', ...)` forces `workdir: meson.project_source_root()`, because fixtures are referenced via repo-root-relative paths (e.g. `tests/fixtures/structures.rep`) and `meson test` otherwise runs from the build directory.
 - `.gitignore`'s blanket `*.ord`/`*.his`/`*.cfg` game-file exclusion has an explicit `!tests/fixtures/*.ord` carve-out. Add a similar carve-out if introducing new fixture file extensions (e.g. `.his`).
+- `meson test -C build`'s summary line (`1/1 ... OK`) counts Meson-level `test()` targets, not the Catch2 test cases inside them - the single `parser-tests` binary bundles all three test files' `TEST_CASE`s (71 cases, 316 assertions) into one target. To see the actual Catch2 output/counts, use `meson test -C build --print-errorlogs`, read `build/meson-logs/testlog.txt`, or run `./build/parser-tests` directly.
+- Two C++ lifetime-bug patterns already bit this suite once (found via AddressSanitizer while verifying issue 37's meson.build, both compiled and passed fine at `-O2` but crashed reliably at Meson's default `-O0` debug buildtype) and could recur in new tests: (1) code that stores a raw pointer into the global `gpDataHelper` (e.g. `CAtlaParser`'s pointer-taking constructor) needs an RAII guard to restore the previous value once it goes out of scope - see `ScopedDataHelper` in `tests/model_regression_tests.cpp`/`tests/parser_regression_tests.cpp`; (2) `CLand` holds raw (non-owning) pointers to `CUnit` objects added via `AddUnit`, so those `CUnit` locals must be declared *before* the `CLand` in the same scope (C++ destroys locals in reverse declaration order) - see the `CLand AddUnit`/`RemoveUnit`/`CalcStructsLoad` tests. If a new test crashes only under `meson test` (or `-Db_sanitize=address`) and not at `-O2`, suspect one of these two patterns first.
 
 ### CI
 
