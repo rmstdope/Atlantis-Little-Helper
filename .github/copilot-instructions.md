@@ -66,3 +66,22 @@ When asking questions to the user, always try to use the question UI/tool with p
 ## Repository-specific guidance
 
 - Always keep README.md up to date with major changes to the project, especially if they affect how to build the roms
+
+### Build system
+
+- The project builds via autoconf (`configure.in` -> `configure`, `Makefile.in` -> `Makefile`), but the committed `Makefile` is hand-maintained and tracked directly in git rather than regenerated per checkout. It currently hardcodes macOS ARM64 + Homebrew wxWidgets 3.3 paths (`/opt/homebrew/...`), so it works as-is on that exact platform without running `./configure`, but is not portable.
+- `Makefile.in` (the actual autoconf template) is missing the `test`/`bin/parser-tests` targets that only exist in the committed `Makefile` (added directly, not via the template, in PR #19). Running `./configure` fresh regenerates `Makefile` from `Makefile.in` and will silently drop `make test` until `Makefile.in` is updated to match. Keep both in sync when changing test build wiring.
+- CI's `test` job (macOS) relies on the committed `Makefile` as-is (no `./configure` step). CI's `build` matrix jobs run `./configure --with-python=no` fresh on each platform (needed for portable wx-config-derived flags) and only build `bin/ah` (the `all` target), not the test suite.
+
+### Platform portability
+
+- The generic property system (`TPropertyHolder::SetProperty`/`GetProperty`, `objs.h`/`objs.cpp`) stores `eLong` values by smuggling a `long` through a `void*`. This is safe on LP64 platforms (macOS, Linux, where `sizeof(long) == sizeof(void*)`) but unsafe on Windows (LLP64, where `long` is 32-bit while pointers are 64-bit): some call sites fail to compile, others (`(const void*&)variable` reference reinterpretation) compile cleanly but corrupt the stack at runtime. See issue #28 for the full site inventory before assuming a Windows build (or any future LLP64 target) is safe just because it compiles.
+
+### Testing
+
+- Parser regression tests live in `tests/parser_regression_tests.cpp` (Catch2, vendored at `tests/catch.hpp`), run via `make test`. Fixture files live in `tests/fixtures/*.rep`/`*.ord` - mostly real, sanitized (passwords replaced with a placeholder) excerpts from historical game reports, not synthetic.
+- `.gitignore`'s blanket `*.ord`/`*.his`/`*.cfg` game-file exclusion has an explicit `!tests/fixtures/*.ord` carve-out. Add a similar carve-out if introducing new fixture file extensions (e.g. `.his`).
+
+### CI
+
+- GitHub-hosted macOS runner labels deprecate on a rolling ~1 year cycle (e.g. `macos-13` retired December 2025; `macos-14` deprecating July-November 2026). Before pinning a `runs-on:` OS version, verify current support status (e.g. via a web search or the actions/runner-images repo) rather than assuming a previously-used label is still valid. The same applies to Linux package names and cross-toolchain package names (e.g. MSYS2/MinGW) when adding new platform targets - verify before writing the workflow to avoid avoidable iteration cycles.
