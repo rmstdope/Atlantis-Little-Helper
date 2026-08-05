@@ -1,0 +1,2 @@
+option('python', type: 'feature', value: 'disabled',
+  description: 'Embedded Python extension support. Only ever worked against Python 2 headers, not available on modern systems - mirrors --with-python\'s existing (non-functional) status quo.')
