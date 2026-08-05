@@ -43,10 +43,10 @@ all: $(TARGETS)
 dirs:
 	mkdir -p bin obj obj/tests
 
-bin/ah: $(patsubst %.o,obj/%.o,$(OBJECTS))
+bin/ah: $(patsubst %.o,obj/%.o,$(OBJECTS)) | dirs
 	$(CXX) -s $(LDFLAGS) -o $@ $(patsubst %.o,obj/%.o,$(OBJECTS)) $(LIBS)
 
-bin/parser-tests: $(TEST_OBJECTS)
+bin/parser-tests: $(TEST_OBJECTS) | dirs
 	$(CXX) $(LDFLAGS) -o $@ $(TEST_OBJECTS) $(LIBS)
 
 test: dirs $(TEST_TARGET)
@@ -56,7 +56,7 @@ clean:
 	rm -f $(patsubst %.o,obj/%.o,$(OBJECTS)) $(TARGETS)
 	rm -f $(TEST_OBJECTS) $(TEST_TARGET)
 
-$(patsubst %.o,obj/%.o,$(OBJECTS)): obj/%.o: %.cpp
+$(patsubst %.o,obj/%.o,$(OBJECTS)): obj/%.o: %.cpp | dirs
 	$(CXX) -c $(CXXFLAGS) $(CPPFLAGS) $(DEFS) -o $@ $<
 
 obj/tests/%.o: tests/%.cpp | dirs
