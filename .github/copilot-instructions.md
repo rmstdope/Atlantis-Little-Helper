@@ -69,9 +69,9 @@ When asking questions to the user, always try to use the question UI/tool with p
 
 ### Build system
 
-- The project builds via autoconf (`configure.in` -> `configure`, `Makefile.in` -> `Makefile`), but the committed `Makefile` is hand-maintained and tracked directly in git rather than regenerated per checkout. It currently hardcodes macOS ARM64 + Homebrew wxWidgets 3.3 paths (`/opt/homebrew/...`), so it works as-is on that exact platform without running `./configure`, but is not portable.
-- CI's `test` job (macOS) relies on the committed `Makefile` as-is (no `./configure` step). CI's `build` matrix jobs run `./configure --with-python=no` fresh on each platform (needed for portable wx-config-derived flags) and only build `bin/ah` (the `all` target), not the test suite.
-- Application sources live under `src/` (moved there from the repo root in issue 35, ahead of the Meson/Ninja migration in issue 34). `config.h` (autoconf-generated) and the `bitmaps/*.xpm` resource files intentionally stayed at the repo root rather than moving into `src/`, since they're build/resource artifacts, not application source. `src/mapframe.cpp`, `src/ahframe.cpp`, and `src/extend.h` still `#include` them by bare relative name, so both `Makefile` and `Makefile.in` carry an explicit `-I.` (repo root) alongside `-Isrc` (see `SRC_INCLUDES`) so the compiler's same-directory-then-`-I` fallback still finds them. Keep this in mind if either file's location changes again.
+- The project builds via Meson/Ninja (`meson.build`/`meson_options.txt`, both at the repo root) - this is now CI-authoritative (issue 34's CI-migration sub-issue). `meson setup build && meson compile -C build` produces `build/ah` and `build/parser-tests` on macOS (arm64 and Intel) and Linux.
+- The old autotools/Make build (`configure.in`, `configure`, `Makefile.in`, `Makefile`, `aclocal.m4`, `config.h.in`) still exists in the repo and still works locally (`./configure --with-python=no && mkdir -p obj bin && make`), but is no longer exercised by CI and has no obligation to stay in sync with future source changes. It's kept only until a later "retire old files" sub-issue of issue 34 removes it - don't treat its presence as evidence it's still maintained.
+- Application sources live under `src/` (moved there from the repo root in issue 35, ahead of the Meson/Ninja migration in issue 34). The `bitmaps/*.xpm` resource files intentionally stayed at the repo root rather than moving into `src/`, since they're resource artifacts, not application source; `src/mapframe.cpp` and `src/ahframe.cpp` still `#include` them by bare relative name, so `meson.build` carries `include_directories('.')` (repo root) alongside `include_directories('src')` for this reason. (The old Makefile additionally needed the root include for `config.h`; `meson.build` doesn't use `config.h`/`HAVE_CONFIG_H` at all - it passes `HAVE_PYTHON` directly as a compile define when the `python` option is enabled, so this doesn't apply there.)
 
 ### Platform portability
 
@@ -79,9 +79,11 @@ When asking questions to the user, always try to use the question UI/tool with p
 
 ### Testing
 
-- Parser regression tests live in `tests/parser_regression_tests.cpp` (Catch2, vendored at `tests/catch.hpp`), run via `make test`. Fixture files live in `tests/fixtures/*.rep`/`*.ord` - mostly real, sanitized (passwords replaced with a placeholder) excerpts from historical game reports, not synthetic.
+- Parser regression tests live in `tests/parser_regression_tests.cpp` (Catch2, vendored at `tests/catch.hpp`), run via `meson test -C build` (CI-authoritative) or the legacy `make test`. Fixture files live in `tests/fixtures/*.rep`/`*.ord` - mostly real, sanitized (passwords replaced with a placeholder) excerpts from historical game reports, not synthetic.
+- `meson.build`'s `test('parser-tests', ...)` forces `workdir: meson.project_source_root()`, because fixtures are referenced via repo-root-relative paths (e.g. `tests/fixtures/structures.rep`) and `meson test` otherwise runs from the build directory.
 - `.gitignore`'s blanket `*.ord`/`*.his`/`*.cfg` game-file exclusion has an explicit `!tests/fixtures/*.ord` carve-out. Add a similar carve-out if introducing new fixture file extensions (e.g. `.his`).
 
 ### CI
 
+- CI runs a single 3-platform matrix job (`test`, over macos-arm64/macos-intel/linux) that installs wxWidgets plus Meson/Ninja, then runs `meson setup`/`meson compile`/`meson test` on each platform. This is the first time the regression suite runs on Linux and Intel in CI, not just macOS.
 - GitHub-hosted macOS runner labels deprecate on a rolling ~1 year cycle (e.g. `macos-13` retired December 2025; `macos-14` deprecating July-November 2026). Before pinning a `runs-on:` OS version, verify current support status (e.g. via a web search or the actions/runner-images repo) rather than assuming a previously-used label is still valid. The same applies to Linux package names and cross-toolchain package names (e.g. MSYS2/MinGW) when adding new platform targets - verify before writing the workflow to avoid avoidable iteration cycles.
