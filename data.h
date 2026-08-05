@@ -622,31 +622,33 @@ public:
 class CGameDataHelper
 {
 public:
-    void         ReportError       (const char * msg, int msglen, bool orderrelated);
-    long         GetStudyCost      (const char * skill);
-    long         GetStructAttr     (const char * kind, long & MaxLoad, long & MinSailingPower);
-    const char * GetConfString     (const char * section, const char * param);
-    bool         GetOrderId        (const char * order, long & id);
-    bool         IsTradeItem       (const char * item);
-    bool         IsMan             (const char * item);
-    const char * GetWeatherLine    (bool IsCurrent, bool IsGood, int Zone);
-    const char * ResolveAlias      (const char * alias);
-    bool         GetItemWeights    (const char * item, int *& weights, const char **& movenames, int & movecount );
-    void         GetMoveNames      (const char **& movenames);
-    bool         GetTropicZone     (const char * plane, long & y_min, long & y_max);
-    void         SetTropicZone     (const char * plane, long y_min, long y_max);
-    void         GetProdDetails    (const char * item, TProdDetails & details);
-    long         MaxSkillLevel     (const char * race, const char * skill, const char * leadership, bool IsArcadiaSkillSystem);
-    bool         ImmediateProdCheck();
-    bool         CanSeeAdvResources(const char * skillname, const char * terrain, std::vector<long> & Levels, std::vector<std::string> & Resources);
-    bool         ShowMoveWarnings  ();
-    bool         IsRawMagicSkill   (const char * skillname);
-    int          GetAttitudeForFaction(int id);
-    void         SetAttitudeForFaction(int id, int attitude);
-    void         SetPlayingFaction (long id);
-    bool         IsWagon           (const char * item);
-    bool         IsWagonPuller     (const char * item);
-    int          WagonCapacity     ();
+    virtual ~CGameDataHelper() = default;
+
+    virtual void         ReportError       (const char * msg, int msglen, bool orderrelated);
+    virtual long         GetStudyCost      (const char * skill);
+    virtual long         GetStructAttr     (const char * kind, long & MaxLoad, long & MinSailingPower);
+    virtual const char * GetConfString     (const char * section, const char * param);
+    virtual bool         GetOrderId        (const char * order, long & id);
+    virtual bool         IsTradeItem       (const char * item);
+    virtual bool         IsMan             (const char * item);
+    virtual const char * GetWeatherLine    (bool IsCurrent, bool IsGood, int Zone);
+    virtual const char * ResolveAlias      (const char * alias);
+    virtual bool         GetItemWeights    (const char * item, int *& weights, const char **& movenames, int & movecount );
+    virtual void         GetMoveNames      (const char **& movenames);
+    virtual bool         GetTropicZone     (const char * plane, long & y_min, long & y_max);
+    virtual void         SetTropicZone     (const char * plane, long y_min, long y_max);
+    virtual void         GetProdDetails    (const char * item, TProdDetails & details);
+    virtual long         MaxSkillLevel     (const char * race, const char * skill, const char * leadership, bool IsArcadiaSkillSystem);
+    virtual bool         ImmediateProdCheck();
+    virtual bool         CanSeeAdvResources(const char * skillname, const char * terrain, std::vector<long> & Levels, std::vector<std::string> & Resources);
+    virtual bool         ShowMoveWarnings  ();
+    virtual bool         IsRawMagicSkill   (const char * skillname);
+    virtual int          GetAttitudeForFaction(int id);
+    virtual void         SetAttitudeForFaction(int id, int attitude);
+    virtual void         SetPlayingFaction (long id);
+    virtual bool         IsWagon           (const char * item);
+    virtual bool         IsWagonPuller     (const char * item);
+    virtual int          WagonCapacity     ();
 };
 
 extern CGameDataHelper * gpDataHelper;
