@@ -69,9 +69,8 @@ When asking questions to the user, always try to use the question UI/tool with p
 
 ### Build system
 
-- The project builds via Meson/Ninja (`meson.build`/`meson_options.txt`, both at the repo root) - this is now CI-authoritative (issue 34's CI-migration sub-issue). `meson setup build && meson compile -C build` produces `build/ah` and `build/parser-tests` on macOS (arm64 and Intel) and Linux.
-- The old autotools/Make build (`configure.in`, `configure`, `Makefile.in`, `Makefile`, `aclocal.m4`, `config.h.in`) still exists in the repo and still works locally (`./configure --with-python=no && mkdir -p obj bin && make`), but is no longer exercised by CI and has no obligation to stay in sync with future source changes. It's kept only until a later "retire old files" sub-issue of issue 34 removes it - don't treat its presence as evidence it's still maintained.
-- Application sources live under `src/` (moved there from the repo root in issue 35, ahead of the Meson/Ninja migration in issue 34). The `bitmaps/*.xpm` resource files intentionally stayed at the repo root rather than moving into `src/`, since they're resource artifacts, not application source; `src/mapframe.cpp` and `src/ahframe.cpp` still `#include` them by bare relative name, so `meson.build` carries `include_directories('.')` (repo root) alongside `include_directories('src')` for this reason. (The old Makefile additionally needed the root include for `config.h`; `meson.build` doesn't use `config.h`/`HAVE_CONFIG_H` at all - it passes `HAVE_PYTHON` directly as a compile define when the `python` option is enabled, so this doesn't apply there.)
+- The project builds via Meson/Ninja (`meson.build`/`meson_options.txt`, both at the repo root) - the only build system in the repo. The old autotools/Make build and stale VC6 project files were removed in issue 34's final sub-issue once Meson was proven CI-authoritative; check git history from before that point if you need to reference the old build. `meson setup build && meson compile -C build` produces `build/ah` and `build/parser-tests` on macOS (arm64 and Intel) and Linux.
+- Application sources live under `src/` (moved there from the repo root in issue 35, ahead of the Meson/Ninja migration in issue 34). The `bitmaps/*.xpm` resource files intentionally stayed at the repo root rather than moving into `src/`, since they're resource artifacts, not application source; `src/mapframe.cpp` and `src/ahframe.cpp` still `#include` them by bare relative name, so `meson.build` carries `include_directories('.')` (repo root) alongside `include_directories('src')` for this reason.
 
 ### Platform portability
 
@@ -79,7 +78,7 @@ When asking questions to the user, always try to use the question UI/tool with p
 
 ### Testing
 
-- Parser regression tests live in `tests/parser_regression_tests.cpp` (Catch2, vendored at `tests/catch.hpp`), run via `meson test -C build` (CI-authoritative) or the legacy `make test`. Fixture files live in `tests/fixtures/*.rep`/`*.ord` - mostly real, sanitized (passwords replaced with a placeholder) excerpts from historical game reports, not synthetic.
+- Parser regression tests live in `tests/parser_regression_tests.cpp` (Catch2, vendored at `tests/catch.hpp`), run via `meson test -C build`. Fixture files live in `tests/fixtures/*.rep`/`*.ord` - mostly real, sanitized (passwords replaced with a placeholder) excerpts from historical game reports, not synthetic.
 - `meson.build`'s `test('parser-tests', ...)` forces `workdir: meson.project_source_root()`, because fixtures are referenced via repo-root-relative paths (e.g. `tests/fixtures/structures.rep`) and `meson test` otherwise runs from the build directory.
 - `.gitignore`'s blanket `*.ord`/`*.his`/`*.cfg` game-file exclusion has an explicit `!tests/fixtures/*.ord` carve-out. Add a similar carve-out if introducing new fixture file extensions (e.g. `.his`).
 

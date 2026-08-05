@@ -1,8 +1,0 @@
-language: c
-compiler:
-  - gcc
-  - clang
-script: s/build
-before_install:
-  - sudo apt-get update -qq
-  - sudo apt-get install -qq libwxgtk3.0-dev
