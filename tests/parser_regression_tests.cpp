@@ -261,6 +261,8 @@ static bool hasAttitudeCall(const std::vector<std::pair<int, int>> & calls, int 
 static std::string readFile(const std::string & path)
 {
     std::ifstream in(path);
+    if (!in)
+        throw std::runtime_error("failed to open file: " + path);
     return std::string((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
 }
 }
@@ -691,11 +693,17 @@ TEST_CASE("SaveOrders with decorate writes a land-description comment before eac
 
     auto decorated = makeReport("");
     REQUIRE(harness.parser.SaveOrders(decorated.path().c_str(), "pw", true, 123) == ERR_OK);
-    CHECK(readFile(decorated.path()).find("plain (0,0) in Start") != std::string::npos);
+    const std::string decoratedContents = readFile(decorated.path());
+    CHECK(decoratedContents.find("plain (0,0) in Start") != std::string::npos);
+    CHECK(decoratedContents.find("unit 1") != std::string::npos);
+    CHECK(decoratedContents.find("hold") != std::string::npos);
 
     auto plain = makeReport("");
     REQUIRE(harness.parser.SaveOrders(plain.path().c_str(), "pw", false, 123) == ERR_OK);
-    CHECK(readFile(plain.path()).find("plain (0,0) in Start") == std::string::npos);
+    const std::string plainContents = readFile(plain.path());
+    CHECK(plainContents.find("unit 1") != std::string::npos);
+    CHECK(plainContents.find("hold") != std::string::npos);
+    CHECK(plainContents.find("plain (0,0) in Start") == std::string::npos);
 }
 
 TEST_CASE("LoadOrders ingests a real multi-unit order file and infers the faction id", "[parser]")
