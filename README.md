@@ -10,6 +10,8 @@ Requirements:
 
 - A C++17 compiler
 - [Meson](https://mesonbuild.com/) and [Ninja](https://ninja-build.org/)
+  - macOS: `brew install meson ninja`
+  - Linux (Debian/Ubuntu): `sudo apt-get install meson ninja-build`
 - wxWidgets 3.x
   - macOS: `brew install wxwidgets`
   - Linux (Debian/Ubuntu): `sudo apt-get install libwxgtk3.2-dev`
