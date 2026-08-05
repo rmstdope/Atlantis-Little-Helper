@@ -217,6 +217,11 @@ DefaultConfigRec DefaultConfig[] =
     {SZ_SECT_WND_LST_COLEDIT_DLG,     SZ_KEY_X2             ,     "750"               },
     {SZ_SECT_WND_LST_COLEDIT_DLG,     SZ_KEY_Y2             ,     "600"               },
 
+    {SZ_SECT_WND_OPTIONS_DLG    ,     SZ_KEY_X1             ,     "250"               },
+    {SZ_SECT_WND_OPTIONS_DLG    ,     SZ_KEY_Y1             ,     "150"               },
+    {SZ_SECT_WND_OPTIONS_DLG    ,     SZ_KEY_X2             ,     "750"               },
+    {SZ_SECT_WND_OPTIONS_DLG    ,     SZ_KEY_Y2             ,     "600"               },
+
 
     {SZ_SECT_LIST_COL_CURRENT  , SZ_KEY_LIS_COL_UNITS_HEX  ,     SZ_SECT_LIST_COL_UNIT_DEF                },
     {SZ_SECT_LIST_COL_CURRENT  , SZ_KEY_LIS_COL_UNITS_FILTER,    SZ_SECT_LIST_COL_UNIT_FLTR_DEF           },
