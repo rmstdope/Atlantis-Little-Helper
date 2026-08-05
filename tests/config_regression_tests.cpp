@@ -21,6 +21,15 @@ std::vector<std::string> collectSectionNames(CConfigFile & cfg, const char * sec
     }
     return names;
 }
+
+// GetByName() returns nullptr when the key is missing; fail with a clear
+// assertion instead of constructing std::string(nullptr) (undefined behavior).
+std::string requireValue(CConfigFile & cfg, const char * section, const char * name)
+{
+    const char * value = cfg.GetByName(section, name);
+    REQUIRE(value != nullptr);
+    return value;
+}
 }
 
 //=============================================================
@@ -31,11 +40,11 @@ TEST_CASE("CConfigFile Load parses the sample fixture's sections and values", "[
     CConfigFile cfg;
     REQUIRE(cfg.Load("tests/fixtures/sample_config.cfg"));
 
-    CHECK(std::string(cfg.GetByName("General", "AppName")) == "Atlantis Little Helper");
-    CHECK(std::string(cfg.GetByName("General", "Version")) == "1.2.3");
-    CHECK(std::string(cfg.GetByName("General", "Empty")) == "");
-    CHECK(std::string(cfg.GetByName("Display", "Theme")) == "Dark");
-    CHECK(std::string(cfg.GetByName("Display", "Formula")) == "a=b+c");
+    CHECK(requireValue(cfg, "General", "AppName") == "Atlantis Little Helper");
+    CHECK(requireValue(cfg, "General", "Version") == "1.2.3");
+    CHECK(requireValue(cfg, "General", "Empty") == "");
+    CHECK(requireValue(cfg, "Display", "Theme") == "Dark");
+    CHECK(requireValue(cfg, "Display", "Formula") == "a=b+c");
 }
 
 TEST_CASE("CConfigFile GetByName is case-insensitive on section and name, and returns null when missing", "[config]")
@@ -44,9 +53,9 @@ TEST_CASE("CConfigFile GetByName is case-insensitive on section and name, and re
     CConfigFile cfg;
     REQUIRE(cfg.Load(file.path().c_str()));
 
-    CHECK(std::string(cfg.GetByName("Section", "Name")) == "Value");
-    CHECK(std::string(cfg.GetByName("section", "name")) == "Value");
-    CHECK(std::string(cfg.GetByName("SECTION", "NAME")) == "Value");
+    CHECK(requireValue(cfg, "Section", "Name") == "Value");
+    CHECK(requireValue(cfg, "section", "name") == "Value");
+    CHECK(requireValue(cfg, "SECTION", "NAME") == "Value");
 
     CHECK(cfg.GetByName("Other", "Name") == nullptr);
     CHECK(cfg.GetByName("Section", "Missing") == nullptr);
@@ -90,10 +99,10 @@ TEST_CASE("CConfigFile Save+Load round trip via the sample fixture preserves str
 
     CConfigFile reloaded;
     REQUIRE(reloaded.Load(output.path().c_str()));
-    CHECK(std::string(reloaded.GetByName("General", "AppName")) == "Atlantis Little Helper");
-    CHECK(std::string(reloaded.GetByName("General", "Version")) == "1.2.3");
-    CHECK(std::string(reloaded.GetByName("Display", "Theme")) == "Dark");
-    CHECK(std::string(reloaded.GetByName("Display", "Formula")) == "a=b+c");
+    CHECK(requireValue(reloaded, "General", "AppName") == "Atlantis Little Helper");
+    CHECK(requireValue(reloaded, "General", "Version") == "1.2.3");
+    CHECK(requireValue(reloaded, "Display", "Theme") == "Dark");
+    CHECK(requireValue(reloaded, "Display", "Formula") == "a=b+c");
 
     // The omitted blank value does not resurrect itself on the next load.
     CHECK(reloaded.GetByName("General", "Empty") == nullptr);
@@ -105,14 +114,14 @@ TEST_CASE("CConfigFile Save omits blank/whitespace-only values but keeps them qu
     cfg.SetByName("Sect", "Real", "Value");
     cfg.SetByName("Sect", "Blank", "   ");
 
-    CHECK(std::string(cfg.GetByName("Sect", "Blank")) == "   ");
+    CHECK(requireValue(cfg, "Sect", "Blank") == "   ");
 
     TempFile output("");
     REQUIRE(cfg.Save(output.path().c_str()));
 
     CConfigFile reloaded;
     REQUIRE(reloaded.Load(output.path().c_str()));
-    CHECK(std::string(reloaded.GetByName("Sect", "Real")) == "Value");
+    CHECK(requireValue(reloaded, "Sect", "Real") == "Value");
     CHECK(reloaded.GetByName("Sect", "Blank") == nullptr);
 }
 
@@ -132,16 +141,16 @@ TEST_CASE("CConfigFile SetByName updates an existing key, inserts a new key, and
     CConfigFile cfg;
 
     cfg.SetByName("Sect", "Key", "V1");
-    CHECK(std::string(cfg.GetByName("Sect", "Key")) == "V1");
+    CHECK(requireValue(cfg, "Sect", "Key") == "V1");
 
     cfg.SetByName("Sect", "Key", "V2");
-    CHECK(std::string(cfg.GetByName("Sect", "Key")) == "V2");
+    CHECK(requireValue(cfg, "Sect", "Key") == "V2");
 
     cfg.SetByName("Sect", "Key", nullptr);
     CHECK(cfg.GetByName("Sect", "Key") == nullptr);
 
     cfg.SetByName("Sect", "NewKey", "New");
-    CHECK(std::string(cfg.GetByName("Sect", "NewKey")) == "New");
+    CHECK(requireValue(cfg, "Sect", "NewKey") == "New");
 }
 
 TEST_CASE("CConfigFile RemoveSection removes only the matching section's entries, case-insensitively", "[config]")
@@ -155,7 +164,7 @@ TEST_CASE("CConfigFile RemoveSection removes only the matching section's entries
 
     CHECK(cfg.GetByName("SectA", "Key1") == nullptr);
     CHECK(cfg.GetByName("SectA", "Key2") == nullptr);
-    CHECK(std::string(cfg.GetByName("SectB", "Key1")) == "B1");
+    CHECK(requireValue(cfg, "SectB", "Key1") == "B1");
 }
 
 //=============================================================
@@ -209,7 +218,7 @@ TEST_CASE("CConfigFile Load discards a line with a name but no '=' before the ne
     CConfigFile cfg;
     REQUIRE(cfg.Load(file.path().c_str()));
 
-    CHECK(std::string(cfg.GetByName("Sect", "Good")) == "Value");
+    CHECK(requireValue(cfg, "Sect", "Good") == "Value");
     CHECK(collectSectionNames(cfg, "Sect").size() == 1);
 }
 
@@ -219,7 +228,7 @@ TEST_CASE("CConfigFile Load keeps the first occurrence of a duplicate key and dr
     CConfigFile cfg;
     REQUIRE(cfg.Load(file.path().c_str()));
 
-    CHECK(std::string(cfg.GetByName("Sect", "Key")) == "First");
+    CHECK(requireValue(cfg, "Sect", "Key") == "First");
     CHECK(collectSectionNames(cfg, "Sect").size() == 1);
 }
 
@@ -229,5 +238,5 @@ TEST_CASE("CConfigFile Load parses CRLF-terminated files the same as LF-terminat
     CConfigFile cfg;
     REQUIRE(cfg.Load(file.path().c_str()));
 
-    CHECK(std::string(cfg.GetByName("Sect", "Key")) == "Value");
+    CHECK(requireValue(cfg, "Sect", "Key") == "Value");
 }

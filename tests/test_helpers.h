@@ -35,6 +35,12 @@ public:
             unlink(path_.c_str());
     }
 
+    // Owns a filesystem path and unlinks it on destruction - copying (or
+    // moving, since a moved-from path_ would still be unlinked) would let
+    // two instances race to unlink the same path.
+    TempFile(const TempFile &) = delete;
+    TempFile & operator=(const TempFile &) = delete;
+
     const std::string & path() const
     {
         return path_;
