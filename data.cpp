@@ -22,8 +22,6 @@
 #include <stdarg.h>
 #include <math.h>
 
-#include "stdhdr.h"
-
 #include "data.h"
 
 #include "string_utils.h"
@@ -33,8 +31,6 @@
 #include "consts.h"
 #include "consts_ah.h"
 #include "objs.h"
-
-#include "ahapp.h"
 
 CGameDataHelper * gpDataHelper = nullptr;
 
@@ -481,7 +477,7 @@ CStruct * CLand::AddNewStruct(CStruct * pNewStruct)
 //-------------------------------------------------------------
 
 
-void CLand::SetFlagsFromUnits()
+void CLand::SetFlagsFromUnits(CAtlaParser* p)
 {
     int                 i;
     int                 alarm=ATT_FRIEND1;
@@ -498,7 +494,10 @@ void CLand::SetFlagsFromUnits()
 
     Flags &= ~(LAND_TAX_NEXT | LAND_TRADE_NEXT);
     AlarmFlags = 0;
-    player_id=atol(gpApp->GetConfig(SZ_SECT_ATTITUDES  , SZ_ATT_PLAYER_ID));
+    {
+        const char* pid = (p && p->m_pConfig) ? p->m_pConfig->GetByName(SZ_SECT_ATTITUDES, SZ_ATT_PLAYER_ID) : nullptr;
+        player_id = atol(pid ? pid : "0");
+    }
 
     for(i=ATT_UNDECLARED; i>=0; i--) Troops[i]=0;
 
@@ -602,18 +601,21 @@ void CLand::SetFlagsFromUnits()
     if((alarm > guard_stance) && (alarm > claim) && (alarm > ATT_FRIEND2)) AlarmFlags |= ALARM;
 
     // normalise troops
-    int minimen = 2*atol(gpApp->GetConfig(SZ_SECT_COMMON  , SZ_KEY_MIN_SEL_MEN));
-    for(i=ATT_UNDECLARED; i>=0; i--)
     {
-        long limit = 2000;
-        men = Troops[i];
-        Troops[i]=0;
-        for(int f=10; f>=3; f-=1)
+        const char* mm = (p && p->m_pConfig) ? p->m_pConfig->GetByName(SZ_SECT_COMMON, SZ_KEY_MIN_SEL_MEN) : nullptr;
+        int minimen = 2 * atol(mm ? mm : "0");
+        for(i=ATT_UNDECLARED; i>=0; i--)
         {
-            long c = (long) ((float) f * f / 100 * limit);
-            if(men >= c) Troops[i]++;
+            long limit = 2000;
+            men = Troops[i];
+            Troops[i]=0;
+            for(int f=10; f>=3; f-=1)
+            {
+                long c = (long) ((float) f * f / 100 * limit);
+                if(men >= c) Troops[i]++;
+            }
+            if(men >= minimen) Troops[i]++;
         }
-        if(men >= minimen) Troops[i]++;
     }
 }
 
@@ -987,7 +989,6 @@ bool CUnit::GetProperty(const char  *  name,
         type  = eCharPtr;
         SetProperty(PRP_FLAGS_STANDARD, type, sValue.c_str(), eNormal);
 
-        LoadCustomFlagNames();
         sValue.clear();
         x = 1;
         for (i=0; i<UNIT_CUSTOM_FLAG_COUNT; i++)
@@ -1102,21 +1103,22 @@ bool CUnit::GetProperty(const char  *  name,
 
 //-------------------------------------------------------------
 
-void CUnit::LoadCustomFlagNames()
+void CUnit::LoadCustomFlagNames(CConfigFile* cfg)
 {
-    if (!m_CustomFlagNamesLoaded)
-    {
-        int  i;
-        std::string sKey;
+    if (!cfg)
+        return;
 
-        for (i=0; i<UNIT_CUSTOM_FLAG_COUNT; i++)
-        {
-            sKey.clear();
-            sKey << (long)i;
-            m_CustomFlagNames[i] = gpApp->GetConfig(SZ_SECT_UNIT_FLAG_NAMES, sKey.c_str());
-        }
-        m_CustomFlagNamesLoaded = true;
+    int  i;
+    std::string sKey;
+
+    for (i=0; i<UNIT_CUSTOM_FLAG_COUNT; i++)
+    {
+        sKey.clear();
+        sKey << (long)i;
+        const char* val = cfg->GetByName(SZ_SECT_UNIT_FLAG_NAMES, sKey.c_str());
+        m_CustomFlagNames[i] = val ? val : "";
     }
+    m_CustomFlagNamesLoaded = true;
 }
 
 //-------------------------------------------------------------
@@ -1393,7 +1395,7 @@ void SplitQualifiedPropertyName(const char * fullname, std::string & Prefix, std
 
 //--------------------------------------------------------------------------
 
-bool EvaluateBaseObjectByBoxes(CBaseObject * pObj, std::string * Property, eCompareOp * CompareOp, std::string * sValue, long * lValue, int count)
+bool EvaluateBaseObjectByBoxes(CBaseObject * pObj, std::string * Property, eCompareOp * CompareOp, std::string * sValue, long * lValue, int count, CAtlaParser* pParser)
 {
     int i;
     EValueType       type;
@@ -1406,20 +1408,17 @@ bool EvaluateBaseObjectByBoxes(CBaseObject * pObj, std::string * Property, eComp
         {
             if ( !pObj->GetProperty(Property[i].c_str(), type, value, eNormal))
             {
-                // make an empty sValue
-                auto it__ = gpApp->m_pAtlantis->m_UnitPropertyTypes.find(Property[i].c_str());
-                if (it__ != gpApp->m_pAtlantis->m_UnitPropertyTypes.end())
+                // make an empty sValue based on the property type registry
+                type  = eLong;
+                value = 0;
+                if (pParser)
                 {
-                    type = (EValueType)it__->second;
-                    if (eLong == type)
-                        value = 0;
-                    else
-                        value = "";
-                }
-                else
-                {
-                    type = eLong;
-                    value = 0;
+                    auto it__ = pParser->m_UnitPropertyTypes.find(Property[i].c_str());
+                    if (it__ != pParser->m_UnitPropertyTypes.end())
+                    {
+                        type = (EValueType)it__->second;
+                        value = (eLong == type) ? 0 : reinterpret_cast<const void*>("");
+                    }
                 }
             }
             switch (type)

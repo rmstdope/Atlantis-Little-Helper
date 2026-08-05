@@ -29,6 +29,10 @@
 #include <vector>
 #include "compat.h"
 
+// Forward declarations to avoid circular includes
+class CAtlaParser;
+class CConfigFile;
+
 typedef enum {GT=0,GE,   EQ,   LE,   LT,  NE, NOP} eCompareOp;
 
 // common properties
@@ -384,7 +388,7 @@ public:
 
     CUnit * AllocSimpleCopy();
 
-    static void         LoadCustomFlagNames();
+    static void         LoadCustomFlagNames(CConfigFile* cfg);
     static void         ResetCustomFlagNames();
     static const char * GetCustomFlagName(int no);
 
@@ -467,7 +471,7 @@ public:
     void      ResetUnitsAndStructs();
     CStruct * GetStructById(long id);
     void      CalcStructsLoad();
-    void      SetFlagsFromUnits();
+    void      SetFlagsFromUnits(CAtlaParser* p);
     CStruct * AddNewStruct(CStruct * pNewStruct);
     void      RemoveEdgeStructs(int direction);
     void      AddNewEdgeStruct(const char * name, int direction);
@@ -698,6 +702,6 @@ void TestLandId();
 bool IsASkillRelatedProperty(const char * propname);
 void MakeQualifiedPropertyName(const char * prefix, const char * shortname, std::string & FullName);
 void SplitQualifiedPropertyName(const char * fullname, std::string & Prefix, std::string & ShortName);
-bool EvaluateBaseObjectByBoxes(CBaseObject * pObj, std::string * Property, eCompareOp * CompareOp, std::string * Value, long * lValue, int count);
+bool EvaluateBaseObjectByBoxes(CBaseObject * pObj, std::string * Property, eCompareOp * CompareOp, std::string * Value, long * lValue, int count, CAtlaParser* pParser);
 
 #endif

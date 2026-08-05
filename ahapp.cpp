@@ -102,6 +102,7 @@ CAhApp::CAhApp() : m_HexDescrSrc    (),
     m_FontDescr[FONT_ERR_DLG   ]  = "Messages and Errors";
 
     m_pAtlantis.reset(new CAtlaParser(&ThisGameDataHelper));
+    m_pAtlantis->m_pConfig = &m_Config[CONFIG_FILE_CONFIG];
     m_Brightness_Delta = 0;
     m_nStdoutLastPos = 0;
     m_nStderrLastPos = 0;
@@ -147,6 +148,7 @@ bool CAhApp::OnInit()
     m_Config[CONFIG_FILE_STATE ].Load(SZ_CONFIG_STATE_FILE);
 
     UpgradeConfigFiles();
+    CUnit::LoadCustomFlagNames(GetConfigFile(SZ_SECT_UNIT_FLAG_NAMES));
 
     m_layout = atol(GetConfig(SZ_SECT_COMMON, SZ_KEY_LAYOUT));
     if (m_layout<0)
@@ -607,29 +609,35 @@ void CAhApp::UpgradeConfigFiles()
     int          fileno, idx, i;
     std::string         ConfigKey;
 
-    // move the sections
-    Ok = m_Config[CONFIG_FILE_CONFIG].GetNextSection("", szNextSection);
-    while (Ok)
+    // move the sections only when we still have old-style unit list headers.
+    // Modern configs already store the current section layout, so scanning the
+    // whole file on every startup just burns CPU and delays the UI.
+    if (m_Config[CONFIG_FILE_CONFIG].GetFirstInSection(SZ_SECT_UNITLIST_HDR, szName, szValue) >= 0 ||
+        m_Config[CONFIG_FILE_CONFIG].GetFirstInSection(SZ_SECT_UNITLIST_HDR_FLTR, szName, szValue) >= 0)
     {
-        Section = szNextSection;
-        fileno    = GetConfigFileNo(Section.c_str());
-
-        if (CONFIG_FILE_CONFIG != fileno)
+        Ok = m_Config[CONFIG_FILE_CONFIG].GetNextSection("", szNextSection);
+        while (Ok)
         {
-            // move to the appropriate file
-            idx = m_Config[CONFIG_FILE_CONFIG].GetFirstInSection(Section.c_str(), szName, szValue);
-            while (idx>=0)
+            Section = szNextSection;
+            fileno    = GetConfigFileNo(Section.c_str());
+
+            if (CONFIG_FILE_CONFIG != fileno)
             {
-                m_Config[fileno].SetByName(Section.c_str(), szName, szValue);
-                idx = m_Config[CONFIG_FILE_CONFIG].GetNextInSection(idx, Section.c_str(), szName, szValue);
+                // move to the appropriate file
+                idx = m_Config[CONFIG_FILE_CONFIG].GetFirstInSection(Section.c_str(), szName, szValue);
+                while (idx>=0)
+                {
+                    m_Config[fileno].SetByName(Section.c_str(), szName, szValue);
+                    idx = m_Config[CONFIG_FILE_CONFIG].GetNextInSection(idx, Section.c_str(), szName, szValue);
+                }
+                m_Config[CONFIG_FILE_CONFIG].RemoveSection(Section.c_str());
+
+                // and it means land flags has to be moved, too
+                m_UpgradeLandFlags = true;
             }
-            m_Config[CONFIG_FILE_CONFIG].RemoveSection(Section.c_str());
 
-            // and it means land flags has to be moved, too
-            m_UpgradeLandFlags = true;
+            Ok = m_Config[CONFIG_FILE_CONFIG].GetNextSection(Section.c_str(), szNextSection);
         }
-
-        Ok = m_Config[CONFIG_FILE_CONFIG].GetNextSection(Section.c_str(), szNextSection);
     }
 
     // unit lists columns
@@ -795,6 +803,13 @@ const char * CAhApp::GetConfig(const char * szSection, const char * szName)
     if (nullptr==p)
         p = "";
     return p;
+}
+
+//-------------------------------------------------------------------------
+
+CConfigFile * CAhApp::GetConfigFile(const char * szSection)
+{
+    return &m_Config[GetConfigFileNo(szSection)];
 }
 
 //-------------------------------------------------------------------------
@@ -2551,7 +2566,7 @@ void CAhApp::PostLoadReport()
             for (i=0; i<pPlane->Lands.Count(); i++)
             {
                 ((CLand*)pPlane->Lands.At(i))->CalcStructsLoad();
-                ((CLand*)pPlane->Lands.At(i))->SetFlagsFromUnits(); // maybe not needed here...
+                ((CLand*)pPlane->Lands.At(i))->SetFlagsFromUnits(m_pAtlantis.get()); // maybe not needed here...
             }
         }
     }
@@ -2665,6 +2680,7 @@ int  CAhApp::LoadReport  (const char * FNameIn, bool Join)
                 m_Reports.insert(reportIt, std::move(cachedCurrent));
             }
             m_pAtlantis.reset(new CAtlaParser(&ThisGameDataHelper));
+            m_pAtlantis->m_pConfig = &m_Config[CONFIG_FILE_CONFIG];
         }
 
         if (!Join)
@@ -3076,6 +3092,7 @@ void CAhApp::SwitchToYearMon(long YearMon)
             });
         m_pAtlantis = std::move(*reportIt);
         m_Reports.erase(reportIt);
+        if (m_pAtlantis) m_pAtlantis->m_pConfig = &m_Config[CONFIG_FILE_CONFIG];
         PostLoadReport();
     }
     else
@@ -3263,6 +3280,7 @@ bool CAhApp::GetPrevTurnReport(CAtlaParser *& pPrevTurn)
 
         if (!m_FirstLoad && !Join)
             m_pAtlantis = new CAtlaParser(&ThisGameDataHelper);
+            m_pAtlantis->m_pConfig = &m_Config[CONFIG_FILE_CONFIG];
 
         if (!Join)
         {

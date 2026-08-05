@@ -20,6 +20,8 @@
 #ifndef __AH_EXTEND_INCL__
 #define __AH_EXTEND_INCL__
 
+#include <functional>
+
 #ifdef HAVE_CONFIG_H
    #include "config.h"
 #endif
@@ -58,6 +60,8 @@ public:
     void   DoneUnitFilter();
     eEErr  RunUnitFilter(CUnit * pUnit, bool & success);
 
+    void   SetErrorCallback(std::function<void(const char*, int)> cb) { m_errorCallback = std::move(cb); }
+
 protected:
     eEErr  InitGeneric();
     void   DoneGeneric();
@@ -68,6 +72,7 @@ protected:
     CAtlaParser * m_pAtlantis;
     bool          m_bInitUnitFilter;
     bool          m_bInitGeneric;
+    std::function<void(const char*, int)> m_errorCallback;
 
 
     PyObject * m_pCode  ;

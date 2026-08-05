@@ -201,6 +201,7 @@ void CUnitFlagsDlg::OnOk(wxCommandEvent& event)
             gpApp->SetConfig(SZ_SECT_UNIT_FLAG_NAMES, sKey.c_str(), m_txtUnitFlagText[i]->GetValue().mb_str());
         }
         CUnit::ResetCustomFlagNames();
+        CUnit::LoadCustomFlagNames(gpApp->GetConfigFile(SZ_SECT_UNIT_FLAG_NAMES));
     }
     
     if (eThisUnit == m_EditMode)
