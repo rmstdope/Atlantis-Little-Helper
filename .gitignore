@@ -1,9 +1,3 @@
-# autoconf creates these ephemeral files
-config.log
-config.h
-config.status
-Makefile
-
 # Object files
 *.o
 
@@ -27,7 +21,6 @@ Makefile
 *.bak
 
 #output files
-bin
 ah.stderr
 ah.stdout
 
