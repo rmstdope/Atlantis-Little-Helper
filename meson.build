@@ -16,6 +16,7 @@ ah_sources = files(
   'src/data.cpp',
   'src/errs.cpp',
   'src/atlaparser.cpp',
+  'src/configmanager.cpp',
   'src/ahapp.cpp',
   'src/ahframe.cpp',
   'src/consts_ah.cpp',

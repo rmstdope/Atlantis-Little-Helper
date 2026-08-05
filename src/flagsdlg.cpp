@@ -96,7 +96,7 @@ CUnitFlagsDlg::CUnitFlagsDlg(wxWindow *parent, E_FLAG_EDIT_MODE Mode, unsigned i
     {
         sKey.clear();
         sKey << (long)i;
-        p = gpApp->GetConfig(SZ_SECT_UNIT_FLAG_NAMES, sKey.c_str());
+        p = gpConfigManager->GetConfig(SZ_SECT_UNIT_FLAG_NAMES, sKey.c_str());
 
         sizer    = new wxBoxSizer( wxHORIZONTAL );
         if (eThisUnit == m_EditMode || eAll == m_EditMode || eManyUnits == m_EditMode)
@@ -198,10 +198,10 @@ void CUnitFlagsDlg::OnOk(wxCommandEvent& event)
         {
             sKey.clear();
             sKey << (long)i;
-            gpApp->SetConfig(SZ_SECT_UNIT_FLAG_NAMES, sKey.c_str(), m_txtUnitFlagText[i]->GetValue().mb_str());
+            gpConfigManager->SetConfig(SZ_SECT_UNIT_FLAG_NAMES, sKey.c_str(), m_txtUnitFlagText[i]->GetValue().mb_str());
         }
         CUnit::ResetCustomFlagNames();
-        CUnit::LoadCustomFlagNames(gpApp->GetConfigFile(SZ_SECT_UNIT_FLAG_NAMES));
+        CUnit::LoadCustomFlagNames(gpConfigManager->GetConfigFile(SZ_SECT_UNIT_FLAG_NAMES));
     }
     
     if (eThisUnit == m_EditMode)

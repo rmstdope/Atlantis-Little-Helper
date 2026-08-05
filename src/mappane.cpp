@@ -233,10 +233,10 @@ void CMapPane::Init(CAhFrame * pParentFrame)
 
     m_pFrame        = pParentFrame;
 
-    m_ShowState = atol(gpApp->GetConfig(SZ_SECT_MAP_PANE, SZ_KEY_STATE));
-    m_MinSelMen = atol(gpApp->GetConfig(SZ_SECT_COMMON  , SZ_KEY_MIN_SEL_MEN));
+    m_ShowState = atol(gpConfigManager->GetConfig(SZ_SECT_MAP_PANE, SZ_KEY_STATE));
+    m_MinSelMen = atol(gpConfigManager->GetConfig(SZ_SECT_COMMON  , SZ_KEY_MIN_SEL_MEN));
 
-    p = gpApp->GetConfig(SZ_SECT_COMMON, SZ_KEY_HEX_SIZE_LIST);
+    p = gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_HEX_SIZE_LIST);
     while (p && *p)
     {
         p = SkipSpaces(GetToken(S, p, ','));
@@ -248,7 +248,7 @@ void CMapPane::Init(CAhFrame * pParentFrame)
     if (0==m_HexSizes.size())
         m_HexSizes.push_back(24);
 
-    m_SelPlane             = atol(gpApp->GetConfig(SZ_SECT_MAP_PANE  , SZ_KEY_PLANE_SEL       ));
+    m_SelPlane             = atol(gpConfigManager->GetConfig(SZ_SECT_MAP_PANE  , SZ_KEY_PLANE_SEL       ));
 
     LoadPlaneConfig();
     ApplyIcons();
@@ -261,8 +261,8 @@ void CMapPane::Init(CAhFrame * pParentFrame)
 
 void CMapPane::Done()
 {
-    gpApp->SetConfig(SZ_SECT_MAP_PANE ,   SZ_KEY_STATE          , m_ShowState);
-    gpApp->SetConfig(SZ_SECT_MAP_PANE ,   SZ_KEY_PLANE_SEL      , m_SelPlane );
+    gpConfigManager->SetConfig(SZ_SECT_MAP_PANE ,   SZ_KEY_STATE          , m_ShowState);
+    gpConfigManager->SetConfig(SZ_SECT_MAP_PANE ,   SZ_KEY_PLANE_SEL      , m_SelPlane );
 
     SavePlaneConfig();
 }
@@ -275,18 +275,18 @@ void CMapPane::SavePlaneConfig()
 
     sSection << "PLANE_" << m_SelPlane;
 
-    gpApp->SetConfig(sSection.c_str(), SZ_KEY_HEX_SIZE       , m_HexSizeIdx               );
-    gpApp->SetConfig(sSection.c_str(), SZ_KEY_HEX_SIZE_OLD   , m_HexSizeIdxOld            );
-    gpApp->SetConfig(sSection.c_str(), SZ_KEY_ATLA_X0        , m_AtlaX0                   );
-    gpApp->SetConfig(sSection.c_str(), SZ_KEY_ATLA_Y0        , m_AtlaY0                   );
-    gpApp->SetConfig(sSection.c_str(), SZ_KEY_HEX_SEL_X      , m_SelHexX                  );
-    gpApp->SetConfig(sSection.c_str(), SZ_KEY_HEX_SEL_Y      , m_SelHexY                  );
+    gpConfigManager->SetConfig(sSection.c_str(), SZ_KEY_HEX_SIZE       , m_HexSizeIdx               );
+    gpConfigManager->SetConfig(sSection.c_str(), SZ_KEY_HEX_SIZE_OLD   , m_HexSizeIdxOld            );
+    gpConfigManager->SetConfig(sSection.c_str(), SZ_KEY_ATLA_X0        , m_AtlaX0                   );
+    gpConfigManager->SetConfig(sSection.c_str(), SZ_KEY_ATLA_Y0        , m_AtlaY0                   );
+    gpConfigManager->SetConfig(sSection.c_str(), SZ_KEY_HEX_SEL_X      , m_SelHexX                  );
+    gpConfigManager->SetConfig(sSection.c_str(), SZ_KEY_HEX_SEL_Y      , m_SelHexY                  );
 
     if (gpApp->m_pAtlantis)
     {
         CLand * pLand = gpApp->m_pAtlantis->GetLand(m_SelHexX, m_SelHexY, m_SelPlane, true);
         if (pLand)
-            gpApp->SetConfig(sSection.c_str(), SZ_KEY_UNIT_SEL, pLand->guiUnit);
+            gpConfigManager->SetConfig(sSection.c_str(), SZ_KEY_UNIT_SEL, pLand->guiUnit);
     }
 
 }
@@ -300,13 +300,13 @@ void CMapPane::LoadPlaneConfig()
 
     sSection << "PLANE_" << m_SelPlane;
 
-    x                      = atol(gpApp->GetConfig(sSection.c_str(), SZ_KEY_HEX_SIZE        ));
+    x                      = atol(gpConfigManager->GetConfig(sSection.c_str(), SZ_KEY_HEX_SIZE        ));
     SetHexSize(x);
-    m_HexSizeIdxOld        = atol(gpApp->GetConfig(sSection.c_str(), SZ_KEY_HEX_SIZE_OLD    ));
-    m_AtlaX0               = atol(gpApp->GetConfig(sSection.c_str(), SZ_KEY_ATLA_X0         ));
-    m_AtlaY0               = atol(gpApp->GetConfig(sSection.c_str(), SZ_KEY_ATLA_Y0         ));
-    m_SelHexX              = atol(gpApp->GetConfig(sSection.c_str(), SZ_KEY_HEX_SEL_X       ));
-    m_SelHexY              = atol(gpApp->GetConfig(sSection.c_str(), SZ_KEY_HEX_SEL_Y       ));
+    m_HexSizeIdxOld        = atol(gpConfigManager->GetConfig(sSection.c_str(), SZ_KEY_HEX_SIZE_OLD    ));
+    m_AtlaX0               = atol(gpConfigManager->GetConfig(sSection.c_str(), SZ_KEY_ATLA_X0         ));
+    m_AtlaY0               = atol(gpConfigManager->GetConfig(sSection.c_str(), SZ_KEY_ATLA_Y0         ));
+    m_SelHexX              = atol(gpConfigManager->GetConfig(sSection.c_str(), SZ_KEY_HEX_SEL_X       ));
+    m_SelHexY              = atol(gpConfigManager->GetConfig(sSection.c_str(), SZ_KEY_HEX_SEL_Y       ));
 }
 
 
@@ -344,7 +344,7 @@ void CMapPane::ApplyFonts()
 //    // Color
 //    S = SZ_KEY_MAP_PREFIX;
 //    S << name;
-//    StrToColor(&cr, gpApp->GetConfig(SZ_SECT_COLORS, S.c_str()));
+//    StrToColor(&cr, gpConfigManager->GetConfig(SZ_SECT_COLORS, S.c_str()));
 //    pEdgeProp->pen = new wxPen(cr, n, wxPENSTYLE_SOLID);
 //
 //    if (!m_EdgeProps.Insert(pEdgeProp))
@@ -392,7 +392,7 @@ void CMapPane::ApplyOneColor(wxColour & cr, const char * name)
 
 void CMapPane::ApplyIcons()
 {
-    m_bAdvancedIcons = (0==stricmp(gpApp->GetConfig(SZ_SECT_COMMON, SZ_KEY_ICONS), SZ_ICONS_ADVANCED));
+    m_bAdvancedIcons = (0==stricmp(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_ICONS), SZ_ICONS_ADVANCED));
 }
 
 //-------------------------------------------------------------------------
@@ -414,37 +414,37 @@ void CMapPane::ApplyColors()
 
 
     delete m_pPen;
-    StrToColor(&cr,   gpApp->GetConfig(SZ_SECT_COLORS, SZ_KEY_MAP_GRID)    );
+    StrToColor(&cr,   gpConfigManager->GetConfig(SZ_SECT_COLORS, SZ_KEY_MAP_GRID)    );
     m_pPen = new wxPen(cr, 1, wxPENSTYLE_SOLID);
 
-    x = atol(gpApp->GetConfig(SZ_SECT_MAP_PANE, SZ_KEY_WALL_WIDTH));
+    x = atol(gpConfigManager->GetConfig(SZ_SECT_MAP_PANE, SZ_KEY_WALL_WIDTH));
     if (x<1) x=1;
     if (x>5) x=5;
     delete m_pPenWall;
     m_pPenWall = new wxPen(*wxBLACK, x, wxPENSTYLE_SOLID);
 
     delete m_pPenSel;
-    StrToColor(&cr,   gpApp->GetConfig(SZ_SECT_COLORS, SZ_KEY_MAP_GRID_SEL)    );
+    StrToColor(&cr,   gpConfigManager->GetConfig(SZ_SECT_COLORS, SZ_KEY_MAP_GRID_SEL)    );
     m_pPenSel = new wxPen(cr, 2, wxPENSTYLE_SOLID);
 
 
     delete m_pPenTropic;
-    StrToColor(&cr,   gpApp->GetConfig(SZ_SECT_COLORS, SZ_KEY_MAP_TROPIC_LINE)    );
+    StrToColor(&cr,   gpConfigManager->GetConfig(SZ_SECT_COLORS, SZ_KEY_MAP_TROPIC_LINE)    );
     m_pPenTropic = new wxPen(cr, 1, wxPENSTYLE_SOLID);
 
     delete m_pPenRing;
-    StrToColor(&cr,   gpApp->GetConfig(SZ_SECT_COLORS, SZ_KEY_MAP_RING)    );
+    StrToColor(&cr,   gpConfigManager->GetConfig(SZ_SECT_COLORS, SZ_KEY_MAP_RING)    );
     m_pPenRing = new wxPen(cr, 1, wxPENSTYLE_SOLID);
 
-    x = atol(gpApp->GetConfig(SZ_SECT_MAP_PANE, SZ_KEY_ROAD_WIDTH));
+    x = atol(gpConfigManager->GetConfig(SZ_SECT_MAP_PANE, SZ_KEY_ROAD_WIDTH));
     if (x<1) x=1;
     if (x>6) x=6;
     delete m_pPenRoad;
-    StrToColor(&cr,   gpApp->GetConfig(SZ_SECT_COLORS, SZ_KEY_MAP_ROAD)    );
+    StrToColor(&cr,   gpConfigManager->GetConfig(SZ_SECT_COLORS, SZ_KEY_MAP_ROAD)    );
     m_pPenRoad = new wxPen(cr, x, wxPENSTYLE_SOLID);
 
     delete m_pPenRoadBad;
-    i = atol(gpApp->GetConfig(SZ_SECT_MAP_PANE, SZ_KEY_DASH_BAD_ROADS));
+    i = atol(gpConfigManager->GetConfig(SZ_SECT_MAP_PANE, SZ_KEY_DASH_BAD_ROADS));
     if (i)
     {
         m_pPenRoadBad = new wxPen(cr, x, wxPENSTYLE_USER_DASH); //wxSOLID);
@@ -453,20 +453,20 @@ void CMapPane::ApplyColors()
     }
     else
     {
-        StrToColor(&cr,   gpApp->GetConfig(SZ_SECT_COLORS, SZ_KEY_MAP_ROAD_BAD)    );
+        StrToColor(&cr,   gpConfigManager->GetConfig(SZ_SECT_COLORS, SZ_KEY_MAP_ROAD_BAD)    );
         m_pPenRoadBad = new wxPen(cr, x, wxPENSTYLE_SOLID);
     }
 
-    flagwidth = atoi(gpApp->GetConfig(SZ_SECT_MAP_PANE, SZ_KEY_FLAG_WIDTH));
+    flagwidth = atoi(gpConfigManager->GetConfig(SZ_SECT_MAP_PANE, SZ_KEY_FLAG_WIDTH));
     for (i=0; i<LAND_FLAG_COUNT; i++)
     {
         delete m_pPenFlag[i];
-        StrToColor(&cr,   gpApp->GetConfig(SZ_SECT_COLORS, FlagColorName[i])    );
+        StrToColor(&cr,   gpConfigManager->GetConfig(SZ_SECT_COLORS, FlagColorName[i])    );
         m_pPenFlag[i] = new wxPen(cr, flagwidth, wxPENSTYLE_SOLID);
     }
 
     delete m_pPenCoastline;
-    StrToColor(&cr,   gpApp->GetConfig(SZ_SECT_COLORS, SZ_KEY_MAP_COASTLINE)    );
+    StrToColor(&cr,   gpConfigManager->GetConfig(SZ_SECT_COLORS, SZ_KEY_MAP_COASTLINE)    );
     m_pPenCoastline = new wxPen(cr, 6, wxPENSTYLE_SOLID);
 
     for (i=0; i<ATT_UNDECLARED; i++)
@@ -476,16 +476,16 @@ void CMapPane::ApplyColors()
         switch(i)
         {
             case ATT_FRIEND1:
-                StrToColor(&cr, gpApp->GetConfig(SZ_SECT_COLORS, SZ_KEY_MAP_TRUSTED));
+                StrToColor(&cr, gpConfigManager->GetConfig(SZ_SECT_COLORS, SZ_KEY_MAP_TRUSTED));
                 break;
             case ATT_FRIEND2:
-                StrToColor(&cr, gpApp->GetConfig(SZ_SECT_COLORS, SZ_KEY_MAP_PREFERRED));
+                StrToColor(&cr, gpConfigManager->GetConfig(SZ_SECT_COLORS, SZ_KEY_MAP_PREFERRED));
                 break;
             case ATT_NEUTRAL:
-                StrToColor(&cr, gpApp->GetConfig(SZ_SECT_COLORS, SZ_KEY_MAP_TOLERATED));
+                StrToColor(&cr, gpConfigManager->GetConfig(SZ_SECT_COLORS, SZ_KEY_MAP_TOLERATED));
                 break;
             case ATT_ENEMY:
-                StrToColor(&cr, gpApp->GetConfig(SZ_SECT_COLORS, SZ_KEY_MAP_ENEMY));
+                StrToColor(&cr, gpConfigManager->GetConfig(SZ_SECT_COLORS, SZ_KEY_MAP_ENEMY));
                 break;
             default: // shouldn't be used
                 StrToColor(&cr, "255,255,255");
@@ -509,9 +509,9 @@ void CMapPane::ApplyColors()
         }
     }
 
-    m_Hatch = atol(gpApp->GetConfig(SZ_SECT_COMMON,  SZ_KEY_HATCH_UNVISITED));
+    m_Hatch = atol(gpConfigManager->GetConfig(SZ_SECT_COMMON,  SZ_KEY_HATCH_UNVISITED));
 
-//    idx = gpApp->GetSectionFirst(SZ_SECT_COLORS, name, value);
+//    idx = gpConfigManager->GetSectionFirst(SZ_SECT_COLORS, name, value);
 //    while (idx>=0)
 //    {
 //        StrToColor(&cr, value);
@@ -523,7 +523,7 @@ void CMapPane::ApplyColors()
     // load edge structures colors
     for (auto* e : m_EdgeProps) delete e;
     m_EdgeProps.clear();
-//    idx = gpApp->GetSectionFirst(SZ_SECT_EDGE_STRUCTS, name, value);
+//    idx = gpConfigManager->GetSectionFirst(SZ_SECT_EDGE_STRUCTS, name, value);
 //    while (idx>=0)
 //    {
 //        // There is a bug here - function calls GetConfig, which creates a new config entry,T
@@ -563,8 +563,8 @@ wxBrush * CMapPane::GetLandBrush(CLand * pLand, bool GetHatched)
         if (idx<0)
         {
             // totally new color, but try to read it, so it gets into config file
-            StrToColor(&cr,   gpApp->GetConfig(SZ_SECT_COLORS, name) );
-            //Hatch = atol(gpApp->GetConfig(SZ_SECT_COMMON,  SZ_KEY_HATCH_UNVISITED));
+            StrToColor(&cr,   gpConfigManager->GetConfig(SZ_SECT_COLORS, name) );
+            //Hatch = atol(gpConfigManager->GetConfig(SZ_SECT_COMMON,  SZ_KEY_HATCH_UNVISITED));
             idx   = (int)m_TerrainBrushes.size();
             ApplyOneColor(cr, name);
         }
@@ -608,11 +608,11 @@ CEdgeStructProperties * CMapPane::GetEdgeProps(const char * name)
         pEdgeProp->name = name;
 
         // Shape
-        p = gpApp->GetConfig(SZ_SECT_EDGE_STRUCTS, name);
+        p = gpConfigManager->GetConfig(SZ_SECT_EDGE_STRUCTS, name);
         if (!p || !*p)
         {
             p = "border,1";
-            gpApp->SetConfig(SZ_SECT_EDGE_STRUCTS, name, p);
+            gpConfigManager->SetConfig(SZ_SECT_EDGE_STRUCTS, name, p);
         }
         p = SkipSpaces(GetToken(S, p, ','));
         if (0==stricmp(S.c_str(), "border"))
@@ -637,7 +637,7 @@ CEdgeStructProperties * CMapPane::GetEdgeProps(const char * name)
         // Color
         S = SZ_KEY_MAP_PREFIX;
         S << name;
-        StrToColor(&cr, gpApp->GetConfig(SZ_SECT_COLORS, S.c_str()));
+        StrToColor(&cr, gpConfigManager->GetConfig(SZ_SECT_COLORS, S.c_str()));
         pEdgeProp->pen = new wxPen(cr, n, wxPENSTYLE_SOLID);
 
         // re-compute insertion point (name may differ from Dummy used above)
@@ -3567,8 +3567,8 @@ void CMapPane::OnMouseEvent(wxMouseEvent& event)
     else if (event.Entering())
         ResumeRectangle();
 
-    else if ( (event.RightDown()  &&  atol(gpApp->GetConfig(SZ_SECT_COMMON, SZ_KEY_RCLICK_CENTERS))) ||
-              (event.LeftDClick() && !atol(gpApp->GetConfig(SZ_SECT_COMMON, SZ_KEY_RCLICK_CENTERS))) )
+    else if ( (event.RightDown()  &&  atol(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_RCLICK_CENTERS))) ||
+              (event.LeftDClick() && !atol(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_RCLICK_CENTERS))) )
     {
         // center
         wxPoint  point(xpos, ypos);
@@ -3576,8 +3576,8 @@ void CMapPane::OnMouseEvent(wxMouseEvent& event)
         CenterClick(point);
     }
 
-    else if ( (event.RightDown()  && !atol(gpApp->GetConfig(SZ_SECT_COMMON, SZ_KEY_RCLICK_CENTERS))) ||
-              (event.LeftDClick() &&  atol(gpApp->GetConfig(SZ_SECT_COMMON, SZ_KEY_RCLICK_CENTERS))) )
+    else if ( (event.RightDown()  && !atol(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_RCLICK_CENTERS))) ||
+              (event.LeftDClick() &&  atol(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_RCLICK_CENTERS))) )
     {
         // popup menu
 

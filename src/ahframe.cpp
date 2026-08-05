@@ -76,11 +76,11 @@ void CAhFrame::Init(int layout, const char * szConfigSection)
     m_Layout          = layout;
 
     SetIcon(wxICON(icon_logo));
-    x = atol(gpApp->GetConfig(szConfigSection, SZ_KEY_X1));
-    y = atol(gpApp->GetConfig(szConfigSection, SZ_KEY_Y1));
-    w = atol(gpApp->GetConfig(szConfigSection, SZ_KEY_X2)) - x;
-    h = atol(gpApp->GetConfig(szConfigSection, SZ_KEY_Y2)) - y;
-    saved_pos = atol(gpApp->GetConfig(szConfigSection, SZ_KEY_USE_SAVED_POS));
+    x = atol(gpConfigManager->GetConfig(szConfigSection, SZ_KEY_X1));
+    y = atol(gpConfigManager->GetConfig(szConfigSection, SZ_KEY_Y1));
+    w = atol(gpConfigManager->GetConfig(szConfigSection, SZ_KEY_X2)) - x;
+    h = atol(gpConfigManager->GetConfig(szConfigSection, SZ_KEY_Y2)) - y;
+    saved_pos = atol(gpConfigManager->GetConfig(szConfigSection, SZ_KEY_USE_SAVED_POS));
 
     // check to get the titlebar visible if config contains too small value for Y.
     // can be needed if the system menu bar is on top of screen
@@ -88,13 +88,13 @@ void CAhFrame::Init(int layout, const char * szConfigSection)
     {
         const char      * szName;
         const char      * szValue;
-        if (gpApp->GetSectionFirst(SZ_SECT_REPORTS, szName, szValue) < 0)
+        if (gpConfigManager->GetSectionFirst(SZ_SECT_REPORTS, szName, szValue) < 0)
         {
             int  x_old, y_old;
             GetPosition(&x_old, &y_old); 
             y = y_old;
         }
-        gpApp->SetConfig(szConfigSection, SZ_KEY_USE_SAVED_POS, "1");
+        gpConfigManager->SetConfig(szConfigSection, SZ_KEY_USE_SAVED_POS, "1");
     }
 
     SetSize(x, y, w, h, wxSIZE_ALLOW_MINUS_ONE);
@@ -119,13 +119,13 @@ void CAhFrame::Done(bool SetClosedFlag)
         GetPosition(&x, &y);
         GetSize    (&w, &h);
 
-        gpApp->SetConfig(m_sConfigSection.c_str(), SZ_KEY_X1, x);
-        gpApp->SetConfig(m_sConfigSection.c_str(), SZ_KEY_Y1, y);
+        gpConfigManager->SetConfig(m_sConfigSection.c_str(), SZ_KEY_X1, x);
+        gpConfigManager->SetConfig(m_sConfigSection.c_str(), SZ_KEY_Y1, y);
         
-        gpApp->SetConfig(m_sConfigSection.c_str(), SZ_KEY_X2, x+w);
-        gpApp->SetConfig(m_sConfigSection.c_str(), SZ_KEY_Y2, y+h);
+        gpConfigManager->SetConfig(m_sConfigSection.c_str(), SZ_KEY_X2, x+w);
+        gpConfigManager->SetConfig(m_sConfigSection.c_str(), SZ_KEY_Y2, y+h);
 
-        gpApp->SetConfig(m_sConfigSection.c_str(), SZ_KEY_OPEN, SetClosedFlag?"0":"1");
+        gpConfigManager->SetConfig(m_sConfigSection.c_str(), SZ_KEY_OPEN, SetClosedFlag?"0":"1");
 
         for (i=0; i<AH_PANE_COUNT; i++)
             if (m_Panes[i])
@@ -200,12 +200,12 @@ void CResizableDlg::SetSize()
 {
     int x, y, w=-1, h=-1;
 
-    x = atol(gpApp->GetConfig(m_sConfigSection.c_str(), SZ_KEY_X1));
-    y = atol(gpApp->GetConfig(m_sConfigSection.c_str(), SZ_KEY_Y1));
+    x = atol(gpConfigManager->GetConfig(m_sConfigSection.c_str(), SZ_KEY_X1));
+    y = atol(gpConfigManager->GetConfig(m_sConfigSection.c_str(), SZ_KEY_Y1));
     if (GetWindowStyle() & wxRESIZE_BORDER)
     {
-        w = atol(gpApp->GetConfig(m_sConfigSection.c_str(), SZ_KEY_X2)) - x;
-        h = atol(gpApp->GetConfig(m_sConfigSection.c_str(), SZ_KEY_Y2)) - y;
+        w = atol(gpConfigManager->GetConfig(m_sConfigSection.c_str(), SZ_KEY_X2)) - x;
+        h = atol(gpConfigManager->GetConfig(m_sConfigSection.c_str(), SZ_KEY_Y2)) - y;
     }
 
     wxDialog::SetSize(x, y, w, h, wxSIZE_ALLOW_MINUS_ONE);
@@ -215,8 +215,8 @@ void CResizableDlg::SetPos()
 {
     int x, y;
 
-    x = atol(gpApp->GetConfig(m_sConfigSection.c_str(), SZ_KEY_X1));
-    y = atol(gpApp->GetConfig(m_sConfigSection.c_str(), SZ_KEY_Y1));
+    x = atol(gpConfigManager->GetConfig(m_sConfigSection.c_str(), SZ_KEY_X1));
+    y = atol(gpConfigManager->GetConfig(m_sConfigSection.c_str(), SZ_KEY_Y1));
 
     wxDialog::Move(x, y);
 }
@@ -228,10 +228,10 @@ void CResizableDlg::StoreSize()
     GetPosition(&x, &y);
     GetSize    (&w, &h);
 
-    gpApp->SetConfig(m_sConfigSection.c_str(), SZ_KEY_X1, x);
-    gpApp->SetConfig(m_sConfigSection.c_str(), SZ_KEY_Y1, y);
-    gpApp->SetConfig(m_sConfigSection.c_str(), SZ_KEY_X2, x+w);
-    gpApp->SetConfig(m_sConfigSection.c_str(), SZ_KEY_Y2, y+h);
+    gpConfigManager->SetConfig(m_sConfigSection.c_str(), SZ_KEY_X1, x);
+    gpConfigManager->SetConfig(m_sConfigSection.c_str(), SZ_KEY_Y1, y);
+    gpConfigManager->SetConfig(m_sConfigSection.c_str(), SZ_KEY_X2, x+w);
+    gpConfigManager->SetConfig(m_sConfigSection.c_str(), SZ_KEY_Y2, y+h);
 }
 
 void CResizableDlg::OnClose(wxCloseEvent& event)

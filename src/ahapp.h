@@ -29,6 +29,7 @@
 #include "stl_helpers.h"
 #include "cfgfile.h"
 #include "atlaparser.h"
+#include "configmanager.h"
 
 enum
 {
@@ -78,14 +79,6 @@ enum
     FONT_COUNT
 };
 
-enum
-{
-    CONFIG_FILE_CONFIG     = 0,
-    CONFIG_FILE_STATE         ,
-
-    CONFIG_FILE_COUNT
-};
-
 class CAhFrame;
 class CEditPane;
 class CHexFilterDlg;
@@ -132,16 +125,6 @@ public:
     virtual bool         OnInit() override;
     virtual int          OnExit() override;
 
-
-    void                 SetConfig(const char * szSection, const char * szName, const char * szNewValue);
-    void                 SetConfig(const char * szSection, const char * szName, long lNewValue);
-    const char         * GetConfig(const char * szSection, const char * szName);
-    CConfigFile        * GetConfigFile(const char * szSection);   // returns config file owning szSection
-    int                  GetSectionFirst(const char * szSection, const char *& szName, const char *& szValue);
-    int                  GetSectionNext (int idx, const char * szSection, const char *& szName, const char *& szValue);
-    void                 RemoveSection(const char * szSection);
-    const char         * GetNextSectionName(int fileno, const char * szStart); // sorry, but fileno is needed here
-    void                 MoveSectionEntries(int fileno, const char * src, const char * dest);
 
     void                 EditPaneChanged(CEditPane * pPane);
     void                 EditPaneDClicked(CEditPane * pPane);
@@ -242,6 +225,7 @@ public:
     void                 SelectOrdersPane();
 
     std::unique_ptr<CAtlaParser> m_pAtlantis;
+    std::unique_ptr<ConfigManager> m_pConfigManager;
 
     CAhFrame           * m_Frames[AH_FRAME_COUNT];
     wxWindow           * m_Panes [AH_PANE_COUNT ];
@@ -252,7 +236,6 @@ public:
 //    bool                 m_LandFlagsChanged;
     bool                 m_CommentsChanged;
     bool                 m_DiscardChanges;
-    bool                 m_UpgradeLandFlags;
     std::unique_ptr<wxAcceleratorTable> m_pAccel;
     long                 m_Brightness_Delta;
 
@@ -279,10 +262,6 @@ private:
     void                 UpdateHexUnitList(CLand * pLand);
     void                 SwitchToYearMon(long YearMon);
 
-    int                  GetConfigFileNo(const char * szSection);
-    void                 UpgradeConfigFiles();
-    void                 UpgradeConfigByFactionId();
-    void                 ComposeConfigOrdersSection(std::string & Sect, int FactionId);
     bool                 GetExportHexOptions(std::string & FName, std::string & FMode, SAVE_HEX_OPTIONS & options, eHexIncl & HexIncl,
                                              bool & InclTurnNoAcl);
     void                 ExportOneHex(CFileWriter & Dest, CPlane * pPlane, CLand * pLand, SAVE_HEX_OPTIONS & options, bool InclTurnNoAcl, bool OnlyNew);
@@ -305,8 +284,6 @@ private:
     std::vector<std::string> m_MoveModes;
     std::vector<const char*> m_MoveModesRaw;
     std::vector<ItemWeights*> m_ItemWeights;
-    CConfigFile          m_Config[CONFIG_FILE_COUNT];
-    std::set<std::string, CaseInsensitiveLess> m_ConfigSectionsState;
     bool                 m_OrdersAreChanged;
     std::string                 m_sTitle;
     std::unordered_map<std::string, long> m_OrderHash;

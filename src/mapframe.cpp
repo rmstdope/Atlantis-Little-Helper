@@ -395,20 +395,20 @@ void CMapFrame::Init(int layout, const char * szConfigSection)
             m_Splitter3->SetMinimumPaneSize(2);
             m_Splitter4->SetMinimumPaneSize(2);
 
-            x = atol(gpApp->GetConfig(szConfigSection, SZ_KEY_HEIGHT_0));
+            x = atol(gpConfigManager->GetConfig(szConfigSection, SZ_KEY_HEIGHT_0));
             m_Splitter->SplitHorizontally(m_Splitter1, p2, x);
 
-            x  = atol(gpApp->GetConfig(szConfigSection, SZ_KEY_WIDTH_0));
+            x  = atol(gpConfigManager->GetConfig(szConfigSection, SZ_KEY_WIDTH_0));
             m_Splitter1->SplitVertically(p1, m_Splitter2, x);
 
-            x  = atol(gpApp->GetConfig(szConfigSection, SZ_KEY_HEIGHT_1));
+            x  = atol(gpConfigManager->GetConfig(szConfigSection, SZ_KEY_HEIGHT_1));
             m_Splitter2->SplitHorizontally(p3, m_Splitter3, x);
 
-            x  = atol(gpApp->GetConfig(szConfigSection, SZ_KEY_HEIGHT_2));
+            x  = atol(gpConfigManager->GetConfig(szConfigSection, SZ_KEY_HEIGHT_2));
             m_Splitter3->SplitHorizontally(p4, m_Splitter4, x);
 
 
-            x  = atol(gpApp->GetConfig(szConfigSection, SZ_KEY_WIDTH_1));
+            x  = atol(gpConfigManager->GetConfig(szConfigSection, SZ_KEY_WIDTH_1));
             m_Splitter4->SplitVertically(p5, p6, x);
 
             break;
@@ -420,7 +420,7 @@ void CMapFrame::Init(int layout, const char * szConfigSection)
             CEditPane         * p2;
             long                y0;
 
-            y0  = atol(gpApp->GetConfig(szConfigSection, SZ_KEY_HEIGHT_0));
+            y0  = atol(gpConfigManager->GetConfig(szConfigSection, SZ_KEY_HEIGHT_0));
             m_Splitter = new wxSplitterWindow(this, -1, wxDefaultPosition, wxDefaultSize,
                                               wxSP_3D | wxCLIP_CHILDREN);
 
@@ -461,11 +461,11 @@ void CMapFrame::Done(bool SetClosedFlag)
     switch (m_Layout)
     {
     case AH_LAYOUT_1_WIN:
-        gpApp->SetConfig(m_sConfigSection.c_str(), SZ_KEY_HEIGHT_0, m_Splitter ->GetSashPosition());
-        gpApp->SetConfig(m_sConfigSection.c_str(), SZ_KEY_WIDTH_0 , m_Splitter1->GetSashPosition());
-        gpApp->SetConfig(m_sConfigSection.c_str(), SZ_KEY_HEIGHT_1, m_Splitter2->GetSashPosition());
-        gpApp->SetConfig(m_sConfigSection.c_str(), SZ_KEY_HEIGHT_2, m_Splitter3->GetSashPosition());
-        gpApp->SetConfig(m_sConfigSection.c_str(), SZ_KEY_WIDTH_1 , m_Splitter4->GetSashPosition());
+        gpConfigManager->SetConfig(m_sConfigSection.c_str(), SZ_KEY_HEIGHT_0, m_Splitter ->GetSashPosition());
+        gpConfigManager->SetConfig(m_sConfigSection.c_str(), SZ_KEY_WIDTH_0 , m_Splitter1->GetSashPosition());
+        gpConfigManager->SetConfig(m_sConfigSection.c_str(), SZ_KEY_HEIGHT_1, m_Splitter2->GetSashPosition());
+        gpConfigManager->SetConfig(m_sConfigSection.c_str(), SZ_KEY_HEIGHT_2, m_Splitter3->GetSashPosition());
+        gpConfigManager->SetConfig(m_sConfigSection.c_str(), SZ_KEY_WIDTH_1 , m_Splitter4->GetSashPosition());
 
         pUnitPane  = (CUnitPane*)gpApp->m_Panes[AH_PANE_UNITS_HEX];
         if (pUnitPane)
@@ -474,7 +474,7 @@ void CMapFrame::Done(bool SetClosedFlag)
         break;
 
     case AH_LAYOUT_2_WIN:
-        gpApp->SetConfig(m_sConfigSection.c_str(), SZ_KEY_HEIGHT_0, m_Splitter->GetSashPosition());
+        gpConfigManager->SetConfig(m_sConfigSection.c_str(), SZ_KEY_HEIGHT_0, m_Splitter->GetSashPosition());
         break;
 
     case AH_LAYOUT_3_WIN:
@@ -566,7 +566,7 @@ void CMapFrame::OnViewSkillsAllUpdate(wxUpdateUIEvent& event)
     const char  * szValue;
     int           sectidx;
 
-    sectidx = gpApp->GetSectionFirst(SZ_SECT_SKILLS, szName, szValue);
+    sectidx = gpConfigManager->GetSectionFirst(SZ_SECT_SKILLS, szName, szValue);
     event.Enable(sectidx>=0);
 }
 
@@ -586,7 +586,7 @@ void CMapFrame::OnViewItemsAllUpdate(wxUpdateUIEvent& event)
     const char  * szValue;
     int           sectidx;
 
-    sectidx = gpApp->GetSectionFirst(SZ_SECT_ITEMS, szName, szValue);
+    sectidx = gpConfigManager->GetSectionFirst(SZ_SECT_ITEMS, szName, szValue);
     event.Enable(sectidx>=0);
 }
 
@@ -605,7 +605,7 @@ void CMapFrame::OnViewObjectsAllUpdate(wxUpdateUIEvent& event)
     const char  * szValue;
     int           sectidx;
 
-    sectidx = gpApp->GetSectionFirst(SZ_SECT_OBJECTS, szName, szValue);
+    sectidx = gpConfigManager->GetSectionFirst(SZ_SECT_OBJECTS, szName, szValue);
     event.Enable(sectidx>=0);
 }
 
@@ -844,7 +844,7 @@ void CMapFrame::OnWindowEditors(wxCommandEvent& event)
 
 void CMapFrame::OnApplyDefaultOrders(wxCommandEvent& event)
 {
-    gpApp->SetOrdersChanged(gpApp->m_pAtlantis->ApplyDefaultOrders(true) //(bool)atol(gpApp->GetConfig(SZ_SECT_COMMON, SZ_KEY_DEFAULT_EMPTY_ONLY)))
+    gpApp->SetOrdersChanged(gpApp->m_pAtlantis->ApplyDefaultOrders(true) //(bool)atol(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_DEFAULT_EMPTY_ONLY)))
                             || gpApp->GetOrdersChanged());
 
     CUnitPane * p = (CUnitPane*)gpApp->m_Panes[AH_PANE_UNITS_HEX];

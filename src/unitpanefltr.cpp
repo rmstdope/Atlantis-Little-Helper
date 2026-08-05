@@ -118,7 +118,7 @@ void CUnitPaneFltr::Update(CUnitFilterDlg * pFilter)
     bool             ShowGoneUnits = false;
     CAtlaParser    * pPrevTurn = nullptr;
 
-    sConfSect = gpApp->GetConfig(m_sConfigSection.c_str(), SZ_KEY_FLTR_SET);
+    sConfSect = gpConfigManager->GetConfig(m_sConfigSection.c_str(), SZ_KEY_FLTR_SET);
     if (pFilter)
     {
         ShowOnMap     = pFilter->m_chDisplayOnMap->IsChecked();
@@ -137,9 +137,9 @@ void CUnitPaneFltr::Update(CUnitFilterDlg * pFilter)
         }
         else
         {
-            Format(ConfigKey, "%s%d", SZ_KEY_UNIT_FLTR_PROPERTY, i);  Property[i] = gpApp->GetConfig(sConfSect.c_str(), ConfigKey.c_str());
-            Format(ConfigKey, "%s%d", SZ_KEY_UNIT_FLTR_COMPARE , i);  Compare [i] = gpApp->GetConfig(sConfSect.c_str(), ConfigKey.c_str());
-            Format(ConfigKey, "%s%d", SZ_KEY_UNIT_FLTR_VALUE   , i);  sValue  [i] = gpApp->GetConfig(sConfSect.c_str(), ConfigKey.c_str());
+            Format(ConfigKey, "%s%d", SZ_KEY_UNIT_FLTR_PROPERTY, i);  Property[i] = gpConfigManager->GetConfig(sConfSect.c_str(), ConfigKey.c_str());
+            Format(ConfigKey, "%s%d", SZ_KEY_UNIT_FLTR_COMPARE , i);  Compare [i] = gpConfigManager->GetConfig(sConfSect.c_str(), ConfigKey.c_str());
+            Format(ConfigKey, "%s%d", SZ_KEY_UNIT_FLTR_VALUE   , i);  sValue  [i] = gpConfigManager->GetConfig(sConfSect.c_str(), ConfigKey.c_str());
         }
 
         TrimRight(Property[i], TRIM_ALL);    TrimLeft(Property[i], TRIM_ALL);
@@ -160,15 +160,15 @@ void CUnitPaneFltr::Update(CUnitFilterDlg * pFilter)
     if (pFilter)
     {
         TrackingGroup = pFilter->m_TrackingGroup;
-        gpApp->SetConfig(m_sConfigSection.c_str(), SZ_KEY_UNIT_FLTR_TRACKING, TrackingGroup.c_str());
+        gpConfigManager->SetConfig(m_sConfigSection.c_str(), SZ_KEY_UNIT_FLTR_TRACKING, TrackingGroup.c_str());
     }
     else
-        TrackingGroup = gpApp->GetConfig(m_sConfigSection.c_str(), SZ_KEY_UNIT_FLTR_TRACKING);
+        TrackingGroup = gpConfigManager->GetConfig(m_sConfigSection.c_str(), SZ_KEY_UNIT_FLTR_TRACKING);
 
     TrimRight(TrackingGroup, TRIM_ALL);
     if (!TrackingGroup.empty())
     {
-        p = gpApp->GetConfig(SZ_SECT_UNIT_TRACKING, TrackingGroup.c_str());
+        p = gpConfigManager->GetConfig(SZ_SECT_UNIT_TRACKING, TrackingGroup.c_str());
         while (p && *p)
         {
             p = GetToken(S, p, ',');
@@ -186,9 +186,9 @@ void CUnitPaneFltr::Update(CUnitFilterDlg * pFilter)
         }
         else
         {
-            S = gpApp->GetConfig(sConfSect.c_str(), SZ_KEY_UNIT_FLTR_SOURCE);
+            S = gpConfigManager->GetConfig(sConfSect.c_str(), SZ_KEY_UNIT_FLTR_SOURCE);
             bUsePython = (0==stricmp(S.c_str(), SZ_KEY_UNIT_FLTR_SOURCE_PYTHON));
-            sPythonText= gpApp->GetConfig(sConfSect.c_str(), SZ_KEY_UNIT_FLTR_PYTHON_CODE);
+            sPythonText= gpConfigManager->GetConfig(sConfSect.c_str(), SZ_KEY_UNIT_FLTR_PYTHON_CODE);
         }
     }
 

@@ -329,7 +329,7 @@ CExportMagesCSVDlg::CExportMagesCSVDlg(wxWindow * parent, const char * fname)
     m_pSeparator = new wxComboBox(this, -1, wxT(""), wxDefaultPosition, wxDefaultSize, 0, nullptr, wxCB_DROPDOWN);
     m_pSeparator->Append(wxT(","));
     m_pSeparator->Append(wxT(";"));
-    p = SkipSpaces(gpApp->GetConfig(m_sConfigSection.c_str(), SZ_KEY_SEPARATOR));
+    p = SkipSpaces(gpConfigManager->GetConfig(m_sConfigSection.c_str(), SZ_KEY_SEPARATOR));
     if (p && *p)
         m_pSeparator->SetValue(wxString::FromAscii(p));
     else
@@ -338,7 +338,7 @@ CExportMagesCSVDlg::CExportMagesCSVDlg(wxWindow * parent, const char * fname)
     m_pOrientation = new wxComboBox(this, -1, wxT(""), wxDefaultPosition, wxDefaultSize, 0, nullptr, wxCB_DROPDOWN );
     m_pOrientation->Append(wxT(SZ_VERTICAL));
     m_pOrientation->Append(wxT(SZ_HORIZONTAL));
-    p = SkipSpaces(gpApp->GetConfig(m_sConfigSection.c_str(), SZ_KEY_ORIENTATION));
+    p = SkipSpaces(gpConfigManager->GetConfig(m_sConfigSection.c_str(), SZ_KEY_ORIENTATION));
     if (p && *p)
         m_pOrientation->SetValue(wxString::FromAscii(p));
     else
@@ -348,7 +348,7 @@ CExportMagesCSVDlg::CExportMagesCSVDlg(wxWindow * parent, const char * fname)
     m_pRadio2 = new wxRadioButton(this, MCSV_RADIO_2, wxT("days"));
     m_pRadio3 = new wxRadioButton(this, MCSV_RADIO_3, wxT("level(days)"));
 
-    m_nFormat = atol(gpApp->GetConfig(m_sConfigSection.c_str(), SZ_KEY_FORMAT));
+    m_nFormat = atol(gpConfigManager->GetConfig(m_sConfigSection.c_str(), SZ_KEY_FORMAT));
     switch (m_nFormat)
     {
         case 0:   m_pRadio1->SetValue(true); break;
@@ -436,9 +436,9 @@ void CExportMagesCSVDlg::OnButton(wxCommandEvent& event)
     {
     case wxID_OK:
         S = m_pSeparator->GetValue();
-        gpApp->SetConfig(m_sConfigSection.c_str(), SZ_KEY_SEPARATOR, S.mb_str());
+        gpConfigManager->SetConfig(m_sConfigSection.c_str(), SZ_KEY_SEPARATOR, S.mb_str());
         S = m_pOrientation->GetValue();
-        gpApp->SetConfig(m_sConfigSection.c_str(), SZ_KEY_ORIENTATION, S.mb_str());
+        gpConfigManager->SetConfig(m_sConfigSection.c_str(), SZ_KEY_ORIENTATION, S.mb_str());
         m_nFormat = 0;
         if (m_pRadio1->GetValue())
             m_nFormat = 0;
@@ -448,7 +448,7 @@ void CExportMagesCSVDlg::OnButton(wxCommandEvent& event)
             m_nFormat = 2;
         S.Empty();
         S << m_nFormat;
-        gpApp->SetConfig(m_sConfigSection.c_str(), SZ_KEY_FORMAT, S.mb_str());
+        gpConfigManager->SetConfig(m_sConfigSection.c_str(), SZ_KEY_FORMAT, S.mb_str());
 
         StoreSize();
         EndModal(wxID_OK);
@@ -772,14 +772,14 @@ CMessageBoxSwitchableDlg::CMessageBoxSwitchableDlg(wxWindow *parent, const char 
 void ShowMessageBoxSwitchable(const char * szTitle, const char * szMessage, const char * szConfigKey)
 {
     std::string S;
-    S = gpApp->GetConfig(SZ_SECT_DO_NOT_SHOW_THESE, szConfigKey);
+    S = gpConfigManager->GetConfig(SZ_SECT_DO_NOT_SHOW_THESE, szConfigKey);
     if (atol(S.c_str()) > 0)
         return;
 
     CMessageBoxSwitchableDlg dlg(nullptr, szTitle, szMessage);
     dlg.ShowModal();
     if (dlg.m_chbSwitchOff->IsChecked())
-        gpApp->SetConfig(SZ_SECT_DO_NOT_SHOW_THESE, szConfigKey, "1");
+        gpConfigManager->SetConfig(SZ_SECT_DO_NOT_SHOW_THESE, szConfigKey, "1");
 }
 
 //==========================================================================

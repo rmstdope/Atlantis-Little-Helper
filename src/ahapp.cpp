@@ -81,7 +81,6 @@ CAhApp::CAhApp() : m_HexDescrSrc    (),
     m_FirstLoad         = true;
     m_OrdersAreChanged  = false;
     m_CommentsChanged   = false;
-    m_UpgradeLandFlags  = false;
     m_DiscardChanges    = false;
     m_SelUnitIdx        = -1;
     m_layout            = 0;
@@ -101,8 +100,11 @@ CAhApp::CAhApp() : m_HexDescrSrc    (),
     m_FontDescr[FONT_VIEW_DLG  ]  = "View dialogs";
     m_FontDescr[FONT_ERR_DLG   ]  = "Messages and Errors";
 
+    m_pConfigManager = std::make_unique<ConfigManager>();
+    gpConfigManager  = m_pConfigManager.get();
+
     m_pAtlantis.reset(new CAtlaParser(&ThisGameDataHelper));
-    m_pAtlantis->m_pConfig = &m_Config[CONFIG_FILE_CONFIG];
+    m_pAtlantis->m_pConfig = &gpConfigManager->m_Config[CONFIG_FILE_CONFIG];
     m_Brightness_Delta = 0;
     m_nStdoutLastPos = 0;
     m_nStderrLastPos = 0;
@@ -110,6 +112,7 @@ CAhApp::CAhApp() : m_HexDescrSrc    (),
 
 CAhApp::~CAhApp()
 {
+    gpConfigManager = nullptr;
     gpApp = nullptr;
 }
 
@@ -128,52 +131,34 @@ bool CAhApp::OnInit()
 
     gpApp = this;
 
-    m_ConfigSectionsState.insert(SZ_SECT_DEF_ORDERS       );
-    m_ConfigSectionsState.insert(SZ_SECT_ORDERS           );
-    m_ConfigSectionsState.insert(SZ_SECT_REPORTS          );
-    m_ConfigSectionsState.insert(SZ_SECT_LAND_FLAGS       );
-    m_ConfigSectionsState.insert(SZ_SECT_LAND_VISITED     );
-    m_ConfigSectionsState.insert(SZ_SECT_SKILLS           );
-    m_ConfigSectionsState.insert(SZ_SECT_ITEMS            );
-    m_ConfigSectionsState.insert(SZ_SECT_OBJECTS          );
-    m_ConfigSectionsState.insert(SZ_SECT_PASSWORDS        );
-    m_ConfigSectionsState.insert(SZ_SECT_UNIT_TRACKING    );
-    m_ConfigSectionsState.insert(SZ_SECT_FOLDERS          );
-    m_ConfigSectionsState.insert(SZ_SECT_DO_NOT_SHOW_THESE);
-    m_ConfigSectionsState.insert(SZ_SECT_TROPIC_ZONE      );
-    m_ConfigSectionsState.insert(SZ_SECT_UNIT_FLAGS       );
+    gpConfigManager->Init();
+    CUnit::LoadCustomFlagNames(gpConfigManager->GetConfigFile(SZ_SECT_UNIT_FLAG_NAMES));
 
-
-    m_Config[CONFIG_FILE_CONFIG].Load(SZ_CONFIG_FILE);
-    m_Config[CONFIG_FILE_STATE ].Load(SZ_CONFIG_STATE_FILE);
-    UpgradeConfigFiles();
-    CUnit::LoadCustomFlagNames(GetConfigFile(SZ_SECT_UNIT_FLAG_NAMES));
-
-    m_layout = atol(GetConfig(SZ_SECT_COMMON, SZ_KEY_LAYOUT));
+    m_layout = atol(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_LAYOUT));
     if (m_layout<0)
         m_layout = 0;
     if (m_layout>=AH_LAYOUT_COUNT)
         m_layout = AH_LAYOUT_COUNT-1;
 
-    m_Brightness_Delta = atol(GetConfig(SZ_SECT_COMMON, SZ_KEY_BRIGHT_DELTA));
+    m_Brightness_Delta = atol(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_BRIGHT_DELTA));
 
 
     for (i=0; i<FONT_COUNT; i++)
     {
         S.clear();
         S << (long)i;
-        szValue = GetConfig(SZ_SECT_FONTS_2, S.c_str());
+        szValue = gpConfigManager->GetConfig(SZ_SECT_FONTS_2, S.c_str());
         m_Fonts[i] = NewFontFromStr(szValue);
     }
 
-    if (0==stricmp(SZ_EOL_MS, GetConfig(SZ_SECT_COMMON, SZ_KEY_EOL)))
+    if (0==stricmp(SZ_EOL_MS, gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_EOL)))
         EOL_FILE = EOL_MS;
     else
         EOL_FILE = EOL_UNIX;
 
 
     // Load unit property groups
-    sectidx = GetSectionFirst(SZ_SECT_UNITPROP_GROUPS, szName, szValue);
+    sectidx = gpConfigManager->GetSectionFirst(SZ_SECT_UNITPROP_GROUPS, szName, szValue);
     while (sectidx >= 0)
     {
         while (szValue && *szValue)
@@ -183,7 +168,7 @@ bool CAhApp::OnInit()
             if (CollDedup.insert({key, val}).second)
                 m_UnitPropertyGroups.emplace(key, val);
         }
-        sectidx = GetSectionNext(sectidx, SZ_SECT_UNITPROP_GROUPS, szName, szValue);
+        sectidx = gpConfigManager->GetSectionNext(sectidx, SZ_SECT_UNITPROP_GROUPS, szName, szValue);
     }
     CUnit::m_PropertyGroupsColl = &m_UnitPropertyGroups;
 
@@ -214,7 +199,7 @@ bool CAhApp::OnInit()
 
     // Water terrain types
     //m_WaterTerrainNames = CStringSortColl(); no need for that
-    p = SkipSpaces(GetConfig(SZ_SECT_COMMON, SZ_KEY_WATER_TERRAINS));
+    p = SkipSpaces(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_WATER_TERRAINS));
     int idx;
     while (p && *p)
     {
@@ -282,7 +267,7 @@ bool CAhApp::OnInit()
 
 
 
-    p = SkipSpaces(GetConfig(SZ_SECT_COMMON, SZ_KEY_VALID_ORDERS));
+    p = SkipSpaces(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_VALID_ORDERS));
     while (p && *p)
     {
         p = SkipSpaces(GetToken(S, p, ','));
@@ -292,7 +277,7 @@ bool CAhApp::OnInit()
 //    m_OrderHash.Dbg_Print();
 
     // Load trade items hash
-    p = SkipSpaces(GetConfig(SZ_SECT_UNITPROP_GROUPS,  PRP_TRADE_ITEMS));
+    p = SkipSpaces(gpConfigManager->GetConfig(SZ_SECT_UNITPROP_GROUPS,  PRP_TRADE_ITEMS));
     while (p && *p)
     {
         p = SkipSpaces(GetToken(S, p, ','));
@@ -301,7 +286,7 @@ bool CAhApp::OnInit()
     }
 
     // All the men hash
-    p = SkipSpaces(GetConfig(SZ_SECT_UNITPROP_GROUPS,  PRP_MEN));
+    p = SkipSpaces(gpConfigManager->GetConfig(SZ_SECT_UNITPROP_GROUPS,  PRP_MEN));
     while (p && *p)
     {
         p = SkipSpaces(GetToken(S, p, ','));
@@ -310,7 +295,7 @@ bool CAhApp::OnInit()
     }
 
     // Magic skills hash
-    p = SkipSpaces(GetConfig(SZ_SECT_UNITPROP_GROUPS,  PRP_MAG_SKILLS));
+    p = SkipSpaces(gpConfigManager->GetConfig(SZ_SECT_UNITPROP_GROUPS,  PRP_MAG_SKILLS));
     while (p && *p)
     {
         int x;
@@ -324,7 +309,7 @@ bool CAhApp::OnInit()
     }
 
     // Read list of year/month for report
-    i = GetSectionFirst(SZ_SECT_REPORTS, szName, szValue);
+    i = gpConfigManager->GetSectionFirst(SZ_SECT_REPORTS, szName, szValue);
     while (i>=0)
     {
         {
@@ -333,7 +318,7 @@ bool CAhApp::OnInit()
             if (_it == m_ReportDates.end() || *_it != _val)
                 m_ReportDates.insert(_it, _val);
         }
-        i = GetSectionNext (i, SZ_SECT_REPORTS, szName, szValue);
+        i = gpConfigManager->GetSectionNext (i, SZ_SECT_REPORTS, szName, szValue);
     }
     StdRedirectInit();
 
@@ -342,13 +327,13 @@ bool CAhApp::OnInit()
     OpenMapFrame();
 
     if ((AH_LAYOUT_3_WIN==m_layout || AH_LAYOUT_2_WIN==m_layout) &&
-        atol(GetConfig(CUnitFrame::GetConfigSection(m_layout), SZ_KEY_OPEN)) )
+        atol(gpConfigManager->GetConfig(CUnitFrame::GetConfigSection(m_layout), SZ_KEY_OPEN)) )
     {
         OpenUnitFrame();
     }
 
     if ((AH_LAYOUT_3_WIN==m_layout) &&
-        (atol(GetConfig(CEditsFrame::GetConfigSection(m_layout), SZ_KEY_OPEN))) )
+        (atol(gpConfigManager->GetConfig(CEditsFrame::GetConfigSection(m_layout), SZ_KEY_OPEN))) )
     {
         OpenEditsFrame();
     }
@@ -361,11 +346,11 @@ bool CAhApp::OnInit()
         for (i=1; i<argc; i++)
             LoadReport(wxString(argv[i]).mb_str(), i>1);
     else
-        if (atol(GetConfig(SZ_SECT_COMMON, SZ_KEY_LOAD_REP)) && (((int)m_ReportDates.size()) > 0) )
+        if (atol(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_LOAD_REP)) && (((int)m_ReportDates.size()) > 0) )
         {
             S.clear();
             S << m_ReportDates[(int)m_ReportDates.size()-1];
-            S2 = GetConfig(SZ_SECT_REPORTS, S.c_str());
+            S2 = gpConfigManager->GetConfig(SZ_SECT_REPORTS, S.c_str());
             const char * p = S2.c_str();
             bool         join = false;
             while (p && *p)
@@ -375,7 +360,7 @@ bool CAhApp::OnInit()
                 join = true;
             }
         }
-    if (atol(GetConfig(CUnitFrameFltr::GetConfigSection(m_layout), SZ_KEY_OPEN)) )
+    if (atol(gpConfigManager->GetConfig(CUnitFrameFltr::GetConfigSection(m_layout), SZ_KEY_OPEN)) )
     {
         OpenUnitFrameFltr(false);
     }
@@ -398,13 +383,12 @@ int CAhApp::OnExit()
         FontToStr(m_Fonts[i], S);
         Name.clear();
         Name << (long)i;
-        SetConfig(SZ_SECT_FONTS_2, Name.c_str(), S.c_str());
+        gpConfigManager->SetConfig(SZ_SECT_FONTS_2, Name.c_str(), S.c_str());
     }
 
     if (!m_DiscardChanges)
     {
-        m_Config[CONFIG_FILE_CONFIG].Save(SZ_CONFIG_FILE);
-        m_Config[CONFIG_FILE_STATE ].Save(SZ_CONFIG_STATE_FILE);
+        gpConfigManager->Save();
 
         if (m_pAtlantis && ERR_OK==m_pAtlantis->m_ParseErr)
             SaveHistory(SZ_HISTORY_FILE);
@@ -427,7 +411,6 @@ int CAhApp::OnExit()
     m_MoveModesRaw.clear();
     for (auto* p : m_ItemWeights) { free(p->name); free(p->weights); delete p; }
     m_ItemWeights.clear();
-    m_ConfigSectionsState.clear();
     m_OrderHash.clear();
     m_Attitudes.FreeAll();
     m_WaterTerrainNames.clear();
@@ -597,297 +580,6 @@ void CAhApp::OpenEditsFrame()
 
 //-------------------------------------------------------------------------
 
-void CAhApp::UpgradeConfigFiles()
-{
-    std::string         Section;
-    const char * szNextSection;
-    const char * szName;
-    const char * szValue;
-    bool         Ok = true;
-    int          fileno, idx, i;
-    std::string         ConfigKey;
-
-    // move the sections only when we still have old-style unit list headers.
-    // Modern configs already store the current section layout, so scanning the
-    // whole file on every startup just burns CPU and delays the UI.
-    if (m_Config[CONFIG_FILE_CONFIG].GetFirstInSection(SZ_SECT_UNITLIST_HDR, szName, szValue) >= 0 ||
-        m_Config[CONFIG_FILE_CONFIG].GetFirstInSection(SZ_SECT_UNITLIST_HDR_FLTR, szName, szValue) >= 0)
-    {
-        Ok = m_Config[CONFIG_FILE_CONFIG].GetNextSection("", szNextSection);
-        while (Ok)
-        {
-            Section = szNextSection;
-            if (Section.empty())
-            {
-                Ok = m_Config[CONFIG_FILE_CONFIG].GetNextSection("\1", szNextSection);
-                continue;
-            }
-            fileno    = GetConfigFileNo(Section.c_str());
-
-            if (CONFIG_FILE_CONFIG != fileno)
-            {
-                // move to the appropriate file
-                idx = m_Config[CONFIG_FILE_CONFIG].GetFirstInSection(Section.c_str(), szName, szValue);
-                while (idx>=0)
-                {
-                    m_Config[fileno].SetByName(Section.c_str(), szName, szValue);
-                    idx = m_Config[CONFIG_FILE_CONFIG].GetNextInSection(idx, Section.c_str(), szName, szValue);
-                }
-                m_Config[CONFIG_FILE_CONFIG].RemoveSection(Section.c_str());
-
-                // and it means land flags has to be moved, too
-                m_UpgradeLandFlags = true;
-            }
-
-            Ok = m_Config[CONFIG_FILE_CONFIG].GetNextSection(Section.c_str(), szNextSection);
-        }
-    }
-
-    // unit lists columns
-    szValue = m_Config[CONFIG_FILE_CONFIG].GetByName(SZ_SECT_LIST_COL_CURRENT, SZ_KEY_LIS_COL_UNITS_HEX);
-    if (!szValue || !*szValue)
-    {
-        MoveSectionEntries(CONFIG_FILE_CONFIG, SZ_SECT_UNITLIST_HDR     , SZ_SECT_LIST_COL_UNIT_DEF     );
-        MoveSectionEntries(CONFIG_FILE_CONFIG, SZ_SECT_UNITLIST_HDR_FLTR, SZ_SECT_LIST_COL_UNIT_FLTR_DEF);
-
-        SetConfig(SZ_SECT_LIST_COL_CURRENT  , SZ_KEY_LIS_COL_UNITS_HEX  ,     SZ_SECT_LIST_COL_UNIT_DEF);
-        SetConfig(SZ_SECT_LIST_COL_CURRENT  , SZ_KEY_LIS_COL_UNITS_FILTER,    SZ_SECT_LIST_COL_UNIT_FLTR_DEF);
-    }
-
-    // unit filter
-    Section.clear();
-    Section  << SZ_SECT_UNIT_FILTER << "Default";
-    Ok = false;
-    for (i=0; i<UNIT_SIMPLE_FLTR_COUNT; i++)
-    {
-        Format(ConfigKey, "%s%d", SZ_KEY_UNIT_FLTR_PROPERTY, i);
-        szValue = SkipSpaces(gpApp->GetConfig(SZ_SECT_WND_UNITS_FLTR, ConfigKey.c_str()));
-        if (szValue && *szValue)
-        {
-            gpApp->SetConfig(Section.c_str(),      ConfigKey.c_str(), szValue);
-            gpApp->SetConfig(SZ_SECT_WND_UNITS_FLTR, ConfigKey.c_str(), "");
-            Ok = true;
-        }
-
-        Format(ConfigKey, "%s%d", SZ_KEY_UNIT_FLTR_COMPARE , i);
-        szValue = gpApp->GetConfig(SZ_SECT_WND_UNITS_FLTR, ConfigKey.c_str());
-        if (szValue && *szValue)
-        {
-            gpApp->SetConfig(Section.c_str(),      ConfigKey.c_str(), szValue);
-            gpApp->SetConfig(SZ_SECT_WND_UNITS_FLTR, ConfigKey.c_str(), "");
-            Ok = true;
-        }
-
-        Format(ConfigKey, "%s%d", SZ_KEY_UNIT_FLTR_VALUE   , i);
-        szValue = gpApp->GetConfig(SZ_SECT_WND_UNITS_FLTR, ConfigKey.c_str());
-        if (szValue && *szValue)
-        {
-            gpApp->SetConfig(Section.c_str(),      ConfigKey.c_str(), szValue);
-            gpApp->SetConfig(SZ_SECT_WND_UNITS_FLTR, ConfigKey.c_str(), "");
-            Ok = true;
-        }
-    }
-    if (Ok)
-        gpApp->SetConfig(SZ_SECT_WND_UNITS_FLTR, SZ_KEY_FLTR_SET, Section.c_str());
-
-    // Arcadia III roads
-    szValue = m_Config[CONFIG_FILE_CONFIG].GetByName(SZ_SECT_COLORS,  SZ_KEY_MAP_ROAD_OLD);
-    if (szValue && *szValue)
-    {
-        m_Config[CONFIG_FILE_CONFIG].SetByName(SZ_SECT_COLORS, SZ_KEY_MAP_ROAD    , szValue);
-        m_Config[CONFIG_FILE_CONFIG].SetByName(SZ_SECT_COLORS, SZ_KEY_MAP_ROAD_OLD, "");
-    }
-    szValue = m_Config[CONFIG_FILE_CONFIG].GetByName(SZ_SECT_COLORS,  SZ_KEY_MAP_ROAD_BAD_OLD);
-    if (szValue && *szValue)
-    {
-        m_Config[CONFIG_FILE_CONFIG].SetByName(SZ_SECT_COLORS, SZ_KEY_MAP_ROAD_BAD    , szValue);
-        m_Config[CONFIG_FILE_CONFIG].SetByName(SZ_SECT_COLORS, SZ_KEY_MAP_ROAD_BAD_OLD, "");
-    }
-}
-
-//-------------------------------------------------------------------------
-
-void CAhApp::MoveSectionEntries(int fileno, const char * src, const char * dest)
-{
-    const char * szName;
-    const char * szValue;
-    std::vector<std::string> Names, Values;
-    int          idx;
-
-    idx = m_Config[fileno].GetFirstInSection(src, szName, szValue);
-    while (idx>=0)
-    {
-        Names.push_back(szName ? szName : "");
-        Values.push_back(szValue ? szValue : "");
-        idx = m_Config[fileno].GetNextInSection(idx, src, szName, szValue);
-    }
-    m_Config[fileno].RemoveSection(src);
-
-    for (idx=0; idx<(int)Values.size(); idx++)
-    {
-        m_Config[fileno].SetByName(dest, Names[idx].c_str(), Values[idx].c_str());
-    }
-}
-
-//-------------------------------------------------------------------------
-
-void CAhApp::UpgradeConfigByFactionId()
-{
-    int          fileno, idx;
-    std::string         S, Section, Key;
-    const char * szName;
-    const char * szValue;
-
-    if (m_pAtlantis->m_CrntFactionId > 0)
-    {
-        // Upgrade order files
-        ComposeConfigOrdersSection(Section, m_pAtlantis->m_CrntFactionId);
-        fileno  = GetConfigFileNo(SZ_SECT_ORDERS);
-        idx     = m_Config[fileno].GetFirstInSection(SZ_SECT_ORDERS, szName, szValue);
-        while (idx>=0)
-        {
-            m_Config[fileno].SetByName(Section.c_str(), szName, szValue);
-            idx = m_Config[fileno].GetNextInSection(idx, SZ_SECT_ORDERS, szName, szValue);
-        }
-        m_Config[fileno].RemoveSection(SZ_SECT_ORDERS);
-
-        // Upgrade passwords
-        S = GetConfig(SZ_SECT_COMMON, SZ_KEY_PWD_OLD);
-        TrimRight(S, TRIM_ALL);
-        if (!S.empty())
-        {
-            Key.clear();
-            Key << (long)m_pAtlantis->m_CrntFactionId;
-            SetConfig(SZ_SECT_PASSWORDS, Key.c_str() , S.c_str() );
-            SetConfig(SZ_SECT_COMMON   , SZ_KEY_PWD_OLD, (const char *)nullptr);
-        }
-    }
-}
-
-//-------------------------------------------------------------------------
-
-void CAhApp::ComposeConfigOrdersSection(std::string & Sect, int FactionId)
-{
-    Sect = SZ_SECT_ORDERS;
-    Sect << "_" << (long)FactionId;
-}
-
-//-------------------------------------------------------------------------
-
-int CAhApp::GetConfigFileNo(const char * szSection)
-{
-    if (m_ConfigSectionsState.find(szSection) != m_ConfigSectionsState.end() ||
-        0==strnicmp(SZ_SECT_ORDERS, szSection, sizeof(SZ_SECT_ORDERS)-1) ) // orders section is composite starting from 2.1.6
-        return CONFIG_FILE_STATE;
-    else
-        return CONFIG_FILE_CONFIG;
-}
-
-//-------------------------------------------------------------------------
-
-const char * CAhApp::GetConfig(const char * szSection, const char * szName)
-{
-    const char * p;
-    int          i;
-    int          fileno = GetConfigFileNo(szSection);
-
-    p = m_Config[fileno].GetByName(szSection, szName);
-    if (nullptr==p)
-    {
-        for (i=0; i<DefaultConfigSize; i++)
-            if ( (0==stricmp(szSection, DefaultConfig[i].szSection)) &&
-                 (0==stricmp(szName,    DefaultConfig[i].szName))  )
-            {
-                p = DefaultConfig[i].szValue;
-                break;
-            }
-        m_Config[fileno].SetByName(szSection, szName, p?p:" ");
-    }
-    if (nullptr==p)
-        p = "";
-    return p;
-}
-
-//-------------------------------------------------------------------------
-
-CConfigFile * CAhApp::GetConfigFile(const char * szSection)
-{
-    return &m_Config[GetConfigFileNo(szSection)];
-}
-
-//-------------------------------------------------------------------------
-
-void CAhApp::SetConfig(const char * szSection, const char * szName, const char * szNewValue)
-{
-    int  fileno = GetConfigFileNo(szSection);
-    m_Config[fileno].SetByName(szSection, szName, szNewValue);
-}
-
-//-------------------------------------------------------------------------
-
-void CAhApp::SetConfig(const char * szSection, const char * szName, long lNewValue)
-{
-    char   buf[64];
-    int    fileno = GetConfigFileNo(szSection);
-
-    snprintf(buf, sizeof(buf), "%ld", lNewValue);
-    m_Config[fileno].SetByName(szSection, szName, buf);
-}
-
-
-//-------------------------------------------------------------------------
-
-int  CAhApp::GetSectionFirst(const char * szSection, const char *& szName, const char *& szValue)
-{
-    int idx;
-    int i;
-    int fileno = GetConfigFileNo(szSection);
-
-    idx = m_Config[fileno].GetFirstInSection(szSection, szName, szValue);
-    if (idx < 0)
-    {
-        for (i=0; i<DefaultConfigSize; i++)
-            if (0==stricmp(szSection, DefaultConfig[i].szSection))
-                m_Config[fileno].SetByName(szSection, DefaultConfig[i].szName, DefaultConfig[i].szValue);
-
-        idx = m_Config[fileno].GetFirstInSection(szSection, szName, szValue);
-    }
-
-    return idx;
-}
-
-//-------------------------------------------------------------------------
-
-int  CAhApp::GetSectionNext (int idx, const char * szSection, const char *& szName, const char *& szValue)
-{
-    int   fileno = GetConfigFileNo(szSection);
-    return m_Config[fileno].GetNextInSection (idx, szSection, szName, szValue);
-}
-
-//-------------------------------------------------------------------------
-
-void  CAhApp::RemoveSection(const char * szSection)
-{
-    int fileno = GetConfigFileNo(szSection);
-    m_Config[fileno].RemoveSection(szSection);
-}
-
-//-------------------------------------------------------------------------
-
-const char * CAhApp::GetNextSectionName(int fileno, const char * szStart)
-{
-    const char * szNextSection = nullptr;
-
-    if (fileno!=CONFIG_FILE_STATE && fileno!=CONFIG_FILE_CONFIG)
-        return nullptr;
-
-    m_Config[fileno].GetNextSection(szStart, szNextSection);
-
-    return szNextSection;
-}
-
-//-------------------------------------------------------------------------
-
 void CAhApp::ForgetFrame(int no, bool frameclosed)
 {
     int i;
@@ -956,7 +648,7 @@ long CAhApp::GetStructAttr(const char * kind, long & MaxLoad, long & MinSailingP
     MaxLoad         = 0;
     MinSailingPower = 0;
 
-    attrlist = GetConfig(SZ_SECT_STRUCTS, ResolveAlias(kind));
+    attrlist = gpConfigManager->GetConfig(SZ_SECT_STRUCTS, ResolveAlias(kind));
     while (attrlist && *attrlist)
     {
         attrlist = GetToken(S, attrlist, ',', TRIM_ALL);
@@ -998,7 +690,7 @@ const char * CAhApp::ResolveAlias(const char * alias)
     p1 = alias;
     do
     {
-        p = SkipSpaces(GetConfig(SZ_SECT_ALIAS, p1));
+        p = SkipSpaces(gpConfigManager->GetConfig(SZ_SECT_ALIAS, p1));
         if (p && *p)
             p1 = p;
         if (cnt++ > 20)  // don't play with recursy, man!
@@ -1020,7 +712,7 @@ long CAhApp::GetStudyCost(const char * skill)
     const char *p;
 
     p = ResolveAlias(skill);
-    n = atol(GetConfig(SZ_SECT_STUDY_COST, p));
+    n = atol(gpConfigManager->GetConfig(SZ_SECT_STUDY_COST, p));
 
     return n;
 }
@@ -1053,7 +745,7 @@ bool CAhApp::GetItemWeights(const char * item, int *& weights, const char **& mo
     {
         std::string S;
 
-        p = SkipSpaces(GetConfig(SZ_SECT_WEIGHT_MOVE, item));
+        p = SkipSpaces(gpConfigManager->GetConfig(SZ_SECT_WEIGHT_MOVE, item));
 
 
         Ok = (p && *p);
@@ -1093,7 +785,7 @@ bool CAhApp::GetItemWeights(const char * item, int *& weights, const char **& mo
                     S << ',';
                 S << (long)pWeights->weights[i];
             }
-            SetConfig(SZ_SECT_WEIGHT_MOVE, item, S.c_str());
+            gpConfigManager->SetConfig(SZ_SECT_WEIGHT_MOVE, item, S.c_str());
         }
         {
             auto _it = std::lower_bound(m_ItemWeights.begin(), m_ItemWeights.end(), pWeights,
@@ -1197,7 +889,7 @@ const char * CAhApp::GetWeatherLine(bool IsCurrent, bool IsGood, int Zone)
             else
                 szKey = SZ_KEY_WEATHER_NEXT_BAD_MEDIUM;
 
-    return GetConfig(SZ_SECT_WEATHER, szKey);
+    return gpConfigManager->GetConfig(SZ_SECT_WEATHER, szKey);
 }
 
 //-------------------------------------------------------------------------
@@ -1223,7 +915,7 @@ long CAhApp::GetMaxRaceSkillLevel(const char * race, const char * skill, const c
         }
         else
         {
-        sVal = GetConfig(SZ_SECT_MAX_SKILL_LVL, race);
+        sVal = gpConfigManager->GetConfig(SZ_SECT_MAX_SKILL_LVL, race);
         p = sVal.c_str();
 
         p = GetToken(S, p, ',', TRIM_ALL);
@@ -1249,7 +941,7 @@ long CAhApp::GetMaxRaceSkillLevel(const char * race, const char * skill, const c
                 if ( 0==stricmp(leadership, SZ_HERO))
                 {
                     // reread magic skill
-                    sVal = GetConfig(SZ_SECT_MAX_MAG_SKILL_LVL, race);
+                    sVal = gpConfigManager->GetConfig(SZ_SECT_MAX_MAG_SKILL_LVL, race);
                     p = sVal.c_str();
 
                     p = GetToken(S, p, ',', TRIM_ALL);
@@ -1276,7 +968,7 @@ long CAhApp::GetMaxRaceSkillLevel(const char * race, const char * skill, const c
                 // adjust for leadership
                 int leader_bonus, hero_bonus, bonus=0;
 
-                sVal = GetConfig(SZ_SECT_COMMON, SZ_KEY_LEAD_SKILL_BONUS);
+                sVal = gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_LEAD_SKILL_BONUS);
                 p = sVal.c_str();
 
                 p = GetToken(S, p, ',', TRIM_ALL);
@@ -1310,14 +1002,14 @@ void CAhApp::GetProdDetails (const char * item, TProdDetails & details)
     int x;
 
     details.Empty();
-    sVal = GetConfig(SZ_SECT_PROD_SKILL, item);
+    sVal = gpConfigManager->GetConfig(SZ_SECT_PROD_SKILL, item);
     if (!sVal.empty())
     {
         S = GetToken(details.skillname, sVal.c_str(), ' ', TRIM_ALL);
         details.skilllevel = atol(S.c_str());
     }
 
-    sVal = GetConfig(SZ_SECT_PROD_RESOURCE, item);
+    sVal = gpConfigManager->GetConfig(SZ_SECT_PROD_RESOURCE, item);
     x = 0;
     p = sVal.c_str();
     while (p && *p && x<MAX_RES_NUM)
@@ -1328,11 +1020,11 @@ void CAhApp::GetProdDetails (const char * item, TProdDetails & details)
         x++;
     }
 
-    sVal = GetConfig(SZ_SECT_PROD_MONTHS, item);
+    sVal = gpConfigManager->GetConfig(SZ_SECT_PROD_MONTHS, item);
     if (!sVal.empty())
         details.months = atol(sVal.c_str());
 
-    sVal = GetConfig(SZ_SECT_PROD_TOOL, item);
+    sVal = gpConfigManager->GetConfig(SZ_SECT_PROD_TOOL, item);
     if (!sVal.empty())
     {
         S = GetToken(details.toolname, sVal.c_str(), ' ', TRIM_ALL);
@@ -1355,10 +1047,10 @@ bool CAhApp::CanSeeAdvResources(const char * skillname, const char * terrain, st
     Levels.clear();
     Resources.clear();
 
-    ProdSkillLine = GetConfig(SZ_SECT_RESOURCE_SKILL,  skillname);
+    ProdSkillLine = gpConfigManager->GetConfig(SZ_SECT_RESOURCE_SKILL,  skillname);
     TrimRight(ProdSkillLine, TRIM_ALL);
 
-    ProdLandLine = GetConfig(SZ_SECT_RESOURCE_LAND,  terrain);
+    ProdLandLine = gpConfigManager->GetConfig(SZ_SECT_RESOURCE_LAND,  terrain);
     TrimRight(ProdLandLine, TRIM_ALL);
 
     if (!ProdSkillLine.empty() && !ProdLandLine.empty())
@@ -1394,7 +1086,7 @@ bool CAhApp::CanSeeAdvResources(const char * skillname, const char * terrain, st
 
 int CAhApp::GetAttitudeForFaction(int id)
 {
-    int player_id = atol( GetConfig(SZ_SECT_ATTITUDES, SZ_ATT_PLAYER_ID));
+    int player_id = atol( gpConfigManager->GetConfig(SZ_SECT_ATTITUDES, SZ_ATT_PLAYER_ID));
     if(id == player_id) return ATT_FRIEND2;
     int attitude = ATT_UNDECLARED;
     CAttitude * policy;
@@ -1538,10 +1230,10 @@ int CAhApp::SaveOrders(bool UsingExistingName)
         id = m_pAtlantis->m_OurFactions[i];
         if (UsingExistingName)
         {
-            ComposeConfigOrdersSection(Section, id);
+            gpConfigManager->ComposeConfigOrdersSection(Section, id);
             S.clear();
             S << (long)m_pAtlantis->m_YearMon;
-            FName = GetConfig(Section.c_str(), S.c_str());
+            FName = gpConfigManager->GetConfig(Section.c_str(), S.c_str());
             TrimRight(FName, TRIM_ALL);
         }
         err = SaveOrders(FName.c_str(), id);
@@ -1570,11 +1262,11 @@ int  CAhApp::SaveOrders(const char * FNameOut, int FactionId)
     FName = FNameOut;
     TrimRight(FName, TRIM_ALL);
 
-    ComposeConfigOrdersSection(Section, FactionId);
+    gpConfigManager->ComposeConfigOrdersSection(Section, FactionId);
     if (FName.empty())
     {
         Format(S, "%d", m_pAtlantis->m_YearMon);
-        FName = GetConfig(Section.c_str(), S.c_str());
+        FName = gpConfigManager->GetConfig(Section.c_str(), S.c_str());
         TrimRight(FName, TRIM_ALL);
 
         if (FName.empty())
@@ -1593,7 +1285,7 @@ int  CAhApp::SaveOrders(const char * FNameOut, int FactionId)
             Prompt << "Faction ";
         Prompt << (long)FactionId;
 
-        Dir = GetConfig(SZ_SECT_FOLDERS, SZ_KEY_FOLDER_ORDERS);
+        Dir = gpConfigManager->GetConfig(SZ_SECT_FOLDERS, SZ_KEY_FOLDER_ORDERS);
         TrimRight(Dir, TRIM_ALL);
         if (Dir.empty())
             Dir = ".";
@@ -1618,7 +1310,7 @@ int  CAhApp::SaveOrders(const char * FNameOut, int FactionId)
             FName = dialog.GetPath().mb_str();
             MakePathRelative(CurrentDir.mb_str(), FName);
             GetDirFromPath(FName.c_str(), Dir);
-            SetConfig(SZ_SECT_FOLDERS, SZ_KEY_FOLDER_ORDERS, Dir.c_str() );
+            gpConfigManager->SetConfig(SZ_SECT_FOLDERS, SZ_KEY_FOLDER_ORDERS, Dir.c_str() );
         }
         else
             return ERR_CANCEL;
@@ -1632,19 +1324,19 @@ int  CAhApp::SaveOrders(const char * FNameOut, int FactionId)
     Key << (long)FactionId;
 
     err = m_pAtlantis->SaveOrders(FName.c_str(),
-                                  GetConfig(SZ_SECT_PASSWORDS, Key.c_str()),
-                                  (bool)atol(GetConfig(SZ_SECT_COMMON, SZ_KEY_DECORATE_ORDERS)),
+                                  gpConfigManager->GetConfig(SZ_SECT_PASSWORDS, Key.c_str()),
+                                  (bool)atol(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_DECORATE_ORDERS)),
                                   FactionId
                                  );
     if (ERR_OK==err)
     {
         snprintf(buf, sizeof(buf), "%ld", m_pAtlantis->m_YearMon);
-        SetConfig(Section.c_str(), buf, FName.c_str());
+        gpConfigManager->SetConfig(Section.c_str(), buf, FName.c_str());
     }
 
     // Save config, too
-    m_Config[CONFIG_FILE_CONFIG].Save(SZ_CONFIG_FILE);
-    m_Config[CONFIG_FILE_STATE ].Save(SZ_CONFIG_STATE_FILE);
+    gpConfigManager->m_Config[CONFIG_FILE_CONFIG].Save(SZ_CONFIG_FILE);
+    gpConfigManager->m_Config[CONFIG_FILE_STATE ].Save(SZ_CONFIG_STATE_FILE);
 
     if (ERR_OK==m_pAtlantis->m_ParseErr)
         SaveHistory(SZ_HISTORY_FILE);
@@ -1696,8 +1388,8 @@ int  CAhApp::LoadOrders  (const char * FNameIn)
     {
         S.clear();
         S << (long)m_pAtlantis->m_YearMon;
-        ComposeConfigOrdersSection(Sect, factid);
-        SetConfig(Sect.c_str(), S.c_str(), FName.c_str());
+        gpConfigManager->ComposeConfigOrdersSection(Sect, factid);
+        gpConfigManager->SetConfig(Sect.c_str(), S.c_str(), FName.c_str());
 
 //        if (pMapPane)
 //            pMapPane->Refresh(false, nullptr);
@@ -1782,7 +1474,7 @@ void CAhApp::LoadComments()
         pUnit = (CUnit*)m_pAtlantis->m_Units.At(i);
         snprintf(buf, sizeof(buf), "%ld", pUnit->Id);
 
-        DecodeConfigLine(pUnit->DefOrders, GetConfig(SZ_SECT_DEF_ORDERS, buf));
+        DecodeConfigLine(pUnit->DefOrders, gpConfigManager->GetConfig(SZ_SECT_DEF_ORDERS, buf));
 
         TrimRight(pUnit->DefOrders, TRIM_ALL);
         pUnit->ExtractCommentsFromDefOrders();
@@ -1813,7 +1505,7 @@ void CAhApp::SaveComments()
         else
             p = nullptr;
         snprintf(buf, sizeof(buf), "%ld", pUnit->Id);
-        SetConfig(SZ_SECT_DEF_ORDERS, buf, p);
+        gpConfigManager->SetConfig(SZ_SECT_DEF_ORDERS, buf, p);
     }
     m_CommentsChanged = false;
 }
@@ -1833,7 +1525,7 @@ void CAhApp::LoadUnitFlags()
         pUnit = (CUnit*)m_pAtlantis->m_Units.At(i);
         snprintf(buf, sizeof(buf), "%ld", pUnit->Id);
 
-        x = atol(GetConfig(SZ_SECT_UNIT_FLAGS, buf));
+        x = atol(gpConfigManager->GetConfig(SZ_SECT_UNIT_FLAGS, buf));
         if (x & UNIT_CUSTOM_FLAG_MASK)
         {
             pUnit->Flags    |= (x & UNIT_CUSTOM_FLAG_MASK);
@@ -1860,7 +1552,7 @@ void CAhApp::SaveUnitFlags()
         S.clear();
         if (pUnit->Flags & UNIT_CUSTOM_FLAG_MASK)
             S << (long)(pUnit->Flags & UNIT_CUSTOM_FLAG_MASK);
-        SetConfig(SZ_SECT_UNIT_FLAGS, buf, S.c_str());
+        gpConfigManager->SetConfig(SZ_SECT_UNIT_FLAGS, buf, S.c_str());
     }
 }
 
@@ -1972,12 +1664,12 @@ void CAhApp::SaveLandFlags()
 
 
             if (!sData.empty() || (pLand->Flags & LAND_HAS_FLAGS)) // allow to remove flags
-                SetConfig(SZ_SECT_LAND_FLAGS, sName.c_str(), sData.c_str());
+                gpConfigManager->SetConfig(SZ_SECT_LAND_FLAGS, sName.c_str(), sData.c_str());
 
             if (pLand->Flags&LAND_IS_CURRENT) //LAND_UNITS)
             {
                 //ym = atol(GetConfig(SZ_SECT_LAND_VISITED, sName.c_str()));
-                p        = GetToken(sData, GetConfig(SZ_SECT_LAND_VISITED, sName.c_str()), ',');
+                p        = GetToken(sData, gpConfigManager->GetConfig(SZ_SECT_LAND_VISITED, sName.c_str()), ',');
                 ym_last  = atol(sData.c_str());
                 if (sData.empty())
                     ym_first = m_pAtlantis->m_YearMon;
@@ -1990,7 +1682,7 @@ void CAhApp::SaveLandFlags()
                 {
                     sData.clear();
                     sData << m_pAtlantis->m_YearMon << "," << ym_first;
-                    SetConfig(SZ_SECT_LAND_VISITED, sName.c_str(), sData.c_str());
+                    gpConfigManager->SetConfig(SZ_SECT_LAND_VISITED, sName.c_str(), sData.c_str());
                 }
             }
         }
@@ -2011,7 +1703,7 @@ void CAhApp::LoadLandFlags()
     std::string              sData, sLine, sN;
     CLand           * pLand;
 
-    sectidx = GetSectionFirst(SZ_SECT_LAND_FLAGS, szName, szValue);
+    sectidx = gpConfigManager->GetSectionFirst(SZ_SECT_LAND_FLAGS, szName, szValue);
     while (sectidx >= 0)
     {
         pLand   = m_pAtlantis->GetLand(szName);
@@ -2039,7 +1731,7 @@ void CAhApp::LoadLandFlags()
             }
 
         }
-        sectidx = GetSectionNext(sectidx, SZ_SECT_LAND_FLAGS, szName, szValue);
+        sectidx = gpConfigManager->GetSectionNext(sectidx, SZ_SECT_LAND_FLAGS, szName, szValue);
     }
 
 
@@ -2175,7 +1867,7 @@ void CAhApp::CheckTaxDetails  (CLand  * pLand, CTaxProdDetailsCollByFaction & Ta
                 pDetail->HexCount++;
             }
             if (pUnit->GetProperty(PRP_MEN, type, (const void *&)men, eNormal) && eLong==type)
-                pDetail->amount -= men*atol(GetConfig(SZ_SECT_COMMON, SZ_KEY_TAX_PER_TAXER));
+                pDetail->amount -= men*atol(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_TAX_PER_TAXER));
         }
     }
 
@@ -2522,7 +2214,7 @@ void CAhApp::PostLoadReport()
     }
 
     // if loaded for the very first time, center it
-    if (GetSectionFirst(SZ_SECT_REPORTS, szName, szValue) < 0)
+    if (gpConfigManager->GetSectionFirst(SZ_SECT_REPORTS, szName, szValue) < 0)
     {
         wxCommandEvent event(wxEVT_COMMAND_TOOL_CLICKED, tool_centerout);
 
@@ -2582,7 +2274,7 @@ void CAhApp::PostLoadReport()
 
 
         EncodeConfigLine(S, pItem->Description.c_str());
-        SetConfig(SZ_SECT_SKILLS, pItem->Name.c_str(), S.c_str());
+        gpConfigManager->SetConfig(SZ_SECT_SKILLS, pItem->Name.c_str(), S.c_str());
     }
 
     // Items
@@ -2591,7 +2283,7 @@ void CAhApp::PostLoadReport()
         pItem = (CShortNamedObj*)m_pAtlantis->m_Items.At(i);
 
         EncodeConfigLine(S, pItem->Description.c_str());
-        SetConfig(SZ_SECT_ITEMS, pItem->Name.c_str(), S.c_str());
+        gpConfigManager->SetConfig(SZ_SECT_ITEMS, pItem->Name.c_str(), S.c_str());
     }
 
     // Objects
@@ -2600,7 +2292,7 @@ void CAhApp::PostLoadReport()
         pItem = (CShortNamedObj*)m_pAtlantis->m_Objects.At(i);
 
         EncodeConfigLine(S, pItem->Description.c_str());
-        SetConfig(SZ_SECT_OBJECTS, pItem->Name.c_str(), S.c_str());
+        gpConfigManager->SetConfig(SZ_SECT_OBJECTS, pItem->Name.c_str(), S.c_str());
     }
 
     if (pMapPane)
@@ -2616,7 +2308,7 @@ void CAhApp::PostLoadReport()
     {
         std::string   sSection;
         sSection << "PLANE_" << pMapPane->m_SelPlane;
-        const char * savedUnitStr = GetConfig(sSection.c_str(), SZ_KEY_UNIT_SEL);
+        const char * savedUnitStr = gpConfigManager->GetConfig(sSection.c_str(), SZ_KEY_UNIT_SEL);
         if (savedUnitStr && *savedUnitStr)
             savedUnitId = atol(savedUnitStr);
         if (savedUnitId)
@@ -2687,7 +2379,7 @@ int  CAhApp::LoadReport  (const char * FNameIn, bool Join)
                 m_Reports.insert(reportIt, std::move(cachedCurrent));
             }
             m_pAtlantis.reset(new CAtlaParser(&ThisGameDataHelper));
-            m_pAtlantis->m_pConfig = &m_Config[CONFIG_FILE_CONFIG];
+            m_pAtlantis->m_pConfig = &gpConfigManager->m_Config[CONFIG_FILE_CONFIG];
         }
 
         if (!Join)
@@ -2717,22 +2409,22 @@ int  CAhApp::LoadReport  (const char * FNameIn, bool Join)
                 if (_it == m_ReportDates.end() || *_it != _ym)
                     m_ReportDates.insert(_it, _ym);
             }
-            UpgradeConfigByFactionId();
+            gpConfigManager->UpgradeConfigByFactionId();
 
-            if (atol(GetConfig(SZ_SECT_COMMON, SZ_KEY_PWD_READ)) && !m_pAtlantis->m_CrntFactionPwd.empty())
+            if (atol(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_PWD_READ)) && !m_pAtlantis->m_CrntFactionPwd.empty())
             {
                 S.clear();
                 S << (long)m_pAtlantis->m_CrntFactionId;
-                SetConfig(SZ_SECT_PASSWORDS, S.c_str(), m_pAtlantis->m_CrntFactionPwd.c_str() );
+                gpConfigManager->SetConfig(SZ_SECT_PASSWORDS, S.c_str(), m_pAtlantis->m_CrntFactionPwd.c_str() );
             }
 
-            LoadOrd = atol(GetConfig(SZ_SECT_COMMON, SZ_KEY_LOAD_ORDER));
+            LoadOrd = atol(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_LOAD_ORDER));
             if (LoadOrd)
             {
                 S.clear();
                 S << (long)m_pAtlantis->m_YearMon;
-                ComposeConfigOrdersSection(Sect, m_pAtlantis->m_CrntFactionId);
-                LoadOrders(GetConfig(Sect.c_str(), S.c_str()));
+                gpConfigManager->ComposeConfigOrdersSection(Sect, m_pAtlantis->m_CrntFactionId);
+                LoadOrders(gpConfigManager->GetConfig(Sect.c_str(), S.c_str()));
             }
         }
 
@@ -2747,20 +2439,20 @@ int  CAhApp::LoadReport  (const char * FNameIn, bool Join)
             S.clear();
             S << (long)m_pAtlantis->m_YearMon;
             if (!Join)
-                SetConfig(SZ_SECT_REPORTS, S.c_str(), FName.c_str());
+                gpConfigManager->SetConfig(SZ_SECT_REPORTS, S.c_str(), FName.c_str());
             else
             {
-                S2 = GetConfig(SZ_SECT_REPORTS, S.c_str());
+                S2 = gpConfigManager->GetConfig(SZ_SECT_REPORTS, S.c_str());
                 if (!S2.empty())
                     S2 << ", ";
                 S2 << FName;
-                SetConfig(SZ_SECT_REPORTS, S.c_str(), S2.c_str());
+                gpConfigManager->SetConfig(SZ_SECT_REPORTS, S.c_str(), S2.c_str());
             }
         }
 
         if (!m_FirstLoad && !Join)
         {
-            n = atol(GetConfig(SZ_SECT_COMMON, SZ_KEY_REP_CACHE_COUNT));
+            n = atol(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_REP_CACHE_COUNT));
             if (n<=0)
                 n = 1;
 
@@ -2802,7 +2494,7 @@ int  CAhApp::LoadReport(bool Join)
     const char * key;
 
     key = Join ? SZ_KEY_FOLDER_REP_JOIN : SZ_KEY_FOLDER_REP_LOAD;
-    Dir = GetConfig(SZ_SECT_FOLDERS, key);
+    Dir = gpConfigManager->GetConfig(SZ_SECT_FOLDERS, key);
     if (Dir.empty())
         Dir = ".";
 
@@ -2823,7 +2515,7 @@ int  CAhApp::LoadReport(bool Join)
         MakePathRelative(CurrentDir.mb_str(), S);
 
         GetDirFromPath(S.c_str(), Dir);
-        SetConfig(SZ_SECT_FOLDERS, key, Dir.c_str() );
+        gpConfigManager->SetConfig(SZ_SECT_FOLDERS, key, Dir.c_str() );
 
         return LoadReport(S.c_str(), Join);
     }
@@ -3098,7 +2790,7 @@ void CAhApp::SwitchToYearMon(long YearMon)
             });
         m_pAtlantis = std::move(*reportIt);
         m_Reports.erase(reportIt);
-        if (m_pAtlantis) m_pAtlantis->m_pConfig = &m_Config[CONFIG_FILE_CONFIG];
+        if (m_pAtlantis) m_pAtlantis->m_pConfig = &gpConfigManager->m_Config[CONFIG_FILE_CONFIG];
         PostLoadReport();
     }
     else
@@ -3106,7 +2798,7 @@ void CAhApp::SwitchToYearMon(long YearMon)
         S.clear();
         S << YearMon;
 
-        S2 = GetConfig(SZ_SECT_REPORTS, S.c_str());
+        S2 = gpConfigManager->GetConfig(SZ_SECT_REPORTS, S.c_str());
         const char * p = S2.c_str();
         bool         join = false;
         while (p && *p)
@@ -3185,7 +2877,7 @@ bool CAhApp::CanSwitchToRep(eRepSeq whichrep, int & RepIdx)
         pLand    = m_pAtlantis->GetLand(pMapPane->m_SelHexX, pMapPane->m_SelHexY, pMapPane->m_SelPlane, true);
         m_pAtlantis->ComposeLandStrCoord(pLand, sName);
 //        ym       = atol(GetConfig(SZ_SECT_LAND_VISITED, sName.c_str()));
-        GetToken(sData, GetConfig(SZ_SECT_LAND_VISITED, sName.c_str()), ',');
+        GetToken(sData, gpConfigManager->GetConfig(SZ_SECT_LAND_VISITED, sName.c_str()), ',');
         ym = atol(sData.c_str());
 
         {
@@ -3229,7 +2921,7 @@ bool CAhApp::GetPrevTurnReport(CAtlaParser *& pPrevTurn)
             S.clear();
             S << YearMon;
     
-            S2 = GetConfig(SZ_SECT_REPORTS, S.c_str());
+            S2 = gpConfigManager->GetConfig(SZ_SECT_REPORTS, S.c_str());
             const char * p = S2.c_str();
             bool         join = false;
             m_DisableErrs = true;
@@ -3286,7 +2978,7 @@ bool CAhApp::GetPrevTurnReport(CAtlaParser *& pPrevTurn)
 
         if (!m_FirstLoad && !Join)
             m_pAtlantis = new CAtlaParser(&ThisGameDataHelper);
-            m_pAtlantis->m_pConfig = &m_Config[CONFIG_FILE_CONFIG];
+            m_pAtlantis->m_pConfig = &gpConfigManager->m_Config[CONFIG_FILE_CONFIG];
 
         if (!Join)
         {
@@ -3316,22 +3008,22 @@ bool CAhApp::GetPrevTurnReport(CAtlaParser *& pPrevTurn)
                 if (_it == m_ReportDates.end() || *_it != _ym)
                     m_ReportDates.insert(_it, _ym);
             }
-            UpgradeConfigByFactionId();
+            gpConfigManager->UpgradeConfigByFactionId();
 
-            if (atol(GetConfig(SZ_SECT_COMMON, SZ_KEY_PWD_READ)) && !m_pAtlantis->m_CrntFactionPwd.empty())
+            if (atol(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_PWD_READ)) && !m_pAtlantis->m_CrntFactionPwd.empty())
             {
                 S.clear();
                 S << (long)m_pAtlantis->m_CrntFactionId;
-                SetConfig(SZ_SECT_PASSWORDS, S.c_str(), m_pAtlantis->m_CrntFactionPwd.c_str() );
+                gpConfigManager->SetConfig(SZ_SECT_PASSWORDS, S.c_str(), m_pAtlantis->m_CrntFactionPwd.c_str() );
             }
 
-            LoadOrd = atol(GetConfig(SZ_SECT_COMMON, SZ_KEY_LOAD_ORDER));
+            LoadOrd = atol(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_LOAD_ORDER));
             if (LoadOrd)
             {
                 S.clear();
                 S << (long)m_pAtlantis->m_YearMon;
-                ComposeConfigOrdersSection(Sect, m_pAtlantis->m_CrntFactionId);
-                LoadOrders(GetConfig(Sect.c_str(), S.c_str()));
+                gpConfigManager->ComposeConfigOrdersSection(Sect, m_pAtlantis->m_CrntFactionId);
+                LoadOrders(gpConfigManager->GetConfig(Sect.c_str(), S.c_str()));
             }
         }
 
@@ -3346,14 +3038,14 @@ bool CAhApp::GetPrevTurnReport(CAtlaParser *& pPrevTurn)
             S.clear();
             S << (long)m_pAtlantis->m_YearMon;
             if (!Join)
-                SetConfig(SZ_SECT_REPORTS, S.c_str(), FName.c_str());
+                gpConfigManager->SetConfig(SZ_SECT_REPORTS, S.c_str(), FName.c_str());
             else
             {
-                S2 = GetConfig(SZ_SECT_REPORTS, S.c_str());
+                S2 = gpConfigManager->GetConfig(SZ_SECT_REPORTS, S.c_str());
                 if (!S2.empty())
                     S2 << ", ";
                 S2 << FName;
-                SetConfig(SZ_SECT_REPORTS, S.c_str(), S2.c_str());
+                gpConfigManager->SetConfig(SZ_SECT_REPORTS, S.c_str(), S2.c_str());
             }
         }
 
@@ -3363,7 +3055,7 @@ bool CAhApp::GetPrevTurnReport(CAtlaParser *& pPrevTurn)
                 { delete m_Reports[i]; m_Reports.erase(m_Reports.begin() + (i)); }
             { auto _ri = std::lower_bound(m_Reports.begin(), m_Reports.end(), m_pAtlantis, [](CAtlaParser* a, CAtlaParser* b){ return a->m_YearMon < b->m_YearMon; }); m_Reports.insert(_ri, m_pAtlantis); }
 
-            n = atol(GetConfig(SZ_SECT_COMMON, SZ_KEY_REP_CACHE_COUNT));
+            n = atol(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_REP_CACHE_COUNT));
             if (n<=0)
                 n = 1;
             if ((int)m_Reports.size()>n)
@@ -3575,7 +3267,7 @@ void CAhApp::LoadOrders()
     int rc;
     std::string Dir;
 
-    Dir = GetConfig(SZ_SECT_FOLDERS, SZ_KEY_FOLDER_ORDERS);
+    Dir = gpConfigManager->GetConfig(SZ_SECT_FOLDERS, SZ_KEY_FOLDER_ORDERS);
     if (Dir.empty())
         Dir = ".";
 
@@ -3595,7 +3287,7 @@ void CAhApp::LoadOrders()
         S = dialog.GetPath().mb_str();
         MakePathRelative(CurrentDir.mb_str(), S);
         GetDirFromPath(S.c_str(), Dir);
-        SetConfig(SZ_SECT_FOLDERS, SZ_KEY_FOLDER_ORDERS, Dir.c_str() );
+        gpConfigManager->SetConfig(SZ_SECT_FOLDERS, SZ_KEY_FOLDER_ORDERS, Dir.c_str() );
 
         LoadOrders(S.c_str());
         SetOrdersChanged(false);
@@ -3659,7 +3351,7 @@ void CAhApp::ViewSkills(bool ViewAll)
 
     if (ViewAll)
     {
-        sectidx = GetSectionFirst(SZ_SECT_SKILLS, szName, szValue);
+        sectidx = gpConfigManager->GetSectionFirst(SZ_SECT_SKILLS, szName, szValue);
         while (sectidx >= 0)
         {
             pSkill              = new CBaseObject;
@@ -3667,7 +3359,7 @@ void CAhApp::ViewSkills(bool ViewAll)
             DecodeConfigLine(pSkill->Description, szValue);
             Skills.Insert(pSkill);
 
-            sectidx = GetSectionNext(sectidx, SZ_SECT_SKILLS, szName, szValue);
+            sectidx = gpConfigManager->GetSectionNext(sectidx, SZ_SECT_SKILLS, szName, szValue);
         }
 
         ShowDescriptionList(Skills, "Skills");
@@ -3689,7 +3381,7 @@ void CAhApp::ViewShortNamedObjects(bool ViewAll, const char * szSection, const c
 
     if (ViewAll)
     {
-        sectidx = GetSectionFirst(szSection, szName, szValue);
+        sectidx = gpConfigManager->GetSectionFirst(szSection, szName, szValue);
         while (sectidx >= 0)
         {
             pItem              = new CBaseObject;
@@ -3697,7 +3389,7 @@ void CAhApp::ViewShortNamedObjects(bool ViewAll, const char * szSection, const c
             DecodeConfigLine(pItem->Description, szValue);
             Items.Insert(pItem);
 
-            sectidx = GetSectionNext(sectidx, szSection, szName, szValue);
+            sectidx = gpConfigManager->GetSectionNext(sectidx, szSection, szName, szValue);
         }
 
         ShowDescriptionList(Items, szHeader);
@@ -4129,7 +3821,7 @@ void CAhApp::CheckMonthLongOrders()
     CMapPane           * pMapPane  = (CMapPane* )m_Panes[AH_PANE_MAP];
 
 
-    p = SkipSpaces(GetConfig(SZ_SECT_COMMON, SZ_KEY_ORD_MONTH_LONG));
+    p = SkipSpaces(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_ORD_MONTH_LONG));
     while (p && *p)
     {
         p = SkipSpaces(GetToken(S, p, ','));
@@ -4137,7 +3829,7 @@ void CAhApp::CheckMonthLongOrders()
             MonthLongOrders.insert(S.c_str());
     }
 
-    p = SkipSpaces(GetConfig(SZ_SECT_COMMON, SZ_KEY_ORD_DUPLICATABLE));
+    p = SkipSpaces(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_ORD_DUPLICATABLE));
     while (p && *p)
     {
         p = SkipSpaces(GetToken(S, p, ','));
@@ -4145,7 +3837,7 @@ void CAhApp::CheckMonthLongOrders()
             MonthLongDup.insert(S.c_str());
     }
 
-    if (1==atol(SkipSpaces(GetConfig(SZ_SECT_COMMON, SZ_KEY_CHECK_OUTPUT_LIST))))
+    if (1==atol(SkipSpaces(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_CHECK_OUTPUT_LIST))))
     {
         // Output will go into the unit filter window
         OpenUnitFrameFltr(false);
@@ -4293,7 +3985,7 @@ void CAhApp::ShowUnitsMovingIntoHex(long CurHexId, CPlane * pCurPlane)
     // now display our findings
     if (FoundUnits.Count() > 0)
     {
-        if (1==atol(SkipSpaces(GetConfig(SZ_SECT_COMMON, SZ_KEY_CHECK_OUTPUT_LIST))))
+        if (1==atol(SkipSpaces(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_CHECK_OUTPUT_LIST))))
         {
             // Output will go into the unit filter window
             OpenUnitFrameFltr(false);
@@ -4355,7 +4047,7 @@ void CAhApp::ShowLandFinancial(CLand * pCurLand)
     if (!pCurLand)
         return;
 
-    TaxPerTaxer = atol(GetConfig(SZ_SECT_COMMON, SZ_KEY_TAX_PER_TAXER));
+    TaxPerTaxer = atol(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_TAX_PER_TAXER));
 
     // get faction list
     for (idx=0; idx<pCurLand->Units.Count(); idx++)
@@ -4652,7 +4344,7 @@ void CAhApp::ExportOneHex(CFileWriter & Dest, CPlane * pPlane, CLand * pLand, SA
 
     m_pAtlantis->ComposeLandStrCoord(pLand, sName);
 
-    p  = GetToken(sData, GetConfig(SZ_SECT_LAND_VISITED, sName.c_str()), ',');
+    p  = GetToken(sData, gpConfigManager->GetConfig(SZ_SECT_LAND_VISITED, sName.c_str()), ',');
     if (sData.empty())
     {
 /*        ym_first = m_pAtlantis->m_YearMon;
@@ -4845,9 +4537,9 @@ const char * CAhApp::GetListColSection(const char * sectprefix, const char * key
 {
     const char * sect;
 
-    sect = GetConfig(SZ_SECT_LIST_COL_CURRENT, key);
+    sect = gpConfigManager->GetConfig(SZ_SECT_LIST_COL_CURRENT, key);
     if (!sect || !*sect)
-        sect  = GetNextSectionName(CONFIG_FILE_CONFIG, sectprefix);
+        sect  = gpConfigManager->GetNextSectionName(CONFIG_FILE_CONFIG, sectprefix);
 
     return sect;
 }
@@ -4944,7 +4636,7 @@ void CAhApp::InitMoveModes()
     int          n;
     bool         Update = false;
 
-    p     = SkipSpaces(GetConfig(SZ_SECT_COMMON, SZ_KEY_MOVEMENTS));
+    p     = SkipSpaces(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_MOVEMENTS));
     while (p && *p)
     {
         p = SkipSpaces(GetToken(S, p, ','));
@@ -4974,7 +4666,7 @@ void CAhApp::InitMoveModes()
                 S << ',';
             S << m_MoveModes[n].c_str();
         }
-        SetConfig(SZ_SECT_COMMON, SZ_KEY_MOVEMENTS, S.c_str());
+        gpConfigManager->SetConfig(SZ_SECT_COMMON, SZ_KEY_MOVEMENTS, S.c_str());
     }
 }
 
@@ -5052,7 +4744,7 @@ const char * CGameDataHelper::GetConfString(const char * section, const char * p
 {
     if (!section)
         section = SZ_SECT_COMMON;
-    return gpApp->GetConfig(section, param);
+    return gpConfigManager->GetConfig(section, param);
 }
 
 bool CGameDataHelper::GetOrderId(const char * order, long & id)
@@ -5080,7 +4772,7 @@ bool CGameDataHelper::GetTropicZone  (const char * plane, long & y_min, long & y
     const char * value;
     std::string         S;
 
-    value = SkipSpaces(gpApp->GetConfig(SZ_SECT_TROPIC_ZONE, plane));
+    value = SkipSpaces(gpConfigManager->GetConfig(SZ_SECT_TROPIC_ZONE, plane));
     if (!value || !*value)
         return false;
 
@@ -5097,7 +4789,7 @@ void CGameDataHelper::SetTropicZone  (const char * plane, long y_min, long y_max
 {
     std::string S;
     S << y_min << ',' << y_max;
-    gpApp->SetConfig(SZ_SECT_TROPIC_ZONE, plane, S.c_str());
+    gpConfigManager->SetConfig(SZ_SECT_TROPIC_ZONE, plane, S.c_str());
 }
 
 void CGameDataHelper::GetProdDetails (const char * item, TProdDetails & details)
@@ -5112,7 +4804,7 @@ long CGameDataHelper::MaxSkillLevel  (const char * race, const char * skill, con
 
 bool CGameDataHelper::ImmediateProdCheck()
 {
-    return atol(gpApp->GetConfig(SZ_SECT_COMMON,  SZ_KEY_CHK_PROD_REQ));
+    return atol(gpConfigManager->GetConfig(SZ_SECT_COMMON,  SZ_KEY_CHK_PROD_REQ));
 }
 
 bool CGameDataHelper::CanSeeAdvResources(const char * skillname, const char * terrain, std::vector<long> & Levels, std::vector<std::string> & Resources)
@@ -5134,12 +4826,12 @@ void CGameDataHelper::SetPlayingFaction(long id)
 {
     // set playing faction to ATT_FRIEND2
     gpApp->SetAttitudeForFaction(id, ATT_FRIEND2);
-    gpApp->SetConfig(SZ_SECT_ATTITUDES, SZ_ATT_PLAYER_ID, id);
+    gpConfigManager->SetConfig(SZ_SECT_ATTITUDES, SZ_ATT_PLAYER_ID, id);
 }
 
 bool CGameDataHelper::ShowMoveWarnings()
 {
-    return atol(gpApp->GetConfig(SZ_SECT_COMMON, SZ_KEY_CHECK_MOVE_MODE));
+    return atol(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_CHECK_MOVE_MODE));
 }
 
 bool CGameDataHelper::IsRawMagicSkill(const char * skillname)
@@ -5161,7 +4853,7 @@ bool CGameDataHelper::IsWagon(const char * item)
 {
     if (!item)
         return false;
-    std::string S = gpApp->GetConfig(SZ_SECT_COMMON, SZ_KEY_WAGONS);
+    std::string S = gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_WAGONS);
     std::string T;
     const char * p = S.c_str();
     while (p && *p)
@@ -5177,7 +4869,7 @@ bool CGameDataHelper::IsWagonPuller(const char * item)
 {
     if (!item)
         return false;
-    std::string S = gpApp->GetConfig(SZ_SECT_COMMON, SZ_KEY_WAGON_PULLERS);
+    std::string S = gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_WAGON_PULLERS);
     std::string T;
     const char * p = S.c_str();
     while (p && *p)
@@ -5191,7 +4883,7 @@ bool CGameDataHelper::IsWagonPuller(const char * item)
 
 int CGameDataHelper::WagonCapacity()
 {
-    return atol(gpApp->GetConfig(SZ_SECT_COMMON, SZ_KEY_WAGON_CAPACITY));
+    return atol(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_WAGON_CAPACITY));
 }
 
 //==========================================================================

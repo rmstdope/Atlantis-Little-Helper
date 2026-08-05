@@ -242,42 +242,42 @@ void COptionsDialog::Init()
 //        m_pComboFonts->SetClientData(m_pComboFonts->GetCount()-1, (void*)i);
     }
 
-    i = gpApp->GetSectionFirst(SZ_SECT_COLORS, szName, szValue);
+    i = gpConfigManager->GetSectionFirst(SZ_SECT_COLORS, szName, szValue);
     while (i>=0)
     {
         m_pComboColors->Append(wxString::FromAscii(szName));
         m_ColorData.push_back({szName, szValue ? szValue : ""});
-        i = gpApp->GetSectionNext(i, SZ_SECT_COLORS, szName, szValue);
+        i = gpConfigManager->GetSectionNext(i, SZ_SECT_COLORS, szName, szValue);
     }
 
-    i = gpApp->GetSectionFirst(SZ_SECT_PASSWORDS, szName, szValue);
+    i = gpConfigManager->GetSectionFirst(SZ_SECT_PASSWORDS, szName, szValue);
     while (i>=0)
     {
         m_pComboFactions->Append(wxString::FromAscii(szName));
         m_FactionData.push_back({szName, szValue ? szValue : ""});
-        i = gpApp->GetSectionNext(i, SZ_SECT_PASSWORDS, szName, szValue);
+        i = gpConfigManager->GetSectionNext(i, SZ_SECT_PASSWORDS, szName, szValue);
     }
 
 
-    m_pChkLoadOrd          ->SetValue(0!=atol(gpApp->GetConfig(SZ_SECT_COMMON, SZ_KEY_LOAD_ORDER)));
-    m_pChkLoadRep          ->SetValue(0!=atol(gpApp->GetConfig(SZ_SECT_COMMON, SZ_KEY_LOAD_REP)));
-    m_pChkUnixStyle        ->SetValue(0!=stricmp(SZ_EOL_MS, gpApp->GetConfig(SZ_SECT_COMMON, SZ_KEY_EOL)));
-    m_pChkHatchUnvisited   ->SetValue(0!=atol(gpApp->GetConfig(SZ_SECT_COMMON, SZ_KEY_HATCH_UNVISITED)));
-    m_pChkRClickCenters    ->SetValue(0!=atol(gpApp->GetConfig(SZ_SECT_COMMON, SZ_KEY_RCLICK_CENTERS)));
-//    m_pChk3WinLayout       ->SetValue(0!=atol(gpApp->GetConfig(SZ_SECT_COMMON, SZ_KEY_LAYOUT)));
-    m_pChkTeach            ->SetValue(0!=atol(gpApp->GetConfig(SZ_SECT_COMMON, SZ_KEY_CHECK_TEACH_LVL)));
-    m_pChkReadPwd          ->SetValue(0!=atol(gpApp->GetConfig(SZ_SECT_COMMON, SZ_KEY_PWD_READ)));
-    m_pChkCheckProdReq     ->SetValue(0!=atol(gpApp->GetConfig(SZ_SECT_COMMON, SZ_KEY_CHK_PROD_REQ)));
-    m_pChkMoveMode         ->SetValue(0!=atol(gpApp->GetConfig(SZ_SECT_COMMON, SZ_KEY_CHECK_MOVE_MODE)));
+    m_pChkLoadOrd          ->SetValue(0!=atol(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_LOAD_ORDER)));
+    m_pChkLoadRep          ->SetValue(0!=atol(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_LOAD_REP)));
+    m_pChkUnixStyle        ->SetValue(0!=stricmp(SZ_EOL_MS, gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_EOL)));
+    m_pChkHatchUnvisited   ->SetValue(0!=atol(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_HATCH_UNVISITED)));
+    m_pChkRClickCenters    ->SetValue(0!=atol(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_RCLICK_CENTERS)));
+//    m_pChk3WinLayout       ->SetValue(0!=atol(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_LAYOUT)));
+    m_pChkTeach            ->SetValue(0!=atol(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_CHECK_TEACH_LVL)));
+    m_pChkReadPwd          ->SetValue(0!=atol(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_PWD_READ)));
+    m_pChkCheckProdReq     ->SetValue(0!=atol(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_CHK_PROD_REQ)));
+    m_pChkMoveMode         ->SetValue(0!=atol(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_CHECK_MOVE_MODE)));
 
-    switch(atol(gpApp->GetConfig(SZ_SECT_COMMON, SZ_KEY_LAYOUT)))
+    switch(atol(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_LAYOUT)))
     {
       case AH_LAYOUT_1_WIN:   m_pRadio1Win->SetValue(true);   break;
       case AH_LAYOUT_2_WIN:   m_pRadio2Win->SetValue(true);   break;
       default             :   m_pRadio3Win->SetValue(true);   break;
     }
 
-    if (0==stricmp(gpApp->GetConfig(SZ_SECT_COMMON, SZ_KEY_ICONS), SZ_ICONS_ADVANCED))
+    if (0==stricmp(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_ICONS), SZ_ICONS_ADVANCED))
         m_pRadioIconsAdvanced->SetValue(true);
     else
         m_pRadioIconsSimple->SetValue(true);
@@ -312,7 +312,7 @@ void COptionsDialog::OnOk    (wxCommandEvent& event)
     if (m_IsValid && event.GetId()==wxID_OK)
     {
         m_IsValid = false;
-        DoApplyColors = ((m_pChkHatchUnvisited->GetValue()?1:0)!=atol(gpApp->GetConfig(SZ_SECT_COMMON, SZ_KEY_HATCH_UNVISITED)));
+        DoApplyColors = ((m_pChkHatchUnvisited->GetValue()?1:0)!=atol(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_HATCH_UNVISITED)));
 
 
         if (m_pRadio1Win->GetValue())
@@ -322,36 +322,36 @@ void COptionsDialog::OnOk    (wxCommandEvent& event)
         else
             layout = AH_LAYOUT_3_WIN;
 
-//        if (m_pChk3WinLayout->GetValue() != (0!=atol(gpApp->GetConfig(SZ_SECT_COMMON, SZ_KEY_LAYOUT))))
-        if (layout != atol(gpApp->GetConfig(SZ_SECT_COMMON, SZ_KEY_LAYOUT)))
+//        if (m_pChk3WinLayout->GetValue() != (0!=atol(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_LAYOUT))))
+        if (layout != atol(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_LAYOUT)))
             wxMessageBox(wxT("Please restart application for the changes to take effect"),
                          wxT("Warning"), wxOK | wxCENTRE | wxICON_EXCLAMATION);
 
 
-        gpApp->SetConfig(SZ_SECT_COMMON, SZ_KEY_LOAD_ORDER        , m_pChkLoadOrd          ->GetValue()?"1":"0");
-        gpApp->SetConfig(SZ_SECT_COMMON, SZ_KEY_LOAD_REP          , m_pChkLoadRep          ->GetValue()?"1":"0");
-        gpApp->SetConfig(SZ_SECT_COMMON, SZ_KEY_HATCH_UNVISITED   , m_pChkHatchUnvisited   ->GetValue()?"1":"0");
-        gpApp->SetConfig(SZ_SECT_COMMON, SZ_KEY_RCLICK_CENTERS    , m_pChkRClickCenters    ->GetValue()?"1":"0");
-//        gpApp->SetConfig(SZ_SECT_COMMON, SZ_KEY_LAYOUT            , m_pChk3WinLayout       ->GetValue()?"1":"0");
-        gpApp->SetConfig(SZ_SECT_COMMON, SZ_KEY_LAYOUT            , layout);
-        gpApp->SetConfig(SZ_SECT_COMMON, SZ_KEY_CHECK_TEACH_LVL   , m_pChkTeach            ->GetValue()?"1":"0");
-        gpApp->SetConfig(SZ_SECT_COMMON, SZ_KEY_PWD_READ          , m_pChkReadPwd          ->GetValue()?"1":"0");
-        gpApp->SetConfig(SZ_SECT_COMMON, SZ_KEY_CHK_PROD_REQ      , m_pChkCheckProdReq     ->GetValue()?"1":"0");
-        gpApp->SetConfig(SZ_SECT_COMMON, SZ_KEY_CHECK_MOVE_MODE   , m_pChkMoveMode         ->GetValue()?"1":"0");
+        gpConfigManager->SetConfig(SZ_SECT_COMMON, SZ_KEY_LOAD_ORDER        , m_pChkLoadOrd          ->GetValue()?"1":"0");
+        gpConfigManager->SetConfig(SZ_SECT_COMMON, SZ_KEY_LOAD_REP          , m_pChkLoadRep          ->GetValue()?"1":"0");
+        gpConfigManager->SetConfig(SZ_SECT_COMMON, SZ_KEY_HATCH_UNVISITED   , m_pChkHatchUnvisited   ->GetValue()?"1":"0");
+        gpConfigManager->SetConfig(SZ_SECT_COMMON, SZ_KEY_RCLICK_CENTERS    , m_pChkRClickCenters    ->GetValue()?"1":"0");
+//        gpConfigManager->SetConfig(SZ_SECT_COMMON, SZ_KEY_LAYOUT            , m_pChk3WinLayout       ->GetValue()?"1":"0");
+        gpConfigManager->SetConfig(SZ_SECT_COMMON, SZ_KEY_LAYOUT            , layout);
+        gpConfigManager->SetConfig(SZ_SECT_COMMON, SZ_KEY_CHECK_TEACH_LVL   , m_pChkTeach            ->GetValue()?"1":"0");
+        gpConfigManager->SetConfig(SZ_SECT_COMMON, SZ_KEY_PWD_READ          , m_pChkReadPwd          ->GetValue()?"1":"0");
+        gpConfigManager->SetConfig(SZ_SECT_COMMON, SZ_KEY_CHK_PROD_REQ      , m_pChkCheckProdReq     ->GetValue()?"1":"0");
+        gpConfigManager->SetConfig(SZ_SECT_COMMON, SZ_KEY_CHECK_MOVE_MODE   , m_pChkMoveMode         ->GetValue()?"1":"0");
 
 
         if (m_pChkUnixStyle->GetValue())
         {
-            gpApp->SetConfig(SZ_SECT_COMMON, SZ_KEY_EOL, SZ_EOL_UNIX);
+            gpConfigManager->SetConfig(SZ_SECT_COMMON, SZ_KEY_EOL, SZ_EOL_UNIX);
             EOL_FILE = EOL_UNIX;
         }
         else
         {
-            gpApp->SetConfig(SZ_SECT_COMMON, SZ_KEY_EOL, SZ_EOL_MS);
+            gpConfigManager->SetConfig(SZ_SECT_COMMON, SZ_KEY_EOL, SZ_EOL_MS);
             EOL_FILE = EOL_MS;
         }
 
-        gpApp->SetConfig(SZ_SECT_COMMON, SZ_KEY_ICONS, m_pRadioIconsAdvanced->GetValue() ? SZ_ICONS_ADVANCED : SZ_ICONS_SIMPLE);
+        gpConfigManager->SetConfig(SZ_SECT_COMMON, SZ_KEY_ICONS, m_pRadioIconsAdvanced->GetValue() ? SZ_ICONS_ADVANCED : SZ_ICONS_SIMPLE);
         
 
 
@@ -398,10 +398,10 @@ void COptionsDialog::OnCancel(wxCommandEvent& event)
         }
 
         for (size_t i2=0; i2<m_ColorData.size(); i2++)
-            gpApp->SetConfig(SZ_SECT_COLORS, m_ColorData[i2].first.c_str(), m_ColorData[i2].second.c_str());
+            gpConfigManager->SetConfig(SZ_SECT_COLORS, m_ColorData[i2].first.c_str(), m_ColorData[i2].second.c_str());
 
         for (size_t i2=0; i2<m_FactionData.size(); i2++)
-            gpApp->SetConfig(SZ_SECT_PASSWORDS, m_FactionData[i2].first.c_str(), m_FactionData[i2].second.c_str());
+            gpConfigManager->SetConfig(SZ_SECT_PASSWORDS, m_FactionData[i2].first.c_str(), m_FactionData[i2].second.c_str());
 
         gpApp->ApplyFonts();
         gpApp->ApplyColors();
@@ -467,7 +467,7 @@ void COptionsDialog::OnColor    (wxCommandEvent& event)
         return;
 
     colname = m_pComboColors->GetStringSelection();
-    StrToColor(&colour, gpApp->GetConfig(SZ_SECT_COLORS, colname.mb_str()));
+    StrToColor(&colour, gpConfigManager->GetConfig(SZ_SECT_COLORS, colname.mb_str()));
 
     data.SetChooseFull(true);
     data.SetCustomColour(0,colour);
@@ -481,7 +481,7 @@ void COptionsDialog::OnColor    (wxCommandEvent& event)
         wxColour col = retData.GetColour();
 
         ColorToStr(newcolour, sizeof(newcolour), &col);
-        gpApp->SetConfig(SZ_SECT_COLORS, colname.mb_str(), newcolour);
+        gpConfigManager->SetConfig(SZ_SECT_COLORS, colname.mb_str(), newcolour);
         gpApp->ApplyColors();
     }
     dialog->Destroy();
@@ -491,14 +491,14 @@ void COptionsDialog::OnColor    (wxCommandEvent& event)
 
 void COptionsDialog::OnFaction(wxCommandEvent& event)
 {
-    m_pTxtPassword->SetValue( wxString::FromAscii(gpApp->GetConfig(SZ_SECT_PASSWORDS, m_pComboFactions->GetStringSelection().mb_str())));
+    m_pTxtPassword->SetValue( wxString::FromAscii(gpConfigManager->GetConfig(SZ_SECT_PASSWORDS, m_pComboFactions->GetStringSelection().mb_str())));
 }
 
 //--------------------------------------------------------------------------
 
 void COptionsDialog::OnPassword(wxCommandEvent& event)
 {
-    gpApp->SetConfig(SZ_SECT_PASSWORDS, m_pComboFactions->GetStringSelection().mb_str(), m_pTxtPassword->GetValue().mb_str());
+    gpConfigManager->SetConfig(SZ_SECT_PASSWORDS, m_pComboFactions->GetStringSelection().mb_str(), m_pTxtPassword->GetValue().mb_str());
 }
 
 //--------------------------------------------------------------------------
