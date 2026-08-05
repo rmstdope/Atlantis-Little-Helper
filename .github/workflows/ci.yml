@@ -8,7 +8,7 @@ on:
 
 jobs:
   test:
-    runs-on: macos-14
+    runs-on: macos-latest
 
     steps:
       - name: Checkout
@@ -19,3 +19,68 @@ jobs:
 
       - name: Run tests
         run: make test
+
+  build:
+    name: build (${{ matrix.name }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: macos-arm64
+            os: macos-latest
+          - name: macos-intel
+            os: macos-15-intel
+          - name: linux
+            os: ubuntu-latest
+          - name: windows
+            os: windows-latest
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install wxWidgets (macOS)
+        if: runner.os == 'macOS'
+        run: brew install wxwidgets
+
+      - name: Install wxWidgets (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwxgtk3.2-dev
+
+      - name: Set up MSYS2 (Windows)
+        if: runner.os == 'Windows'
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            mingw-w64-x86_64-toolchain
+            mingw-w64-x86_64-wxwidgets3.2-msw
+            make
+
+      - name: Build (macOS/Linux)
+        if: runner.os != 'Windows'
+        run: |
+          ./configure --with-python=no
+          mkdir -p obj bin
+          make
+
+      - name: Build (Windows)
+        if: runner.os == 'Windows'
+        shell: msys2 {0}
+        run: |
+          ./configure --with-python=no
+          mkdir -p obj bin
+          make
+
+      - name: Verify binary was produced (macOS/Linux)
+        if: runner.os != 'Windows'
+        run: test -e bin/ah
+
+      - name: Verify binary was produced (Windows)
+        if: runner.os == 'Windows'
+        shell: msys2 {0}
+        run: test -e bin/ah.exe || test -e bin/ah
