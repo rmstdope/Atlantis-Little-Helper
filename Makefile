@@ -35,7 +35,8 @@ TEST_OBJECTS = obj/tests/parser_regression_tests.o \
 TEST_TARGET  = bin/parser-tests
 
 CXXFLAGS_TEST = $(CXXFLAGS) -DALH_TESTING
-TEST_CPPFLAGS = $(CPPFLAGS) -I. -Itests
+SRC_INCLUDES  = -Isrc -I.
+TEST_CPPFLAGS = $(CPPFLAGS) $(SRC_INCLUDES) -Itests
 
 
 all: $(TARGETS)
@@ -56,8 +57,8 @@ clean:
 	rm -f $(patsubst %.o,obj/%.o,$(OBJECTS)) $(TARGETS)
 	rm -f $(TEST_OBJECTS) $(TEST_TARGET)
 
-$(patsubst %.o,obj/%.o,$(OBJECTS)): obj/%.o: %.cpp | dirs
-	$(CXX) -c $(CXXFLAGS) $(CPPFLAGS) $(DEFS) -o $@ $<
+$(patsubst %.o,obj/%.o,$(OBJECTS)): obj/%.o: src/%.cpp | dirs
+	$(CXX) -c $(CXXFLAGS) $(CPPFLAGS) $(SRC_INCLUDES) $(DEFS) -o $@ $<
 
 obj/tests/%.o: tests/%.cpp | dirs
 	$(CXX) -c $(CXXFLAGS_TEST) $(TEST_CPPFLAGS) $(DEFS) -o $@ $<
