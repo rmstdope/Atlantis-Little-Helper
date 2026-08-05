@@ -1,0 +1,35 @@
+#atlantis 21 "testpw"
+
+;*** Borg  orders for Mar year 1
+
+;*** plain (36,42)
+
+unit 1289 ; Drone
+claim 10
+study comb
+turn
+@tax
+endturn
+noaid 1
+
+;*** plain (35,43)
+
+unit 1290 ; Drone
+claim 10
+study comb
+turn
+@tax
+endturn
+noaid 1
+
+;*** swamp (37,43)
+
+unit 1288 ; Drone
+claim 10
+study comb
+turn
+@tax
+endturn
+noaid 1
+
+#end
