@@ -27,7 +27,7 @@ Makefile
 *.bak
 
 #output files
-ah
+bin
 ah.stderr
 ah.stdout
 
