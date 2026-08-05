@@ -11,6 +11,7 @@
 #include <cctype>
 #include <cstdio>
 #include <fstream>
+#include <iterator>
 #include <map>
 #include <stdexcept>
 #include <string>
@@ -256,6 +257,12 @@ static bool hasAttitudeCall(const std::vector<std::pair<int, int>> & calls, int 
 {
     return std::find(calls.begin(), calls.end(), std::make_pair(id, attitude)) != calls.end();
 }
+
+static std::string readFile(const std::string & path)
+{
+    std::ifstream in(path);
+    return std::string((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+}
 }
 
 TEST_CASE("ParseFactionInfo captures faction id and year", "[parser]")
@@ -455,4 +462,291 @@ TEST_CASE("SaveOrders and LoadOrders round-trip a simple unit order", "[parser]"
 
     CHECK(faction_id == 123);
     CHECK(unit->Orders.find("hold") != std::string::npos);
+}
+
+TEST_CASE("ParseStructure captures id, kind, and description for hex structures", "[parser]")
+{
+    ParserHarness harness;
+
+    REQUIRE(harness.parser.ParseRep("tests/fixtures/structures.rep", false, false) == ERR_OK);
+
+    auto * land = harness.parser.GetLand(8, 50, 0);
+    REQUIRE(land != nullptr);
+    REQUIRE(land->Structs.Count() == 3);
+
+    auto * stockade = static_cast<CStruct *>(land->Structs.At(0));
+    REQUIRE(stockade != nullptr);
+    CHECK(stockade->Id == 1);
+    CHECK(stockade->Name.find("Jungle Camp") != std::string::npos);
+    CHECK(stockade->Kind == "Stockade");
+
+    auto * timberYard = static_cast<CStruct *>(land->Structs.At(1));
+    REQUIRE(timberYard != nullptr);
+    CHECK(timberYard->Kind == "Timber Yard");
+
+    auto * ranch = static_cast<CStruct *>(land->Structs.At(2));
+    REQUIRE(ranch != nullptr);
+    CHECK(ranch->Kind == "Ranch");
+}
+
+TEST_CASE("ParseStructure associates the first contained unit as structure owner", "[parser]")
+{
+    ParserHarness harness;
+
+    REQUIRE(harness.parser.ParseRep("tests/fixtures/structures.rep", false, false) == ERR_OK);
+
+    auto * land = harness.parser.GetLand(8, 50, 0);
+    REQUIRE(land != nullptr);
+    REQUIRE(land->Units.Count() == 2);
+
+    auto * stockade = static_cast<CStruct *>(land->Structs.At(0));
+    REQUIRE(stockade != nullptr);
+    REQUIRE(stockade->Kind == "Stockade");
+
+    CUnit dummy;
+    dummy.Id = 12830;
+    int idx = 0;
+    REQUIRE(land->Units.Search(&dummy, idx));
+    auto * guard = static_cast<CUnit *>(land->Units.At(idx));
+    REQUIRE(guard != nullptr);
+    CHECK(stockade->OwnerUnitId == guard->Id);
+}
+
+TEST_CASE("ParseBattles stores attacker, defender, and casualty text for a battle", "[parser]")
+{
+    ParserHarness harness;
+
+    REQUIRE(harness.parser.ParseRep("tests/fixtures/battle_and_mixed_report.rep", false, false) == ERR_OK);
+
+    REQUIRE(harness.parser.m_Battles.Count() == 1);
+    auto * battle = static_cast<CBattle *>(harness.parser.m_Battles.At(0));
+    REQUIRE(battle != nullptr);
+    CHECK(battle->Name.find("Demon (972) attacks Drones (2170)") != std::string::npos);
+    CHECK(battle->Description.find("Attackers:") != std::string::npos);
+    CHECK(battle->Description.find("Defenders:") != std::string::npos);
+    CHECK(battle->Description.find("Total Casualties:") != std::string::npos);
+}
+
+TEST_CASE("ParseRep parses faction, battle, event, skill, attitude, and terrain data from one mixed report", "[parser]")
+{
+    ParserHarness harness;
+
+    REQUIRE(harness.parser.ParseRep("tests/fixtures/battle_and_mixed_report.rep", false, false) == ERR_OK);
+
+    CHECK(harness.parser.m_CrntFactionId == 62);
+    // Borg (62, our own faction from the header) plus Mantzikert (39, first
+    // referenced only as an alien unit's owning faction) are both tracked.
+    CHECK(harness.parser.m_Factions.Count() == 2);
+    CHECK(harness.parser.m_Battles.Count() == 1);
+    CHECK(harness.parser.m_Events.Description.find("Times reward of 200 silver.") != std::string::npos);
+    CHECK(harness.parser.m_Skills.Count() == 1);
+    CHECK(hasAttitudeCall(harness.helper.attitude_calls, 0, ATT_NEUTRAL));
+
+    auto * faction = harness.parser.GetFaction(62);
+    REQUIRE(faction != nullptr);
+    CHECK(faction->UnclaimedSilver == 684);
+
+    auto * land = harness.parser.GetLand(43, 79, 0);
+    REQUIRE(land != nullptr);
+    REQUIRE(land->Units.Count() == 2);
+
+    CUnit dummy;
+    dummy.Id = 1652;
+    int idx = 0;
+    REQUIRE(harness.parser.m_Units.Search(&dummy, idx));
+    auto * ownUnit = static_cast<CUnit *>(harness.parser.m_Units.At(idx));
+    REQUIRE(ownUnit != nullptr);
+    CHECK(ownUnit->IsOurs);
+    CHECK(ownUnit->Orders.find("@work") != std::string::npos);
+}
+
+TEST_CASE("ParseRep on an empty file returns ERR_OK with nothing parsed", "[parser]")
+{
+    ParserHarness harness;
+
+    REQUIRE(harness.parser.ParseRep("tests/fixtures/empty_report.rep", false, false) == ERR_OK);
+
+    CHECK(harness.parser.m_Factions.Count() == 0);
+    CHECK(harness.parser.m_Units.Count() == 0);
+    CHECK(harness.parser.m_Planes.Count() == 0);
+    CHECK(harness.parser.m_Battles.Count() == 0);
+}
+
+TEST_CASE("ParseRep, LoadOrders, and SaveOrders return ERR_FOPEN for a missing file", "[parser]")
+{
+    ParserHarness harness;
+    const char * missing = "tests/fixtures/does-not-exist.rep";
+
+    CHECK(harness.parser.ParseRep(missing, false, false) == ERR_FOPEN);
+
+    int factionId = 0;
+    CHECK(harness.parser.LoadOrders(missing, factionId) == ERR_FOPEN);
+
+    CHECK(harness.parser.SaveOrders("tests/fixtures/does-not-exist-dir/orders.ord", "pw", false, 1) == ERR_FOPEN);
+}
+
+TEST_CASE("ParseStructure with no active land is a graceful no-op", "[parser]")
+{
+    ParserHarness harness;
+
+    REQUIRE(harness.parser.ParseRep("tests/fixtures/malformed_structure_no_land.rep", false, false) == ERR_OK);
+
+    CHECK(harness.parser.m_Planes.Count() == 0);
+}
+
+TEST_CASE("ParseStructure ignores a structure line with a missing id", "[parser]")
+{
+    ParserHarness harness;
+
+    REQUIRE(harness.parser.ParseRep("tests/fixtures/malformed_structure_no_id.rep", false, false) == ERR_OK);
+
+    REQUIRE(harness.parser.m_Planes.Count() == 1);
+    auto * plane = static_cast<CPlane *>(harness.parser.m_Planes.At(0));
+    REQUIRE(plane != nullptr);
+    REQUIRE(plane->Lands.Count() == 1);
+
+    auto * land = static_cast<CLand *>(plane->Lands.At(0));
+    REQUIRE(land != nullptr);
+    CHECK(land->Structs.Count() == 0);
+}
+
+TEST_CASE("A missing blank line drops the last entry and skips the following section", "[parser]")
+{
+    ParserHarness harness;
+
+    REQUIRE(harness.parser.ParseRep("tests/fixtures/missing_blank_separator.rep", false, false) == ERR_OK);
+
+    // The second skill has no trailing blank line before "Item reports:", so
+    // the header text is silently absorbed into its description instead of
+    // being recognized as the start of a new section...
+    REQUIRE(harness.parser.m_Skills.Count() == 2);
+    auto * corrupted = static_cast<CShortNamedObj *>(harness.parser.m_Skills.At(1));
+    REQUIRE(corrupted != nullptr);
+    CHECK(corrupted->Description.find("Item reports:") != std::string::npos);
+
+    // ...and because the header line was consumed rather than left for
+    // dispatch, the entire Item reports section is skipped.
+    CHECK(harness.parser.m_Items.Count() == 0);
+}
+
+TEST_CASE("SaveOrders writes only the requested faction's units", "[parser]")
+{
+    ParserHarness harness;
+    auto report = makeReport(
+        "Atlantis Report For:\n"
+        "Test Faction (123)\n"
+        "January, Year 2\n"
+        "\n"
+        "plain (0,0) in Start, 10 peasants (humans), $0.\n"
+        "Exits:\n"
+        "* Hero (1), Test Faction (123)\n"
+        "- Ally (2), Ally Faction (456)\n"
+        "\n");
+
+    REQUIRE(harness.parser.ParseRep(report.path().c_str(), false, false) == ERR_OK);
+
+    CUnit ourDummy;
+    ourDummy.Id = 1;
+    int ourIdx = 0;
+    REQUIRE(harness.parser.m_Units.Search(&ourDummy, ourIdx));
+    auto * ourUnit = static_cast<CUnit *>(harness.parser.m_Units.At(ourIdx));
+    REQUIRE(ourUnit != nullptr);
+    ourUnit->Orders = "hold";
+
+    CUnit otherDummy;
+    otherDummy.Id = 2;
+    int otherIdx = 0;
+    REQUIRE(harness.parser.m_Units.Search(&otherDummy, otherIdx));
+    auto * otherUnit = static_cast<CUnit *>(harness.parser.m_Units.At(otherIdx));
+    REQUIRE(otherUnit != nullptr);
+    REQUIRE(otherUnit->FactionId == 456);
+    otherUnit->Orders = "hold";
+
+    auto saved = makeReport("");
+    REQUIRE(harness.parser.SaveOrders(saved.path().c_str(), "pw", false, 123) == ERR_OK);
+
+    const std::string contents = readFile(saved.path());
+    CHECK(contents.find("unit 1") != std::string::npos);
+    CHECK(contents.find("unit 2") == std::string::npos);
+}
+
+TEST_CASE("SaveOrders with decorate writes a land-description comment before each hex's orders", "[parser]")
+{
+    ParserHarness harness;
+    auto report = makeReport(
+        "Atlantis Report For:\n"
+        "Test Faction (123)\n"
+        "January, Year 2\n"
+        "\n"
+        "plain (0,0) in Start, 10 peasants (humans), $0.\n"
+        "Exits:\n"
+        "* Hero (1), Test Faction (123)\n"
+        "\n");
+
+    REQUIRE(harness.parser.ParseRep(report.path().c_str(), false, false) == ERR_OK);
+
+    auto * unit = static_cast<CUnit *>(harness.parser.m_Units.At(0));
+    REQUIRE(unit != nullptr);
+    unit->Orders = "hold";
+
+    auto decorated = makeReport("");
+    REQUIRE(harness.parser.SaveOrders(decorated.path().c_str(), "pw", true, 123) == ERR_OK);
+    CHECK(readFile(decorated.path()).find("plain (0,0) in Start") != std::string::npos);
+
+    auto plain = makeReport("");
+    REQUIRE(harness.parser.SaveOrders(plain.path().c_str(), "pw", false, 123) == ERR_OK);
+    CHECK(readFile(plain.path()).find("plain (0,0) in Start") == std::string::npos);
+}
+
+TEST_CASE("LoadOrders ingests a real multi-unit order file and infers the faction id", "[parser]")
+{
+    ParserHarness harness;
+
+    for (long id : {1289L, 1290L, 1288L})
+    {
+        CUnit * unit = new CUnit;
+        unit->Id = id;
+        unit->FactionId = 21;
+        harness.parser.m_Units.Insert(unit);
+    }
+
+    int factionId = 0;
+    REQUIRE(harness.parser.LoadOrders("tests/fixtures/orders_multi_unit.ord", factionId) == ERR_OK);
+
+    CHECK(factionId == 21);
+
+    CUnit dummy;
+    dummy.Id = 1289;
+    int idx = 0;
+    REQUIRE(harness.parser.m_Units.Search(&dummy, idx));
+    auto * unit = static_cast<CUnit *>(harness.parser.m_Units.At(idx));
+    REQUIRE(unit != nullptr);
+    CHECK(unit->Orders.find("claim 10") != std::string::npos);
+    CHECK(unit->Orders.find("study comb") != std::string::npos);
+}
+
+TEST_CASE("LoadOrders on a file with no unit lines leaves FactionId at 0 and existing orders untouched", "[parser]")
+{
+    ParserHarness harness;
+    auto report = makeReport(
+        "Atlantis Report For:\n"
+        "Test Faction (123)\n"
+        "January, Year 2\n"
+        "\n"
+        "plain (0,0) in Start, 10 peasants (humans), $0.\n"
+        "Exits:\n"
+        "* Hero (1), Test Faction (123)\n"
+        "\n");
+
+    REQUIRE(harness.parser.ParseRep(report.path().c_str(), false, false) == ERR_OK);
+
+    auto * unit = static_cast<CUnit *>(harness.parser.m_Units.At(0));
+    REQUIRE(unit != nullptr);
+    unit->Orders = "hold";
+
+    int factionId = 999;
+    REQUIRE(harness.parser.LoadOrders("tests/fixtures/orders_no_units.ord", factionId) == ERR_OK);
+
+    CHECK(factionId == 0);
+    CHECK(unit->Orders == "hold");
 }

@@ -1,0 +1,123 @@
+Atlantis Report For:
+Borg (62) (Martial 1, Magic 4)
+May, Year 1
+
+Atlantis Engine Version: 5.2.5 (beta)
+NewOrigins, Version: 3.0.0 (beta)
+
+Faction Status:
+Regions: 3 (10)
+Quartermasters: 0 (2)
+Mages: 5 (5)
+Apprentices: 0 (10)
+
+Battles during turn:
+Demon (972) attacks Drones (2170) in mountain (42,80) in Sa'endtell!
+
+Attackers:
+Demon (972), 8 demons [DEMO] (Combat 4/4, Attacks 12, Hits 12, Tactics
+  2).
+
+Defenders:
+Drones (2170), Borg (62), behind, 11 humans [HUMN], combat 1.
+
+Round 1:
+Demon (972) tactics bonus 2.
+
+Demon (972) loses 0.
+Drones (2170) loses 11.
+
+Round 1 statistics:
+
+Demon (972) army:
+- Demon (972):
+  - without weapon (slashing melee attack), attacked 11 of 17 times,
+  11 successful attacks, 0 blocked by armor, 11 hits, 11 total damage,
+  and killed 11 enemies.
+
+Drones (2170) army:
+- Drones (2170):
+  - without weapon (slashing melee attack), attacked 0 of 1 time, 0
+  successful attacks, 0 blocked by armor, 0 hits, 0 total damage, and
+  killed 0 enemies.
+
+Drones (2170) is destroyed!
+
+Battle statistics:
+
+Demon (972) army:
+- Demon (972):
+  - without weapon (slashing melee attack), attacked 11 of 17 times,
+  11 successful attacks, 0 blocked by armor, 11 hits, 11 total damage,
+  and killed 11 enemies.
+
+Drones (2170) army:
+- Drones (2170):
+  - without weapon (slashing melee attack), attacked 0 of 1 time, 0
+  successful attacks, 0 blocked by armor, 0 hits, 0 total damage, and
+  killed 0 enemies.
+
+Total Casualties:
+Drones (2170) loses 11.
+Damaged units: 2170.
+Demon (972) loses 0.
+
+Spoils: none.
+
+Events during turn:
+Times reward of 200 silver.
+Drone (1652): Earns 12 silver working in forest (43,79) in Utso.
+Drone (1653): Collects $50 in taxes in forest (44,80) in Utso.
+
+Skill reports:
+
+illusion [ILLU] 1: Illusion is the magic of creating images of things
+  that do not actually exist.
+
+Declared Attitudes (default Neutral):
+Hostile : none.
+Unfriendly : Creatures (2).
+Neutral : none.
+Friendly : none.
+Ally : Queen XOT (34).
+
+Unclaimed silver: 684.
+
+forest (43,79) in Utso, 1757 peasants (high elves), $1300.
+------------------------------------------------------------
+  Wages: $13.7 (Max: $556).
+  Wanted: none.
+  For Sale: 70 high elves [HELF] at $43, 14 leaders [LEAD] at $767.
+  Entertainment available: $65.
+  Products: 23 grain [GRAI], 30 wood [WOOD], 11 furs [FUR].
+
+Exits:
+  North : forest (43,77) in Utso.
+  Northeast : ocean (44,78) in Atlantis Ocean.
+  Southeast : forest (44,80) in Utso.
+  South : mountain (43,81) in Derngill, contains Onthead [city].
+  Southwest : mountain (42,80) in Sa'endtell.
+  Northwest : forest (42,78) in Meulcos, contains Erwhestead [town].
+
+- Romanus (893), Mantzikert (39), avoiding, behind, leader [LEAD].
+* Drone (1652), Borg (62), avoiding, behind, revealing faction,
+  receiving no aid, consuming faction's food, weightless battle
+  spoils, human [HUMN], 4 silver [SILV]. Weight: 10. Capacity:
+  0/0/15/0. Skills: none.
+
+
+Orders Template (Short Format):
+
+#atlantis 62 "testpw"
+
+;*** forest (43,79) in Utso ***
+
+unit 1652
+@work
+
+;*** forest (44,80) in Utso ***
+
+unit 1653
+@tax
+
+#end

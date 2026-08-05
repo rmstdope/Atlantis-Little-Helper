@@ -1,0 +1,28 @@
+jungle (8,50) in Maput, 1585 peasants (orcs), $919.
+------------------------------------------------------------
+  Wages: $12.9 (Max: $400).
+  Wanted: none.
+  For Sale: 63 orcs [ORC] at $41, 12 leaders [LEAD] at $722.
+  Entertainment available: $57.
+  Products: 52 livestock [LIVE], 23 wood [WOOD], 27 herbs [HERB], 16
+    furs [FUR].
+
+Exits:
+  North : jungle (8,48) in Maput.
+  Northeast : ocean (9,49) in Atlantis Ocean.
+  Southeast : jungle (9,51) in Maput.
+  South : ocean (8,52) in Atlantis Ocean.
+  Southwest : mountain (7,51) in Inhead.
+  Northwest : mountain (7,49) in Inhead.
+
+
++ Jungle Camp [1] : Stockade.
+  - Jungle Guns (12830), on guard, Elder Tree Forests (32), 6 orcs
+    [ORC].
+  - Jungle Patrol (13509), on guard, Elder Tree Forests (32), 3 orcs
+    [ORC].
+
++ Planks and Beams [2] : Timber Yard.
+
++ Stella Corral [3] : Ranch.
+
