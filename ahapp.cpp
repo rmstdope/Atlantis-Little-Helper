@@ -117,6 +117,7 @@ CAhApp::~CAhApp()
 
 bool CAhApp::OnInit()
 {
+    bool              configUpgraded = false;
     int               i;
     const char      * p;
     const char      * szName;
@@ -146,8 +147,7 @@ bool CAhApp::OnInit()
 
     m_Config[CONFIG_FILE_CONFIG].Load(SZ_CONFIG_FILE);
     m_Config[CONFIG_FILE_STATE ].Load(SZ_CONFIG_STATE_FILE);
-
-    UpgradeConfigFiles();
+    configUpgraded = UpgradeConfigFiles();
     CUnit::LoadCustomFlagNames(GetConfigFile(SZ_SECT_UNIT_FLAG_NAMES));
 
     m_layout = atol(GetConfig(SZ_SECT_COMMON, SZ_KEY_LAYOUT));
@@ -210,7 +210,6 @@ bool CAhApp::OnInit()
 
 
     InitMoveModes();
-
     //m_Attitudes.FreeAll();
     SetAttitudeForFaction(0, ATT_NEUTRAL);
 
@@ -337,11 +336,6 @@ bool CAhApp::OnInit()
         }
         i = GetSectionNext (i, SZ_SECT_REPORTS, szName, szValue);
     }
-
-
-
-
-
     StdRedirectInit();
 
     CreateAccelerator();
@@ -350,15 +344,22 @@ bool CAhApp::OnInit()
 
     if ((AH_LAYOUT_3_WIN==m_layout || AH_LAYOUT_2_WIN==m_layout) &&
         atol(GetConfig(CUnitFrame::GetConfigSection(m_layout), SZ_KEY_OPEN)) )
+    {
         OpenUnitFrame();
+    }
 
     if ((AH_LAYOUT_3_WIN==m_layout) &&
         (atol(GetConfig(CEditsFrame::GetConfigSection(m_layout), SZ_KEY_OPEN))) )
+    {
         OpenEditsFrame();
+    }
 
     SetTopWindow(m_Frames[AH_FRAME_MAP]);
     m_Frames[AH_FRAME_MAP]->SetFocus();
 
+
+    if (configUpgraded)
+        m_FirstLoad = true;
 
     if (argc>1)
         for (i=1; i<argc; i++)
@@ -378,9 +379,10 @@ bool CAhApp::OnInit()
                 join = true;
             }
         }
-
     if (atol(GetConfig(CUnitFrameFltr::GetConfigSection(m_layout), SZ_KEY_OPEN)) )
+    {
         OpenUnitFrameFltr(false);
+    }
 
     return true;
 }
@@ -615,8 +617,20 @@ void CAhApp::UpgradeConfigFiles()
     if (m_Config[CONFIG_FILE_CONFIG].GetFirstInSection(SZ_SECT_UNITLIST_HDR, szName, szValue) >= 0 ||
         m_Config[CONFIG_FILE_CONFIG].GetFirstInSection(SZ_SECT_UNITLIST_HDR_FLTR, szName, szValue) >= 0)
     {
+<<<<<<< HEAD
         Ok = m_Config[CONFIG_FILE_CONFIG].GetNextSection("", szNextSection);
         while (Ok)
+=======
+        Section = szNextSection;
+        if (Section.empty())
+        {
+            Ok = m_Config[CONFIG_FILE_CONFIG].GetNextSection("\1", szNextSection);
+            continue;
+        }
+        fileno    = GetConfigFileNo(Section.c_str());
+
+        if (CONFIG_FILE_CONFIG != fileno)
+>>>>>>> 9e46b29 (Fix startup config upgrade loop)
         {
             Section = szNextSection;
             fileno    = GetConfigFileNo(Section.c_str());
