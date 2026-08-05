@@ -596,3 +596,20 @@ TEST_CASE("CPlane Lands behaves like a standard id-sorted collection", "[model]"
 
     CHECK(plane.Lands.Count() == 1);
 }
+
+// Regression test for the Faction Overview crash: GetPropertyName returns ""
+// (not nullptr) past the last property, so iterating via std::string assignment
+// and !propname.empty() terminates safely without a null-pointer dereference.
+TEST_CASE("TPropertyHolder GetPropertyName returns empty string past the last property", "[model]")
+{
+    CBaseObject obj;
+
+    // With no properties, index 0 should already be past the end.
+    CHECK(std::string(obj.GetPropertyName(0)) == "");
+
+    // Add one property and verify iteration: index 0 returns the name, index 1
+    // returns "" (terminates the loop).
+    obj.SetProperty("speed", eLong, reinterpret_cast<const void *>(static_cast<intptr_t>(42L)), eNormal);
+    CHECK(std::string(obj.GetPropertyName(0)) == "speed");
+    CHECK(std::string(obj.GetPropertyName(1)) == "");
+}

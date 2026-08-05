@@ -756,7 +756,7 @@ CUnit * CUnit::AllocSimpleCopy()
 
     idx = 0;
     propname = GetPropertyName(idx);
-    while (propname)
+    while (*propname)
     {
         if (GetProperty(propname, type, value, eNormal))
             pUnit->SetProperty(propname, type, value, eNormal);
@@ -844,7 +844,7 @@ void CUnit::CalcWeightsAndMovement()
     // preliminary calculation, no wagons
     idx      = 0;
     propname = GetPropertyName(idx);
-    while (propname)
+    while (*propname)
     {
         if (GetProperty(propname, type, n, eNormal) &&
             (eLong==type) &&
@@ -873,7 +873,7 @@ void CUnit::CalcWeightsAndMovement()
         int nHorses=0, nWagons=0;
         idx      = 0;
         propname = GetPropertyName(idx);
-        while (propname)
+        while (*propname)
         {
             if (GetProperty(propname, type, n, eNormal) &&
                 (eLong==type) )
