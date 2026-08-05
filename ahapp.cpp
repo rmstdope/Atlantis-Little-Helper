@@ -117,7 +117,6 @@ CAhApp::~CAhApp()
 
 bool CAhApp::OnInit()
 {
-    bool              configUpgraded = false;
     int               i;
     const char      * p;
     const char      * szName;
@@ -147,7 +146,7 @@ bool CAhApp::OnInit()
 
     m_Config[CONFIG_FILE_CONFIG].Load(SZ_CONFIG_FILE);
     m_Config[CONFIG_FILE_STATE ].Load(SZ_CONFIG_STATE_FILE);
-    configUpgraded = UpgradeConfigFiles();
+    UpgradeConfigFiles();
     CUnit::LoadCustomFlagNames(GetConfigFile(SZ_SECT_UNIT_FLAG_NAMES));
 
     m_layout = atol(GetConfig(SZ_SECT_COMMON, SZ_KEY_LAYOUT));
@@ -357,9 +356,6 @@ bool CAhApp::OnInit()
     SetTopWindow(m_Frames[AH_FRAME_MAP]);
     m_Frames[AH_FRAME_MAP]->SetFocus();
 
-
-    if (configUpgraded)
-        m_FirstLoad = true;
 
     if (argc>1)
         for (i=1; i<argc; i++)
@@ -617,22 +613,15 @@ void CAhApp::UpgradeConfigFiles()
     if (m_Config[CONFIG_FILE_CONFIG].GetFirstInSection(SZ_SECT_UNITLIST_HDR, szName, szValue) >= 0 ||
         m_Config[CONFIG_FILE_CONFIG].GetFirstInSection(SZ_SECT_UNITLIST_HDR_FLTR, szName, szValue) >= 0)
     {
-<<<<<<< HEAD
         Ok = m_Config[CONFIG_FILE_CONFIG].GetNextSection("", szNextSection);
         while (Ok)
-=======
-        Section = szNextSection;
-        if (Section.empty())
-        {
-            Ok = m_Config[CONFIG_FILE_CONFIG].GetNextSection("\1", szNextSection);
-            continue;
-        }
-        fileno    = GetConfigFileNo(Section.c_str());
-
-        if (CONFIG_FILE_CONFIG != fileno)
->>>>>>> 9e46b29 (Fix startup config upgrade loop)
         {
             Section = szNextSection;
+            if (Section.empty())
+            {
+                Ok = m_Config[CONFIG_FILE_CONFIG].GetNextSection("\1", szNextSection);
+                continue;
+            }
             fileno    = GetConfigFileNo(Section.c_str());
 
             if (CONFIG_FILE_CONFIG != fileno)
