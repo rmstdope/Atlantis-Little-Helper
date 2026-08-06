@@ -1,0 +1,307 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  # Recovery path: re-drive a release for an existing tag without having to
+  # delete and re-push the tag.
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing tag to (re-)release, e.g. v2.8.0'
+        required: true
+        type: string
+
+# Serialise runs for the same tag so two of them can never race on creating or
+# updating its release. Never cancel in progress: a half-finished publish is
+# worse than a queued one.
+concurrency:
+  group: release-${{ inputs.tag || github.ref_name }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  # Cheap gate that runs before the three builds, so a bad tag fails in seconds.
+  validate:
+    name: validate tag
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.check.outputs.tag }}
+      version: ${{ steps.check.outputs.version }}
+      prerelease: ${{ steps.check.outputs.prerelease }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+
+      - name: Validate tag format and version consistency
+        id: check
+        env:
+          TAG: ${{ inputs.tag || github.ref_name }}
+        run: |
+          set -euo pipefail
+
+          if [[ ! "$TAG" =~ ^v([0-9]+\.[0-9]+\.[0-9]+)(-([0-9A-Za-z.-]+))?$ ]]; then
+            echo "::error::'$TAG' is not a release tag."
+            echo "Expected vMAJOR.MINOR.PATCH with an optional pre-release suffix,"
+            echo "for example v2.8.0 (release) or v2.8.0-rc1 (pre-release)."
+            exit 1
+          fi
+          VERSION="${BASH_REMATCH[1]}"
+          SUFFIX="${BASH_REMATCH[3]:-}"
+
+          MESON_VERSION="$(sed -n "s/^[[:space:]]*version:[[:space:]]*'\([^']*\)'.*/\1/p" meson.build | head -n1)"
+          HEADER_VERSION="$(sed -n 's/^#define[[:space:]]\{1,\}AH_VERSION[[:space:]]\{1,\}"\([^"]*\)".*/\1/p' src/version.h | head -n1)"
+
+          echo "tag core version : $VERSION"
+          echo "meson.build      : $MESON_VERSION"
+          echo "src/version.h    : $HEADER_VERSION"
+
+          if [ "$MESON_VERSION" != "$VERSION" ] || [ "$HEADER_VERSION" != "$VERSION" ]; then
+            echo "::error::Version mismatch between tag and source tree."
+            echo "The tag says $VERSION, meson.build says '$MESON_VERSION', src/version.h says '$HEADER_VERSION'."
+            echo "Bump meson.build's version: and src/version.h's AH_VERSION in a reviewed"
+            echo "commit, then re-tag that commit. See the Releases section of README.md."
+            exit 1
+          fi
+
+          if [ -n "$SUFFIX" ]; then PRERELEASE=true; else PRERELEASE=false; fi
+          echo "pre-release      : $PRERELEASE"
+
+          {
+            echo "tag=$TAG"
+            echo "version=$VERSION"
+            echo "prerelease=$PRERELEASE"
+          } >> "$GITHUB_OUTPUT"
+
+  # Same platform matrix and dependency install as ci.yml, so the release path
+  # stays in lockstep with the path CI already proves on every push.
+  build:
+    name: build (${{ matrix.name }})
+    needs: validate
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: macos-arm64
+            os: macos-latest
+          - name: macos-intel
+            os: macos-15-intel
+          - name: linux-x86_64
+            os: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    env:
+      TAG: ${{ needs.validate.outputs.tag }}
+      VERSION: ${{ needs.validate.outputs.version }}
+      PLATFORM: ${{ matrix.name }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.validate.outputs.tag }}
+
+      - name: Install wxWidgets and Meson (macOS)
+        if: runner.os == 'macOS'
+        run: brew install wxwidgets meson ninja
+
+      - name: Install wxWidgets and Meson (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwxgtk3.2-dev meson ninja-build
+
+      # Quality gate. Deliberately Meson's default (debug, -O0) buildtype, exactly
+      # as ci.yml does: two documented lifetime bugs in this codebase reproduce
+      # reliably at -O0 but pass silently at -O2, so gating on an optimised build
+      # would make the release path weaker than CI.
+      - name: Setup (test build)
+        run: meson setup build
+
+      - name: Compile (test build)
+        run: meson compile -C build
+
+      - name: Test
+        run: meson test -C build --print-errorlogs
+
+      # Separate optimised build; this is what actually ships.
+      - name: Setup (release build)
+        run: meson setup build-release --buildtype=release
+
+      - name: Compile (release build)
+        run: meson compile -C build-release
+
+      - name: Verify binary was produced
+        run: test -e build-release/ah
+
+      # meson's --strip only takes effect during `meson install`, and this project
+      # has no install rules, so strip explicitly. On macOS stripping invalidates
+      # the linker's ad-hoc code signature and an arm64 binary would then die with
+      # "Killed: 9", so re-sign immediately afterwards.
+      - name: Strip binary (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          set -euo pipefail
+          strip -x build-release/ah
+          codesign --force --sign - build-release/ah
+          codesign --verify --verbose build-release/ah
+
+      - name: Strip binary (Linux)
+        if: runner.os == 'Linux'
+        run: strip build-release/ah
+
+      # Copy each item explicitly: the repo root accumulates untracked scratch
+      # (ah.cfg, ah.his, obj/, backup/) that must never end up in an archive.
+      - name: Stage archive contents
+        run: |
+          set -euo pipefail
+          STAGE="dist/alh-${VERSION}-${PLATFORM}"
+          mkdir -p "$STAGE/doc" "$STAGE/terrain_bitmaps"
+
+          cp build-release/ah "$STAGE/ah"
+          cp LICENSE "$STAGE/LICENSE"
+          cp doc/readme.html doc/history.txt doc/readme_bin.txt "$STAGE/doc/"
+          cp terrain_bitmaps/*.bmp terrain_bitmaps/readme.txt "$STAGE/terrain_bitmaps/"
+
+          # github.sha points at the default branch head for workflow_dispatch, so
+          # take the commit from the checkout instead.
+          COMMIT="$(git rev-parse HEAD)"
+
+          {
+            printf 'Atlantis Little Helper\n\n'
+            printf 'Version      : %s\n' "$VERSION"
+            printf 'Tag          : %s\n' "$TAG"
+            printf 'Commit       : %s\n' "$COMMIT"
+            printf 'Platform     : %s\n' "$PLATFORM"
+            printf 'Built (UTC)  : %s\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+            printf 'Built by     : %s/%s/actions/runs/%s\n\n' \
+              "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID"
+            printf 'This binary is dynamically linked against wxWidgets 3.x, which must be\n'
+            printf 'installed separately to run it:\n'
+            printf '  macOS : brew install wxwidgets\n'
+            printf '  Linux : the wxGTK 3.2 runtime package for your distribution\n'
+            printf '          (Ubuntu 24.04: libwxgtk3.2-1t64)\n\n'
+            printf 'ALH keeps its configuration and history in the current directory, so run\n'
+            printf 'it from a separate directory per game. Copy terrain_bitmaps/*.bmp into a\n'
+            printf 'game directory to use bitmap terrain (no effect on macOS builds).\n\n'
+            printf 'See doc/readme.html for full documentation.\n'
+          } > "$STAGE/BUILD-INFO.txt"
+
+          ls -lR "$STAGE"
+
+      - name: Create archive
+        run: tar czf "alh-${VERSION}-${PLATFORM}.tar.gz" -C dist "alh-${VERSION}-${PLATFORM}"
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: alh-${{ needs.validate.outputs.version }}-${{ matrix.name }}
+          path: alh-${{ needs.validate.outputs.version }}-${{ matrix.name }}.tar.gz
+          if-no-files-found: error
+
+  # Single publish job: `needs: build` means a failure on any platform blocks
+  # publication entirely, so a release is never visible with assets missing.
+  publish:
+    name: publish release
+    needs: [validate, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TAG: ${{ needs.validate.outputs.tag }}
+      VERSION: ${{ needs.validate.outputs.version }}
+      PRERELEASE: ${{ needs.validate.outputs.prerelease }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.validate.outputs.tag }}
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Generate checksums
+        working-directory: dist
+        run: |
+          set -euo pipefail
+          sha256sum *.tar.gz > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
+      # printf format strings are single-quoted so backticks stay literal markdown
+      # instead of being treated as command substitution.
+      - name: Build release notes
+        run: |
+          set -euo pipefail
+          COMMIT="$(git rev-parse HEAD)"
+          {
+            printf '## Atlantis Little Helper %s\n\n' "$VERSION"
+            printf '| | |\n|---|---|\n'
+            printf '| Tag | `%s` |\n' "$TAG"
+            printf '| Commit | `%s` |\n' "$COMMIT"
+            printf '| Built (UTC) | %s |\n\n' "$(date -u '+%Y-%m-%d %H:%M:%S')"
+            printf 'These binaries are **dynamically linked against wxWidgets 3.x**, which must be\n'
+            printf 'installed to run them (`brew install wxwidgets` on macOS, the wxGTK 3.2 runtime\n'
+            printf 'package on Linux). See the Releases section of README.md for details.\n\n'
+            printf '### Assets\n\n'
+            printf '| Platform | File | SHA256 |\n|---|---|---|\n'
+            while read -r sum file; do
+              platform=${file#alh-$VERSION-}
+              platform=${platform%.tar.gz}
+              printf '| %s | `%s` | `%s` |\n' "$platform" "$file" "$sum"
+            done < dist/SHA256SUMS.txt
+            printf '\nVerify downloads with `shasum -a 256 -c SHA256SUMS.txt`.\n'
+          } > notes.md
+          cat notes.md
+
+      - name: Create or update release
+        run: |
+          set -euo pipefail
+
+          EXTRA=()
+          if [ "$PRERELEASE" = "true" ]; then
+            EXTRA+=(--prerelease --latest=false)
+          fi
+
+          CREATED=false
+          WAS_DRAFT=false
+          if gh release view "$TAG" --json id >/dev/null 2>&1; then
+            # Re-run for a tag that already has a release: refresh the assets but
+            # leave the notes alone, so hand-edited release text survives.
+            WAS_DRAFT="$(gh release view "$TAG" --json isDraft --jq .isDraft)"
+            echo "Release $TAG already exists (draft=$WAS_DRAFT); reusing it, notes left untouched."
+          else
+            # --verify-tag: abort rather than inventing a tag from the default
+            # branch if the workflow_dispatch input was mistyped.
+            gh release create "$TAG" \
+              --draft \
+              --verify-tag \
+              --title "Atlantis Little Helper $VERSION" \
+              --notes-file notes.md \
+              --generate-notes \
+              ${EXTRA[@]+"${EXTRA[@]}"}
+            CREATED=true
+          fi
+
+          # Fixed asset names plus --clobber make re-runs idempotent.
+          gh release upload "$TAG" dist/*.tar.gz dist/SHA256SUMS.txt --clobber
+
+          # Publish last, so the release only becomes visible once every asset is
+          # attached. Also rescues a draft left behind by an earlier failed run.
+          if [ "$CREATED" = "true" ] || [ "$WAS_DRAFT" = "true" ]; then
+            gh release edit "$TAG" --draft=false
+          fi
+
+      - name: Summarise published release
+        run: |
+          set -euo pipefail
+          gh release view "$TAG" --json tagName,isDraft,isPrerelease,url,assets \
+            --jq '"tag: \(.tagName)  draft: \(.isDraft)  prerelease: \(.isPrerelease)\n\(.url)\nassets:\n" + ([.assets[] | "  \(.name)  \(.size) bytes"] | join("\n"))'

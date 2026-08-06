@@ -46,7 +46,8 @@
             ALH is an Open Source project. It is cross-platform (Windows/Unix/Mac), at
             least it was tested on Linux and Windows.
             <li>
-                ALH is available as source code and as compiled Windows and Linux binaries. <a name="installconfig">
+                ALH is available as source code and as compiled binaries for macOS
+                (Apple Silicon and Intel) and Linux. <a name="installconfig">
                 </a>
                 <h3>Installation and configuration</h3>
                         <p>
@@ -58,12 +59,32 @@
                                 <a name="install"></a>
                                 <h4>Installation</h4>
                         <li>
+                            Download the archive for your platform from the
+                            <a href="https://github.com/rmstdope/Atlantis-Little-Helper/releases">Releases page</a>
+                            and unpack it. It contains the ALH executable (ah), the documentation,
+                            and the terrain bitmaps. Release archives are named
+                            alh-&lt;version&gt;-&lt;platform&gt;.tar.gz, and a SHA256SUMS.txt file is
+                            published alongside them so downloads can be verified with
+                            "shasum -a 256 -c SHA256SUMS.txt".
+                        <li>
+                            The released binaries are dynamically linked against wxWidgets 3.x, which
+                            must be installed separately: "brew install wxwidgets" on macOS, or the
+                            wxGTK 3.2 runtime package (libwxgtk3.2-1t64 on current Ubuntu) on Linux.
+                            On macOS, archives downloaded through a browser are quarantined by
+                            Gatekeeper; clear it with
+                            "xattr -dr com.apple.quarantine &lt;unpacked directory&gt;".
+                        <li>
                         ALH uses current directory for storing configuration and history files. So, you
                         will need a separate directory for every game you are playing. And that
                         directory must be a current directory when you are starting ALH.
                         <li>
                             Just copy ALH executable to some directory on the path and run it from the game
                             directory.
+                        <li>
+                            To use bitmap terrains, copy the .bmp files from the archive's
+                            terrain_bitmaps directory into your game directory (see
+                            <a href="#map_bimaps">Use bitmaps to display terrains</a> below). This has
+                            no effect on macOS builds, where terrain bitmaps are not used.
                             <p>
                                 <a name="install_win32"></a>
                                 <h4>Installation on Windows</h4>
@@ -342,8 +363,7 @@ values:
                             Python filters are more flexible, allowing to compare unit properties, for
                             example. Consider the following filter
                             <pre>   LEAD == 0 and SILV &gt; MEN*10*12 and (SWOR &gt;= MEN or XBOW &gt;= MEN) </pre>
-                            which returns all armed non-leader units having enough silv for a year. <a name="contacts">
-                            </a>
+                            which returns all armed non-leader units having enough silv for a year.
                         <li>
                             It is possible to use functionality in Python modules for processing filters.
                             All required imports should be included in ah.common.py file. By default it
@@ -353,10 +373,15 @@ values:
                             <br>
 
 
+	<a name="contacts"></a>
 	<h3>Downloads and contacts</h3>
 		<li>
-			The latest version of Atlantis Little Helper is available for download from <a href="http://www.geocities.com/pbemah">
-			www.geocities.com/pbemah<a>.
+			The latest version of Atlantis Little Helper is available for download from the
+			<a href="https://github.com/rmstdope/Atlantis-Little-Helper/releases">Releases page</a>
+			of the <a href="https://github.com/rmstdope/Atlantis-Little-Helper">GitHub project</a>.
+			Builds for macOS (Apple Silicon and Intel) and Linux are published automatically for
+			every release; see <a href="../README.md">README.md</a> for the release and build
+			process.
 		<li>	ALH was designed and developed by <a href="mailto:mshariy@shaw.ca">Max Shariy</a>. <br>
 			<ul>
 			<li>Some valuable contributions received from <a href="mailto:shar1@arrakis.es">Sh'Arcashmo</a>. <br>
@@ -366,8 +391,8 @@ values:
 			</ul>
 		</li>
 		<li>
-		Bugs can be reported at the <a href="http://sourceforge.net/tracker/?atid=519782&amp;group_id=68020&amp;func=browse"> sourceforge project location</a>,
-                or mailed directly to <a href="mailto:mshariy@shaw.ca">Max Shariy</a>.
+		Bugs can be reported at the
+		<a href="https://github.com/rmstdope/Atlantis-Little-Helper/issues">GitHub issue tracker</a>.
 			
     </BODY>
 </HTML>
