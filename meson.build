@@ -8,6 +8,7 @@ root_inc = include_directories('.')
 src_inc = include_directories('src')
 model_inc = include_directories('src/model')
 app_inc = include_directories('src/app')
+gui_inc = include_directories('src/gui')
 tests_inc = include_directories('tests')
 
 ah_sources = files(
@@ -26,27 +27,27 @@ ah_sources = files(
   'src/app/reportloader.cpp',
   'src/app/reportgenerator.cpp',
   'src/app/ahapp.cpp',
-  'src/ahframe.cpp',
+  'src/gui/ahframe.cpp',
   'src/consts_ah.cpp',
-  'src/editpane.cpp',
-  'src/editsframe.cpp',
-  'src/extend.cpp',
-  'src/extend_no.cpp',
-  'src/flagsdlg.cpp',
-  'src/hexfilterdlg.cpp',
-  'src/listcoledit.cpp',
-  'src/listpane.cpp',
-  'src/mapframe.cpp',
-  'src/mappane.cpp',
-  'src/msgframe.cpp',
-  'src/optionsdlg.cpp',
-  'src/unitfilterdlg.cpp',
-  'src/unitframe.cpp',
-  'src/unitframefltr.cpp',
-  'src/unitpane.cpp',
-  'src/unitpanefltr.cpp',
-  'src/unitsplitdlg.cpp',
-  'src/utildlgs.cpp',
+  'src/gui/editpane.cpp',
+  'src/gui/editsframe.cpp',
+  'src/gui/extend.cpp',
+  'src/gui/extend_no.cpp',
+  'src/gui/flagsdlg.cpp',
+  'src/gui/hexfilterdlg.cpp',
+  'src/gui/listcoledit.cpp',
+  'src/gui/listpane.cpp',
+  'src/gui/mapframe.cpp',
+  'src/gui/mappane.cpp',
+  'src/gui/msgframe.cpp',
+  'src/gui/optionsdlg.cpp',
+  'src/gui/unitfilterdlg.cpp',
+  'src/gui/unitframe.cpp',
+  'src/gui/unitframefltr.cpp',
+  'src/gui/unitpane.cpp',
+  'src/gui/unitpanefltr.cpp',
+  'src/gui/unitsplitdlg.cpp',
+  'src/gui/utildlgs.cpp',
 )
 
 # Shared with the parser-tests target below: the parser/model/property layer,
@@ -118,7 +119,7 @@ if py_opt.allowed()
 endif
 
 executable('ah', ah_sources,
-  include_directories: [root_inc, src_inc, model_inc, app_inc],
+  include_directories: [root_inc, src_inc, model_inc, app_inc, gui_inc],
   cpp_args: ah_extra_args,
   dependencies: ah_deps)
 
