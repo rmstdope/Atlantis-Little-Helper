@@ -178,7 +178,7 @@ CUnitFilterDlg::CUnitFilterDlg(wxWindow *parent, const char * szConfigSection)
     CResizableDlg::SetSize();
 
 
-    if (!gpApp->CanSwitchToRep(repPrev, idx))
+    if (!gpReportLoader->CanSwitchToRep(repPrev, idx))
         m_btnGone->Disable();
 
     m_bReady = true;

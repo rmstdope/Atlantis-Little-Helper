@@ -204,7 +204,7 @@ void CUnitPaneFltr::Update(CUnitFilterDlg * pFilter)
 
     if (ShowGoneUnits)
     {
-        if (!gpApp->GetPrevTurnReport(pPrevTurn))
+        if (!gpReportLoader->GetPrevTurnReport(pPrevTurn))
             goto Failed;
         
         CUnitPane * pUnitPane = (CUnitPane*)gpUIController->m_Panes[AH_PANE_UNITS_HEX];
@@ -308,8 +308,8 @@ Failed:
         std::string sOut, sErr;
 
         Python.DoneUnitFilter();
-        gpApp->StdRedirectReadMore(false, sErr);
-        gpApp->StdRedirectReadMore(true, sOut);
+        gpReportLoader->StdRedirectReadMore(false, sErr);
+        gpReportLoader->StdRedirectReadMore(true, sOut);
         if (E_OK != rcPy)
         {
             S.clear();
@@ -497,7 +497,7 @@ void CUnitPaneFltr::OnPopupMenuIssueOrders(wxCommandEvent& event)
 
     if (!LandIds.empty())
     {
-        gpApp->SetOrdersChanged(true);
+        gpReportLoader->SetOrdersChanged(true);
 /*        gpGameData->m_pAtlantis->RunOrders(m_pCurLand);
         Update(m_pCurLand);*/
         for (long landId : LandIds)

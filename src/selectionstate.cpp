@@ -351,7 +351,7 @@ void SelectionState::OnUnitHexSelectionChange(long idx)
             }
         }
 
-        pOrders->SetSource(pUnit?&pUnit->Orders:nullptr,      &gpApp->m_OrdersAreChanged);
+        pOrders->SetSource(pUnit?&pUnit->Orders:nullptr,      &gpReportLoader->m_OrdersAreChanged);
         pOrders->SetReadOnly ( ReadOnly );
         pOrders->ApplyFonts();
     }
@@ -362,7 +362,7 @@ void SelectionState::OnUnitHexSelectionChange(long idx)
             // OnKillFocus event for the editor did not fire up
             pComments->OnKillFocus();
         }
-        pComments->SetSource(pUnit?&pUnit->DefOrders:nullptr, &gpApp->m_CommentsChanged);
+        pComments->SetSource(pUnit?&pUnit->DefOrders:nullptr, &gpReportLoader->m_CommentsChanged);
     }
 
     RedrawTracks();

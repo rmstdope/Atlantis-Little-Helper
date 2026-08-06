@@ -34,12 +34,12 @@
 #include "gamedatamanager.h"
 #include "uicontroller.h"
 #include "selectionstate.h"
+#include "reportloader.h"
 
 class CAhFrame;
 class CEditPane;
 class CHexFilterDlg;
 
-enum eRepSeq  {repFirst, repPrev, repNext, repLast, repLastVisited};
 enum eHexIncl {HexNew,
                HexCurrent,
                HexSelected, // inside a rectangle by mouse dragging
@@ -68,14 +68,6 @@ public:
     virtual int          OnExit() override;
 
 
-    int                  LoadReport(bool Join);
-    int                  LoadReport(const char * FNameIn, bool Join);
-    int                  SaveOrders(bool UsingExistingName);
-    void                 LoadOrders();
-
-    void                 SwitchToRep(eRepSeq whichrep);
-    bool                 CanSwitchToRep(eRepSeq whichrep, int & RepIdx);
-
     void                 WriteMagesCSV();
     void                 ShowDescriptionList(CBaseColl & Items, const char * title); // Collection of CBaseObject
     void                 ShowDescriptionList(CBaseCollById & Items, const char * title);
@@ -100,63 +92,21 @@ public:
     void                 ExportHexes();
     void                 FindTradeRoutes();
     void                 ViewMovedUnits();
-    bool                 GetPrevTurnReport(CAtlaParser *& pPrevTurn);
-
-    bool                 GetOrdersChanged(){return m_OrdersAreChanged;};
-    void                 SetOrdersChanged(bool Changed);
-    void                 StdRedirectReadMore(bool FromStdout, std::string & sData);
-    void                 CheckRedirectedOutputFiles();
-    void                 RerunOrders();
-    void                 SetAllLandUnitFlags();
     void                 ShowUnitsMovingIntoHex(long CurHexId, CPlane * pCurPlane);
     void                 ShowLandFinancial(CLand * pCurLand);
-
-    // TEMPORARY: public only because UIController (step 4) and
-    // SelectionState (step 5) bridge through gpApp-> to reach these until
-    // ReportLoader/ReportGenerator (steps 6/7) extract them for real and
-    // make them properly public there.
-    void                 SaveComments();
-    void                 SaveLandFlags();
-    void                 SaveUnitFlags();
-    bool                 m_DisableErrs;
-    bool                 m_OrdersAreChanged;
 
     std::unique_ptr<ConfigManager> m_pConfigManager;
     std::unique_ptr<GameRules> m_pGameRules;
     std::unique_ptr<GameDataManager> m_pGameData;
     std::unique_ptr<UIController> m_pUIController;
     std::unique_ptr<SelectionState> m_pSelectionState;
-
-    std::multimap<std::string, std::string> m_UnitPropertyGroups;
-
-//    bool                 m_LandFlagsChanged;
-    bool                 m_CommentsChanged;
+    std::unique_ptr<ReportLoader> m_pReportLoader;
 
 
 private:
-    int                  LoadOrders  (const char * FNameIn);
-    int                  SaveOrders  (const char * FNameOut, int FactionId);
-    int                  SaveHistory (const char * FNameOut);
-    void                 LoadComments();
-    void                 PostLoadReport();
-    void                 PreLoadReport();
-    void                 GetShortFactName(std::string & S, int FactionId);
-    void                 LoadLandFlags();
-    void                 UpdateEdgeStructs();
-    void                 LoadUnitFlags();
-
-    void                 SwitchToYearMon(long YearMon);
-
     bool                 GetExportHexOptions(std::string & FName, std::string & FMode, SAVE_HEX_OPTIONS & options, eHexIncl & HexIncl,
                                              bool & InclTurnNoAcl);
     void                 ExportOneHex(CFileWriter & Dest, CPlane * pPlane, CLand * pLand, SAVE_HEX_OPTIONS & options, bool InclTurnNoAcl, bool OnlyNew);
-    void                 StdRedirectInit();
-    void                 StdRedirectDone();
-
-
-    bool                 m_FirstLoad;
-    int                  m_nStdoutLastPos;
-    int                  m_nStderrLastPos;
 
 };
 

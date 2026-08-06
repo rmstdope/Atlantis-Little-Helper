@@ -3948,19 +3948,19 @@ void CMapPane::OnToolbarCmd(wxCommandEvent& event)
         break;
 
     case tool_nextturn  :
-        gpApp->SwitchToRep(repNext);
+        gpReportLoader->SwitchToRep(repNext);
         break;
 
     case tool_prevturn  :
-        gpApp->SwitchToRep(repPrev);
+        gpReportLoader->SwitchToRep(repPrev);
         break;
 
     case tool_lastturn  :
-        gpApp->SwitchToRep(repLast);
+        gpReportLoader->SwitchToRep(repLast);
         break;
 
     case tool_lastvisitturn  :
-        gpApp->SwitchToRep(repLastVisited);
+        gpReportLoader->SwitchToRep(repLastVisited);
         break;
 
     case tool_findhex:
@@ -4019,19 +4019,19 @@ bool CMapPane::IsToolActive(wxUpdateUIEvent& event)
         break;
 
     case tool_nextturn  :
-        Ok = gpApp->CanSwitchToRep(repNext, i);
+        Ok = gpReportLoader->CanSwitchToRep(repNext, i);
         break;
 
     case tool_prevturn  :
-        Ok = gpApp->CanSwitchToRep(repPrev, i);
+        Ok = gpReportLoader->CanSwitchToRep(repPrev, i);
         break;
 
     case tool_lastturn  :
-        Ok = gpApp->CanSwitchToRep(repLast, i);
+        Ok = gpReportLoader->CanSwitchToRep(repLast, i);
         break;
 
     case tool_lastvisitturn  :
-        Ok = gpApp->CanSwitchToRep(repLastVisited, i);
+        Ok = gpReportLoader->CanSwitchToRep(repLastVisited, i);
         break;
 
     case tool_findhex:

@@ -325,7 +325,7 @@ void UIController::ShowError(const char * msg, int msglen, bool ignore_disabled)
 {
     CEditPane * p;
 
-    if (gpApp->m_DisableErrs && !ignore_disabled)
+    if (gpReportLoader->m_DisableErrs && !ignore_disabled)
        return;
 
     OpenMsgFrame();
@@ -360,7 +360,7 @@ void UIController::SetMapFrameTitle()
         S << ")";
     }
 
-    if (gpApp->GetOrdersChanged())
+    if (gpReportLoader->GetOrdersChanged())
         S << " [modified]";
     if (pMapFrame)
         pMapFrame->SetTitle(wxString::FromAscii(S.c_str()));
@@ -370,12 +370,12 @@ void UIController::SetMapFrameTitle()
 
 bool UIController::CanCloseApp()
 {
-    gpApp->SaveLandFlags();
-    gpApp->SaveUnitFlags();
-    if (gpApp->m_CommentsChanged)
-        gpApp->SaveComments();
+    gpReportLoader->SaveLandFlags();
+    gpReportLoader->SaveUnitFlags();
+    if (gpReportLoader->m_CommentsChanged)
+        gpReportLoader->SaveComments();
 
-    return ( m_DiscardChanges || !gpApp->GetOrdersChanged() || ERR_OK==gpApp->SaveOrders(true));
+    return ( m_DiscardChanges || !gpReportLoader->GetOrdersChanged() || ERR_OK==gpReportLoader->SaveOrders(true));
 }
 
 //-------------------------------------------------------------------------
@@ -398,7 +398,7 @@ void UIController::EditPaneChanged(CEditPane * pPane)
             gpGameData->m_pAtlantis->RunOrders(pLand);
             gpSelectionState->UpdateHexUnitList(pLand);
             gpSelectionState->UpdateHexEditPane(pLand);
-            gpApp->SetOrdersChanged(gpApp->GetOrdersChanged()); // this hack is needed since EditPanes are modifying the vars directly...
+            gpReportLoader->SetOrdersChanged(gpReportLoader->GetOrdersChanged()); // this hack is needed since EditPanes are modifying the vars directly...
         }
         else if (pPane == m_Panes[AH_PANE_UNIT_COMMENTS])
         {

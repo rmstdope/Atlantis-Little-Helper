@@ -21,6 +21,7 @@ ah_sources = files(
   'src/gamedatamanager.cpp',
   'src/uicontroller.cpp',
   'src/selectionstate.cpp',
+  'src/reportloader.cpp',
   'src/ahapp.cpp',
   'src/ahframe.cpp',
   'src/consts_ah.cpp',

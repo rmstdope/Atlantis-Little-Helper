@@ -669,28 +669,28 @@ void CMapFrame::OnCloseWindow(wxCloseEvent& event)
 
 void CMapFrame::OnLoadReport(wxCommandEvent& WXUNUSED(event))
 {
-    gpApp->LoadReport(false);
+    gpReportLoader->LoadReport(false);
 }
 
 //--------------------------------------------------------------------
 
 void CMapFrame::OnJoinReport(wxCommandEvent& WXUNUSED(event))
 {
-    gpApp->LoadReport(true);
+    gpReportLoader->LoadReport(true);
 }
 
 //--------------------------------------------------------------------
 
 void CMapFrame::OnLoadOrders(wxCommandEvent& WXUNUSED(event))
 {
-    gpApp->LoadOrders();
+    gpReportLoader->LoadOrders();
 }
 
 //--------------------------------------------------------------------
 
 void CMapFrame::OnSaveOrdersAs(wxCommandEvent& WXUNUSED(event))
 {
-    gpApp->SaveOrders(false);
+    gpReportLoader->SaveOrders(false);
 }
 
 //--------------------------------------------------------------------
@@ -844,8 +844,8 @@ void CMapFrame::OnWindowEditors(wxCommandEvent& event)
 
 void CMapFrame::OnApplyDefaultOrders(wxCommandEvent& event)
 {
-    gpApp->SetOrdersChanged(gpGameData->m_pAtlantis->ApplyDefaultOrders(true) //(bool)atol(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_DEFAULT_EMPTY_ONLY)))
-                            || gpApp->GetOrdersChanged());
+    gpReportLoader->SetOrdersChanged(gpGameData->m_pAtlantis->ApplyDefaultOrders(true) //(bool)atol(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_DEFAULT_EMPTY_ONLY)))
+                            || gpReportLoader->GetOrdersChanged());
 
     CUnitPane * p = (CUnitPane*)gpUIController->m_Panes[AH_PANE_UNITS_HEX];
     if (p)
@@ -857,7 +857,7 @@ void CMapFrame::OnApplyDefaultOrders(wxCommandEvent& event)
 
 void CMapFrame::OnRerunOrders(wxCommandEvent& event)
 {
-    gpApp->RerunOrders();
+    gpReportLoader->RerunOrders();
 }
 
 //--------------------------------------------------------------------
@@ -953,7 +953,7 @@ void CMapFrame::OnFlagNames(wxCommandEvent& event)
 
 void CMapFrame::OnFlagsAllSet(wxCommandEvent& event)
 {
-    gpApp->SetAllLandUnitFlags();
+    gpReportLoader->SetAllLandUnitFlags();
 }
 
 //--------------------------------------------------------------------

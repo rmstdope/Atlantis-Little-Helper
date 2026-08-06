@@ -145,7 +145,7 @@ void CAhFrame::SetPane(int no, wxWindow * pane)
 
 void CAhFrame::OnSaveOrders(wxCommandEvent& WXUNUSED(event))
 {
-    gpApp->SaveOrders(true);
+    gpReportLoader->SaveOrders(true);
 }
 
 
