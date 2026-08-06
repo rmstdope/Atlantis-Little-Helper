@@ -199,6 +199,14 @@ CResizableDlg::CResizableDlg(wxWindow * parent, const char * title, const char *
 void CResizableDlg::SetSize()
 {
     int x, y, w=-1, h=-1;
+    wxSize minSize = GetBestSize();
+
+    if (minSize.x <= 0 || minSize.y <= 0)
+        minSize = GetSize();
+    if (minSize.x <= 0)
+        minSize.x = 200;
+    if (minSize.y <= 0)
+        minSize.y = 120;
 
     x = atol(gpConfigManager->GetConfig(m_sConfigSection.c_str(), SZ_KEY_X1));
     y = atol(gpConfigManager->GetConfig(m_sConfigSection.c_str(), SZ_KEY_Y1));
@@ -206,8 +214,14 @@ void CResizableDlg::SetSize()
     {
         w = atol(gpConfigManager->GetConfig(m_sConfigSection.c_str(), SZ_KEY_X2)) - x;
         h = atol(gpConfigManager->GetConfig(m_sConfigSection.c_str(), SZ_KEY_Y2)) - y;
+
+        if (w < minSize.x)
+            w = minSize.x;
+        if (h < minSize.y)
+            h = minSize.y;
     }
 
+    wxDialog::SetMinSize(minSize);
     wxDialog::SetSize(x, y, w, h, wxSIZE_ALLOW_MINUS_ONE);
 }
 
@@ -241,7 +255,6 @@ void CResizableDlg::OnClose(wxCloseEvent& event)
 }
 
 //==========================================================================
-
 
 
 
