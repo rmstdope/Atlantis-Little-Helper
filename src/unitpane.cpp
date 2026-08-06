@@ -174,7 +174,7 @@ void CUnitPane::Update(CLand * pLand)
 
 
     if ((0==m_pUnits->Count()) || !FullUpdate) // otherwise will be called from OnSelected()
-        gpApp->OnUnitHexSelectionChange(GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED));
+        gpSelectionState->OnUnitHexSelectionChange(GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED));
 }
 
 //--------------------------------------------------------------------------
@@ -356,7 +356,7 @@ void CUnitPane::OnSelected(wxListEvent& event)
         if (m_pCurLand)
             m_pCurLand->guiUnit = pUnit->Id;
 
-        gpApp->OnUnitHexSelectionChange(event.m_itemIndex);
+        gpSelectionState->OnUnitHexSelectionChange(event.m_itemIndex);
     }
 }
 

@@ -30,6 +30,7 @@
 #include "consts_ah.h"
 #include "configmanager.h"
 #include "gamedatamanager.h"
+#include "selectionstate.h"
 #include "ahapp.h"
 #include "ahframe.h"
 #include "mapframe.h"
@@ -256,7 +257,7 @@ void UIController::OpenMsgFrame()
     {
         m_Frames[AH_FRAME_MSG] = new CMsgFrame(m_Frames[AH_FRAME_MAP]);
         m_Frames[AH_FRAME_MSG]->Init(m_layout, nullptr);
-        gpApp->m_MsgSrc.clear();
+        gpSelectionState->m_MsgSrc.clear();
         m_Frames[AH_FRAME_MSG]->Show(true);
     }
     else
@@ -328,11 +329,11 @@ void UIController::ShowError(const char * msg, int msglen, bool ignore_disabled)
        return;
 
     OpenMsgFrame();
-    AddStr(gpApp->m_MsgSrc, msg, msglen);
+    AddStr(gpSelectionState->m_MsgSrc, msg, msglen);
 
     p = (CEditPane*)m_Panes[AH_PANE_MSG];
     if (p)
-        p->SetSource(&gpApp->m_MsgSrc, nullptr);
+        p->SetSource(&gpSelectionState->m_MsgSrc, nullptr);
 }
 
 //-------------------------------------------------------------------------
@@ -395,18 +396,18 @@ void UIController::EditPaneChanged(CEditPane * pPane)
 
             // TBD: is it needed? m_pCurLand->guiUnit = m_pUnitListPane->GetCurrentUnitId();
             gpGameData->m_pAtlantis->RunOrders(pLand);
-            gpApp->UpdateHexUnitList(pLand);
-            gpApp->UpdateHexEditPane(pLand);
+            gpSelectionState->UpdateHexUnitList(pLand);
+            gpSelectionState->UpdateHexEditPane(pLand);
             gpApp->SetOrdersChanged(gpApp->GetOrdersChanged()); // this hack is needed since EditPanes are modifying the vars directly...
         }
         else if (pPane == m_Panes[AH_PANE_UNIT_COMMENTS])
         {
             // selected unit's comments / default orders have been changed
-            pUnit = gpApp->GetSelectedUnit(); // depends on m_SelUnitIdx
+            pUnit = gpSelectionState->GetSelectedUnit(); // depends on m_SelUnitIdx
             if (pUnit)
             {
                 pUnit->ExtractCommentsFromDefOrders();
-                gpApp->UpdateHexUnitList(pLand);
+                gpSelectionState->UpdateHexUnitList(pLand);
             }
         }
     }
@@ -463,7 +464,7 @@ void UIController::EditPaneDClicked(CEditPane * pPane)
             if (gpGameData->m_pAtlantis->m_Units.Search(&Dummy, idx))
             {
                 pUnit = (CUnit*)gpGameData->m_pAtlantis->m_Units.At(idx);
-                gpApp->SelectUnit(pUnit);
+                gpSelectionState->SelectUnit(pUnit);
                 return;
             }
         }
@@ -478,7 +479,7 @@ void UIController::EditPaneDClicked(CEditPane * pPane)
             if (')'==ch && gpGameData->m_pAtlantis->m_Units.Search(&Dummy, idx))
             {
                 pUnit = (CUnit*)gpGameData->m_pAtlantis->m_Units.At(idx);
-                gpApp->SelectUnit(pUnit);
+                gpSelectionState->SelectUnit(pUnit);
                 return;
             }
         }
@@ -489,7 +490,7 @@ void UIController::EditPaneDClicked(CEditPane * pPane)
         if ('('==ch)
         {
             p = SkipSpaces(GetToken(S, p, ")\n", ch, TRIM_ALL));
-            if (')' == ch && gpApp->SelectLand(S.c_str()))
+            if (')' == ch && gpSelectionState->SelectLand(S.c_str()))
                 return;
         }
     }

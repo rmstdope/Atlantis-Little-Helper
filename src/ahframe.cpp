@@ -153,21 +153,21 @@ void CAhFrame::OnSaveOrders(wxCommandEvent& WXUNUSED(event))
 
 void CAhFrame::OnNextUnit(wxCommandEvent& event)
 {
-    gpApp->SelectNextUnit();
+    gpSelectionState->SelectNextUnit();
 }
 
 //--------------------------------------------------------------------------
 
 void CAhFrame::OnPrevUnit(wxCommandEvent& event)
 {
-    gpApp->SelectPrevUnit();
+    gpSelectionState->SelectPrevUnit();
 }
 
 //--------------------------------------------------------------------------
 
 void CAhFrame::OnUnitList(wxCommandEvent& event)
 {
-    gpApp->SelectUnitsPane();
+    gpSelectionState->SelectUnitsPane();
 }
 
 //--------------------------------------------------------------------------
@@ -175,7 +175,7 @@ void CAhFrame::OnUnitList(wxCommandEvent& event)
 
 void CAhFrame::OnOrders(wxCommandEvent& event)
 {
-    gpApp->SelectOrdersPane();
+    gpSelectionState->SelectOrdersPane();
 }
 
 //--------------------------------------------------------------------------

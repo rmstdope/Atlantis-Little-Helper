@@ -33,6 +33,7 @@
 #include "gamerules.h"
 #include "gamedatamanager.h"
 #include "uicontroller.h"
+#include "selectionstate.h"
 
 class CAhFrame;
 class CEditPane;
@@ -71,17 +72,9 @@ public:
     int                  LoadReport(const char * FNameIn, bool Join);
     int                  SaveOrders(bool UsingExistingName);
     void                 LoadOrders();
-    CUnit              * GetSelectedUnit();
-
-    void                 SelectUnit(CUnit * pUnit);
-    bool                 SelectLand(const char * landcoords); //  "48,52[,somewhere]"
-    void                 SelectLand(CLand * pLand);
 
     void                 SwitchToRep(eRepSeq whichrep);
     bool                 CanSwitchToRep(eRepSeq whichrep, int & RepIdx);
-
-    void                 OnMapSelectionChange();
-    void                 OnUnitHexSelectionChange(long idx);
 
     void                 WriteMagesCSV();
     void                 ShowDescriptionList(CBaseColl & Items, const char * title); // Collection of CBaseObject
@@ -117,33 +110,22 @@ public:
     void                 SetAllLandUnitFlags();
     void                 ShowUnitsMovingIntoHex(long CurHexId, CPlane * pCurPlane);
     void                 ShowLandFinancial(CLand * pCurLand);
-    void                 AddTempHex(int X, int Y, int Plane);
-    void                 DelTempHex(int X, int Y, int Plane);
-    
-    void                 SelectNextUnit();
-    void                 SelectPrevUnit();
-    void                 SelectUnitsPane();
-    void                 SelectOrdersPane();
 
-    // TEMPORARY: public only because UIController (step 4) bridges through
-    // gpApp-> to reach these until SelectionState/ReportLoader (steps 5/6)
-    // extract them for real and make them properly public there.
+    // TEMPORARY: public only because UIController (step 4) and
+    // SelectionState (step 5) bridge through gpApp-> to reach these until
+    // ReportLoader/ReportGenerator (steps 6/7) extract them for real and
+    // make them properly public there.
     void                 SaveComments();
     void                 SaveLandFlags();
     void                 SaveUnitFlags();
-    void                 UpdateHexEditPane(CLand * pLand);
-    void                 UpdateHexUnitList(CLand * pLand);
-
-    // TEMPORARY: public only because UIController (step 4) bridges through
-    // gpApp-> to reach these until SelectionState/ReportLoader (steps 5/6)
-    // extract them for real.
-    std::string          m_MsgSrc;
     bool                 m_DisableErrs;
+    bool                 m_OrdersAreChanged;
 
     std::unique_ptr<ConfigManager> m_pConfigManager;
     std::unique_ptr<GameRules> m_pGameRules;
     std::unique_ptr<GameDataManager> m_pGameData;
     std::unique_ptr<UIController> m_pUIController;
+    std::unique_ptr<SelectionState> m_pSelectionState;
 
     std::multimap<std::string, std::string> m_UnitPropertyGroups;
 
@@ -158,7 +140,6 @@ private:
     void                 LoadComments();
     void                 PostLoadReport();
     void                 PreLoadReport();
-    void                 RedrawTracks();
     void                 GetShortFactName(std::string & S, int FactionId);
     void                 LoadLandFlags();
     void                 UpdateEdgeStructs();
@@ -171,14 +152,9 @@ private:
     void                 ExportOneHex(CFileWriter & Dest, CPlane * pPlane, CLand * pLand, SAVE_HEX_OPTIONS & options, bool InclTurnNoAcl, bool OnlyNew);
     void                 StdRedirectInit();
     void                 StdRedirectDone();
-    void                 SelectTempUnit(CUnit * pUnit);
 
 
     bool                 m_FirstLoad;
-    std::string                 m_HexDescrSrc;
-    std::string                 m_UnitDescrSrc;
-    long                 m_SelUnitIdx;
-    bool                 m_OrdersAreChanged;
     int                  m_nStdoutLastPos;
     int                  m_nStderrLastPos;
 

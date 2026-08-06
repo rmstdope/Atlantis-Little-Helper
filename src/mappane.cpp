@@ -254,7 +254,7 @@ void CMapPane::Init(CAhFrame * pParentFrame)
     ApplyIcons();
     ApplyColors();
     //UpdateEditPane();
-    gpApp->OnMapSelectionChange();
+    gpSelectionState->OnMapSelectionChange();
 }
 
 //--------------------------------------------------------------------------
@@ -2779,7 +2779,7 @@ void CMapPane::OnPaint(wxPaintEvent &WXUNUSED(event))
 
     DrawRing(&dc, &rect, pPlane);
 
-    pUnit = gpApp->GetSelectedUnit();
+    pUnit = gpSelectionState->GetSelectedUnit();
     RedrawTracksForUnit(pPlane, pUnit, &dc, false);
 
     DrawCitiesAndWeather(&dc, &rect, pPlane);
@@ -2890,7 +2890,7 @@ void CMapPane::SelectHex(int NoX, int NoY)
                 m_AtlaY0 += (wy+m_HexHalfHeight - height + m_HexHalfHeight);
 
         //UpdateEditPane();
-        gpApp->OnMapSelectionChange();
+        gpSelectionState->OnMapSelectionChange();
     }
 }
 */
@@ -3282,7 +3282,7 @@ void CMapPane::SetSelection(int nx, int ny, CUnit * pUnit, CPlane * pPlane, bool
 
         RedrawTracksForUnit(pPlane, pUnit, &dc, false);
         DrawCitiesAndWeather(&dc, &rect, pPlane);
-        gpApp->OnMapSelectionChange();
+        gpSelectionState->OnMapSelectionChange();
         
         DrawRing(&dc, &rect, pPlane);
     }
@@ -3552,7 +3552,7 @@ void CMapPane::OnMouseEvent(wxMouseEvent& event)
         StartRectangle(xpos, ypos);
         GetHexNo(nx, ny, xpos, ypos);
         nx = NormalizeHexX(nx, pPlane);
-        SetSelection(nx, ny, gpApp->GetSelectedUnit(), pPlane, false);
+        SetSelection(nx, ny, gpSelectionState->GetSelectedUnit(), pPlane, false);
     }
 
     else if (event.LeftUp())
@@ -3771,7 +3771,7 @@ void CMapPane::OnPopupMenuFlag(wxCommandEvent& WXUNUSED(event))
 
 //        gpApp->m_LandFlagsChanged = true;
         Refresh(false);
-        gpApp->OnMapSelectionChange();
+        gpSelectionState->OnMapSelectionChange();
     }
 }
 
@@ -3830,8 +3830,8 @@ void CMapPane::OnPopupFinancial   (wxCommandEvent & event)
 void CMapPane::OnPopupNewHex(wxCommandEvent & event)
 {
     CPlane * pPlane   = (CPlane*)gpGameData->m_pAtlantis->m_Planes.At(m_SelPlane);
-    gpApp->AddTempHex(m_SelHexX, m_SelHexY, m_SelPlane);
-    SetSelection(m_SelHexX, m_SelHexY, nullptr /*gpApp->GetSelectedUnit()*/, pPlane, true);
+    gpSelectionState->AddTempHex(m_SelHexX, m_SelHexY, m_SelPlane);
+    SetSelection(m_SelHexX, m_SelHexY, nullptr /*gpSelectionState->GetSelectedUnit()*/, pPlane, true);
 }
 
 
@@ -3841,8 +3841,8 @@ void CMapPane::OnPopupNewHex(wxCommandEvent & event)
 void CMapPane::OnPopupDeleteHex(wxCommandEvent & event)
 {
     CPlane * pPlane   = (CPlane*)gpGameData->m_pAtlantis->m_Planes.At(m_SelPlane);
-    gpApp->DelTempHex(m_SelHexX, m_SelHexY, m_SelPlane);
-    SetSelection(m_SelHexX, m_SelHexY, nullptr /*gpApp->GetSelectedUnit()*/, pPlane, true);
+    gpSelectionState->DelTempHex(m_SelHexX, m_SelHexY, m_SelPlane);
+    SetSelection(m_SelHexX, m_SelHexY, nullptr /*gpSelectionState->GetSelectedUnit()*/, pPlane, true);
 }
 
 //--------------------------------------------------------------------------
@@ -3932,7 +3932,7 @@ void CMapPane::OnToolbarCmd(wxCommandEvent& event)
             m_SelPlane--;
             LoadPlaneConfig();
             Refresh(false, nullptr);
-            gpApp->OnMapSelectionChange();
+            gpSelectionState->OnMapSelectionChange();
         }
         break;
 
@@ -3943,7 +3943,7 @@ void CMapPane::OnToolbarCmd(wxCommandEvent& event)
             m_SelPlane++;
             LoadPlaneConfig();
             Refresh(false, nullptr);
-            gpApp->OnMapSelectionChange();
+            gpSelectionState->OnMapSelectionChange();
         }
         break;
 

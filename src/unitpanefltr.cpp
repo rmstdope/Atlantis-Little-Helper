@@ -389,7 +389,7 @@ void CUnitPaneFltr::OnSelected(wxListEvent& event)
         return;
     CUnit       * pUnit     = GetUnit(event.m_itemIndex);
 
-    gpApp->SelectUnit(pUnit);
+    gpSelectionState->SelectUnit(pUnit);
 }
 
 

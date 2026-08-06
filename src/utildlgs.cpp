@@ -86,7 +86,7 @@ CShowOneDescriptionDlg::CShowOneDescriptionDlg(wxWindow * parent, const char * t
     {
         p = GetToken(S, p, '(', TRIM_ALL);
         p = GetToken(S, p, ')', TRIM_ALL);
-        if (gpApp->SelectLand(S.c_str()))
+        if (gpSelectionState->SelectLand(S.c_str()))
             break;
     }
 }
@@ -292,7 +292,7 @@ void CShowDescriptionListDlg::OnLBSelect(wxCommandEvent & event)
         {
             p = GetToken(S, p, '(', TRIM_ALL);
             p = GetToken(S, p, ')', TRIM_ALL);
-            if (gpApp->SelectLand(S.c_str()))
+            if (gpSelectionState->SelectLand(S.c_str()))
                 break;
         }
     }
