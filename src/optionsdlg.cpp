@@ -283,12 +283,21 @@ void COptionsDialog::Init()
         m_pRadioIconsSimple->SetValue(true);
 
 
-    m_pComboFonts   ->SetSelection(0);
-    m_pComboColors  ->SetSelection(0);
-    m_pComboFactions->SetSelection(0);
+    if (m_pComboFonts->GetCount() > 0)
+        m_pComboFonts->SetSelection(0);
+    if (m_pComboColors->GetCount() > 0)
+        m_pComboColors->SetSelection(0);
+    if (m_pComboFactions->GetCount() > 0)
+    {
+        m_pComboFactions->SetSelection(0);
 
-    wxCommandEvent event;
-    OnFaction(event);
+        wxCommandEvent event;
+        OnFaction(event);
+    }
+    else
+    {
+        m_pTxtPassword->SetValue("");
+    }
 }
 
 
@@ -491,6 +500,12 @@ void COptionsDialog::OnColor    (wxCommandEvent& event)
 
 void COptionsDialog::OnFaction(wxCommandEvent& event)
 {
+    if (wxNOT_FOUND == m_pComboFactions->GetSelection())
+    {
+        m_pTxtPassword->SetValue("");
+        return;
+    }
+
     m_pTxtPassword->SetValue( wxString::FromAscii(gpApp->GetConfig(SZ_SECT_PASSWORDS, m_pComboFactions->GetStringSelection().mb_str())));
 }
 
@@ -498,8 +513,10 @@ void COptionsDialog::OnFaction(wxCommandEvent& event)
 
 void COptionsDialog::OnPassword(wxCommandEvent& event)
 {
+    if (wxNOT_FOUND == m_pComboFactions->GetSelection())
+        return;
+
     gpApp->SetConfig(SZ_SECT_PASSWORDS, m_pComboFactions->GetStringSelection().mb_str(), m_pTxtPassword->GetValue().mb_str());
 }
 
 //--------------------------------------------------------------------------
-
