@@ -299,13 +299,44 @@ void ColorToStr(char * p, size_t n, wxColour * cr)
 
 void MakePathRelative(const char * cur_dir, std::string & path)
 {
-    const char * p = path.c_str();
-    std::string         rel_path;
+    const char * p          = path.c_str();
+    const char * cd         = cur_dir;
+    const char * lastSep_p  = nullptr;
+    const char * lastSep_cd = nullptr;
+    std::string  rel_path;
 
-    while (*p && EQUAL_PATH_CHARS(*p, *cur_dir) )
+    while (*p && EQUAL_PATH_CHARS(*p, *cd) )
     {
+        if (*p == SEP)
+        {
+            lastSep_p  = p;
+            lastSep_cd = cd;
+        }
         p++;
-        cur_dir++;
+        cd++;
+    }
+
+    // The match only lands on a genuine shared path component if it stopped
+    // exactly at a separator (or end of string) on BOTH sides - e.g. cur_dir
+    // fully consumed with path continuing at a fresh '/'. Otherwise it
+    // stopped mid-segment - e.g. matching just the "A" shared by
+    // "Atlantis..." and "ALH2..." - which is a coincidental character
+    // collision, not a shared directory/file name, so roll back to the last
+    // separator both sides actually agreed on.
+    bool boundary_p  = (*p  == '\0' || *p  == SEP);
+    bool boundary_cd = (*cd == '\0' || *cd == SEP);
+    if (!(boundary_p && boundary_cd))
+    {
+        if (lastSep_p)
+        {
+            p  = lastSep_p  + 1;
+            cd = lastSep_cd + 1;
+        }
+        else
+        {
+            p  = path.c_str();
+            cd = cur_dir;
+        }
     }
 
     if (*p==SEP)
@@ -313,12 +344,12 @@ void MakePathRelative(const char * cur_dir, std::string & path)
     else
         rel_path << ".." << SEP;
 
-    while (*cur_dir)
+    while (*cd)
     {
-        if (*cur_dir == SEP)
+        if (*cd == SEP)
             rel_path << ".." << SEP;
 
-        cur_dir++;
+        cd++;
     }
 
     rel_path << p;
