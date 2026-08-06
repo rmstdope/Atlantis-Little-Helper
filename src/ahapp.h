@@ -31,6 +31,7 @@
 #include "atlaparser.h"
 #include "configmanager.h"
 #include "gamerules.h"
+#include "gamedatamanager.h"
 
 enum
 {
@@ -199,9 +200,9 @@ public:
     void                 SelectUnitsPane();
     void                 SelectOrdersPane();
 
-    std::unique_ptr<CAtlaParser> m_pAtlantis;
     std::unique_ptr<ConfigManager> m_pConfigManager;
     std::unique_ptr<GameRules> m_pGameRules;
+    std::unique_ptr<GameDataManager> m_pGameData;
 
     CAhFrame           * m_Frames[AH_FRAME_COUNT];
     wxWindow           * m_Panes [AH_PANE_COUNT ];
@@ -247,8 +248,6 @@ private:
     void                 SelectTempUnit(CUnit * pUnit);
 
 
-    std::vector<std::unique_ptr<CAtlaParser>> m_Reports;
-    std::vector<long>    m_ReportDates;
     bool                 m_FirstLoad;
     std::string                 m_HexDescrSrc;
     std::string                 m_UnitDescrSrc;

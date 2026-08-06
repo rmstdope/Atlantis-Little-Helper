@@ -214,10 +214,10 @@ void ConfigManager::UpgradeConfigByFactionId()
     const char * szName;
     const char * szValue;
 
-    if (gpApp->m_pAtlantis->m_CrntFactionId > 0)
+    if (gpGameData->m_pAtlantis->m_CrntFactionId > 0)
     {
         // Upgrade order files
-        ComposeConfigOrdersSection(Section, gpApp->m_pAtlantis->m_CrntFactionId);
+        ComposeConfigOrdersSection(Section, gpGameData->m_pAtlantis->m_CrntFactionId);
         fileno  = GetConfigFileNo(SZ_SECT_ORDERS);
         idx     = m_Config[fileno].GetFirstInSection(SZ_SECT_ORDERS, szName, szValue);
         while (idx>=0)
@@ -233,7 +233,7 @@ void ConfigManager::UpgradeConfigByFactionId()
         if (!S.empty())
         {
             Key.clear();
-            Key << (long)gpApp->m_pAtlantis->m_CrntFactionId;
+            Key << (long)gpGameData->m_pAtlantis->m_CrntFactionId;
             SetConfig(SZ_SECT_PASSWORDS, Key.c_str() , S.c_str() );
             SetConfig(SZ_SECT_COMMON   , SZ_KEY_PWD_OLD, (const char *)nullptr);
         }

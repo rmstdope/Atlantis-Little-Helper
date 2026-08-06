@@ -526,7 +526,7 @@ void CUnitPane::OnPopupMenuTeach (wxCommandEvent& event)
         if (m_pCurLand)
             m_pCurLand->guiUnit = pUnit->Id;
 
-        gpApp->SetOrdersChanged(gpApp->m_pAtlantis->GenOrdersTeach(pUnit)
+        gpApp->SetOrdersChanged(gpGameData->m_pAtlantis->GenOrdersTeach(pUnit)
                                || gpApp->GetOrdersChanged());
         Update(m_pCurLand);
     }
@@ -576,7 +576,7 @@ void CUnitPane::OnPopupMenuShareSilv  (wxCommandEvent& event)
         if (m_pCurLand)
             m_pCurLand->guiUnit = pUnit->Id;
 
-        gpApp->SetOrdersChanged(gpApp->m_pAtlantis->ShareSilver(pUnit)
+        gpApp->SetOrdersChanged(gpGameData->m_pAtlantis->ShareSilver(pUnit)
                                || gpApp->GetOrdersChanged());
         Update(m_pCurLand);
     }
@@ -603,7 +603,7 @@ void CUnitPane::OnPopupMenuGiveEverything (wxCommandEvent& event)
 
         N = wxGetTextFromUser(wxT("Give everything to unit"), wxT("Confirm"));
 
-        gpApp->SetOrdersChanged(gpApp->m_pAtlantis->GenGiveEverything(pUnit, N.mb_str())
+        gpApp->SetOrdersChanged(gpGameData->m_pAtlantis->GenGiveEverything(pUnit, N.mb_str())
                                || gpApp->GetOrdersChanged());
         Update(m_pCurLand);
     }
@@ -627,7 +627,7 @@ void CUnitPane::OnPopupMenuDiscardJunk(wxCommandEvent& WXUNUSED(event))
         if (m_pCurLand)
             m_pCurLand->guiUnit = pUnit->Id;
 
-        gpApp->SetOrdersChanged(gpApp->m_pAtlantis->DiscardJunkItems(pUnit, gpConfigManager->GetConfig(SZ_SECT_UNITPROP_GROUPS, PRP_JUNK_ITEMS))
+        gpApp->SetOrdersChanged(gpGameData->m_pAtlantis->DiscardJunkItems(pUnit, gpConfigManager->GetConfig(SZ_SECT_UNITPROP_GROUPS, PRP_JUNK_ITEMS))
                                || gpApp->GetOrdersChanged());
         Update(m_pCurLand);
     }
@@ -656,7 +656,7 @@ void CUnitPane::OnPopupMenuDetectSpies(wxCommandEvent& WXUNUSED(event))
         if (m_pCurLand)
             m_pCurLand->guiUnit = pUnit->Id;
 
-        gpApp->SetOrdersChanged(gpApp->m_pAtlantis->DetectSpies(pUnit,
+        gpApp->SetOrdersChanged(gpGameData->m_pAtlantis->DetectSpies(pUnit,
                                                                 atol(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_SPY_DETECT_LO)),
                                                                 atol(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_SPY_DETECT_HI)),
                                                                 atol(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_SPY_DETECT_AMT)))
@@ -820,7 +820,7 @@ void CUnitPane::OnPopupMenuIssueOrders(wxCommandEvent& event)
     if (Changed)
     {
         gpApp->SetOrdersChanged(true);
-        gpApp->m_pAtlantis->RunOrders(m_pCurLand);
+        gpGameData->m_pAtlantis->RunOrders(m_pCurLand);
         Update(m_pCurLand);
     }
 }

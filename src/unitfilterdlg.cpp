@@ -229,7 +229,7 @@ void CUnitFilterDlg::Init()
         m_cbProperty[count]->Append(wxT(""));
         m_cbCompare [count]->Append(wxT(""));
 
-        for (const auto& propname : gpApp->m_pAtlantis->m_UnitPropertyNames)
+        for (const auto& propname : gpGameData->m_pAtlantis->m_UnitPropertyNames)
         {
             item = propname.c_str();
 
@@ -490,8 +490,8 @@ void CUnitFilterDlg::OnBoxesChange  (wxCommandEvent& event)
 
                 EValueType type = eLong;
                 {
-                    auto it__ = gpApp->m_pAtlantis->m_UnitPropertyTypes.find(s1.c_str());
-                    if (it__ != gpApp->m_pAtlantis->m_UnitPropertyTypes.end())
+                    auto it__ = gpGameData->m_pAtlantis->m_UnitPropertyTypes.find(s1.c_str());
+                    if (it__ != gpGameData->m_pAtlantis->m_UnitPropertyTypes.end())
                         type = (EValueType)it__->second;
                 }
                 if (eCharPtr == type)

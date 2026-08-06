@@ -103,7 +103,7 @@ void CUnitPaneFltr::Update(CUnitFilterDlg * pFilter)
     const char     * p;
     std::string             S;
     bool             bUsePython = false;
-    CPythonEmbedder  Python(gpApp->m_pAtlantis.get());
+    CPythonEmbedder  Python(gpGameData->m_pAtlantis.get());
     Python.SetErrorCallback([](const char* msg, int len){ gpApp->ShowError(msg, len, true); });
     eEErr            rcPy = E_OK;
     std::string             sPythonText, sRealPythonText;
@@ -237,8 +237,8 @@ void CUnitPaneFltr::Update(CUnitFilterDlg * pFilter)
                     pUnit = (CUnit*)pLand->Units.At(i);
                 if (!pUnit) // that's the one!
                 {
-                    if (gpApp->m_pAtlantis->m_Units.Search(pPrevUnit, i))
-                        pUnit = (CUnit*)gpApp->m_pAtlantis->m_Units.At(i);
+                    if (gpGameData->m_pAtlantis->m_Units.Search(pPrevUnit, i))
+                        pUnit = (CUnit*)gpGameData->m_pAtlantis->m_Units.At(i);
                     ok = true;
                 }
                 if (!pUnit)
@@ -255,7 +255,7 @@ void CUnitPaneFltr::Update(CUnitFilterDlg * pFilter)
                     InsertUnit(pUnit);
                     if (ShowOnMap)
                     {
-                        CLand * pUnitLand = gpApp->m_pAtlantis->GetLand(pUnit->LandId);
+                        CLand * pUnitLand = gpGameData->m_pAtlantis->GetLand(pUnit->LandId);
                         if (pUnitLand)
                             pUnitLand->Flags |=  LAND_LOCATED_UNITS;
                     }
@@ -283,7 +283,7 @@ void CUnitPaneFltr::Update(CUnitFilterDlg * pFilter)
                         break; // execution must never fail!
                 }
                 else
-                    ok = EvaluateBaseObjectByBoxes(pUnit, Property, CompareOp, sValue, lValue, UNIT_SIMPLE_FLTR_COUNT, gpApp->m_pAtlantis.get());
+                    ok = EvaluateBaseObjectByBoxes(pUnit, Property, CompareOp, sValue, lValue, UNIT_SIMPLE_FLTR_COUNT, gpGameData->m_pAtlantis.get());
     
                 if (ok)
                 {
@@ -334,9 +334,9 @@ void CUnitPaneFltr::ClearLandFlags()
     CPlane * pPlane;
     CLand  * pLand;
 
-    for (np=0; np<gpApp->m_pAtlantis->m_Planes.Count(); np++)
+    for (np=0; np<gpGameData->m_pAtlantis->m_Planes.Count(); np++)
     {
-        pPlane = (CPlane*)gpApp->m_pAtlantis->m_Planes.At(np);
+        pPlane = (CPlane*)gpGameData->m_pAtlantis->m_Planes.At(np);
         for (nl=0; nl<pPlane->Lands.Count(); nl++)
         {
             pLand    = (CLand*)pPlane->Lands.At(nl);
@@ -498,12 +498,12 @@ void CUnitPaneFltr::OnPopupMenuIssueOrders(wxCommandEvent& event)
     if (!LandIds.empty())
     {
         gpApp->SetOrdersChanged(true);
-/*        gpApp->m_pAtlantis->RunOrders(m_pCurLand);
+/*        gpGameData->m_pAtlantis->RunOrders(m_pCurLand);
         Update(m_pCurLand);*/
         for (long landId : LandIds)
         {
-            pLand = gpApp->m_pAtlantis->GetLand(landId);
-            gpApp->m_pAtlantis->RunOrders(pLand);
+            pLand = gpGameData->m_pAtlantis->GetLand(landId);
+            gpGameData->m_pAtlantis->RunOrders(pLand);
         }
         pUnitPane = (CUnitPane*)gpApp->m_Panes[AH_PANE_UNITS_HEX];
         if (pUnitPane)

@@ -554,7 +554,7 @@ void CMapFrame::OnToolbarUpdate(wxUpdateUIEvent& event)
 
 void CMapFrame::OnViewBattlesAllUpdate(wxUpdateUIEvent& event)
 {
-    event.Enable(gpApp->m_pAtlantis->m_Battles.Count()>0);
+    event.Enable(gpGameData->m_pAtlantis->m_Battles.Count()>0);
 }
 
 
@@ -574,7 +574,7 @@ void CMapFrame::OnViewSkillsAllUpdate(wxUpdateUIEvent& event)
 
 void CMapFrame::OnViewSkillsNewUpdate(wxUpdateUIEvent& event)
 {
-    event.Enable(gpApp->m_pAtlantis->m_Skills.Count()>0);
+    event.Enable(gpGameData->m_pAtlantis->m_Skills.Count()>0);
 }
 
 
@@ -594,7 +594,7 @@ void CMapFrame::OnViewItemsAllUpdate(wxUpdateUIEvent& event)
 
 void CMapFrame::OnViewItemsNewUpdate(wxUpdateUIEvent& event)
 {
-    event.Enable(gpApp->m_pAtlantis->m_Items.Count()>0);
+    event.Enable(gpGameData->m_pAtlantis->m_Items.Count()>0);
 }
 
 //--------------------------------------------------------------------
@@ -613,42 +613,42 @@ void CMapFrame::OnViewObjectsAllUpdate(wxUpdateUIEvent& event)
 
 void CMapFrame::OnViewObjectsNewUpdate(wxUpdateUIEvent& event)
 {
-    event.Enable(gpApp->m_pAtlantis->m_Objects.Count()>0);
+    event.Enable(gpGameData->m_pAtlantis->m_Objects.Count()>0);
 }
 
 //--------------------------------------------------------------------
 
 void CMapFrame::OnViewEventsUpdate(wxUpdateUIEvent& event)
 {
-    event.Enable(!gpApp->m_pAtlantis->m_Events.Description.empty());
+    event.Enable(!gpGameData->m_pAtlantis->m_Events.Description.empty());
 }
 
 //--------------------------------------------------------------------
 
 void CMapFrame::OnViewSecurityEventsUpdate(wxUpdateUIEvent& event)
 {
-    event.Enable(!gpApp->m_pAtlantis->m_SecurityEvents.Description.empty());
+    event.Enable(!gpGameData->m_pAtlantis->m_SecurityEvents.Description.empty());
 }
 
 //--------------------------------------------------------------------
 
 void CMapFrame::OnViewNewProductsUpdate(wxUpdateUIEvent& event)
 {
-    event.Enable(gpApp->m_pAtlantis->m_NewProducts.Count() > 0);
+    event.Enable(gpGameData->m_pAtlantis->m_NewProducts.Count() > 0);
 }
 
 //--------------------------------------------------------------------
 
 void CMapFrame::OnViewErrorsUpdate(wxUpdateUIEvent& event)
 {
-    event.Enable(!gpApp->m_pAtlantis->m_Errors.Description.empty());
+    event.Enable(!gpGameData->m_pAtlantis->m_Errors.Description.empty());
 }
 
 //--------------------------------------------------------------------
 
 void CMapFrame::OnViewGatesUpdate(wxUpdateUIEvent& event)
 {
-    event.Enable(gpApp->m_pAtlantis->m_Gates.Count()>0);
+    event.Enable(gpGameData->m_pAtlantis->m_Gates.Count()>0);
 }
 
 //--------------------------------------------------------------------
@@ -704,42 +704,42 @@ void CMapFrame::OnOptions(wxCommandEvent& event)
 
 void CMapFrame::OnViewSkillsAll(wxCommandEvent& event)
 {
-    gpApp->ViewShortNamedObjects(true, SZ_SECT_SKILLS, "Skills", gpApp->m_pAtlantis->m_Skills);
+    gpApp->ViewShortNamedObjects(true, SZ_SECT_SKILLS, "Skills", gpGameData->m_pAtlantis->m_Skills);
 }
 
 //--------------------------------------------------------------------
 
 void CMapFrame::OnViewSkillsNew(wxCommandEvent& event)
 {
-    gpApp->ViewShortNamedObjects(false, SZ_SECT_SKILLS, "Skills", gpApp->m_pAtlantis->m_Skills);
+    gpApp->ViewShortNamedObjects(false, SZ_SECT_SKILLS, "Skills", gpGameData->m_pAtlantis->m_Skills);
 }
 
 //--------------------------------------------------------------------
 
 void CMapFrame::OnViewItemsAll(wxCommandEvent& event)
 {
-    gpApp->ViewShortNamedObjects(true, SZ_SECT_ITEMS, "Items", gpApp->m_pAtlantis->m_Items);
+    gpApp->ViewShortNamedObjects(true, SZ_SECT_ITEMS, "Items", gpGameData->m_pAtlantis->m_Items);
 }
 
 //--------------------------------------------------------------------
 
 void CMapFrame::OnViewItemsNew(wxCommandEvent& event)
 {
-    gpApp->ViewShortNamedObjects(false, SZ_SECT_ITEMS, "Items", gpApp->m_pAtlantis->m_Items);
+    gpApp->ViewShortNamedObjects(false, SZ_SECT_ITEMS, "Items", gpGameData->m_pAtlantis->m_Items);
 }
 
 //--------------------------------------------------------------------
 
 void CMapFrame::OnViewObjectsAll(wxCommandEvent& event)
 {
-    gpApp->ViewShortNamedObjects(true, SZ_SECT_OBJECTS, "Objects", gpApp->m_pAtlantis->m_Objects);
+    gpApp->ViewShortNamedObjects(true, SZ_SECT_OBJECTS, "Objects", gpGameData->m_pAtlantis->m_Objects);
 }
 
 //--------------------------------------------------------------------
 
 void CMapFrame::OnViewObjectsNew(wxCommandEvent& event)
 {
-    gpApp->ViewShortNamedObjects(false, SZ_SECT_OBJECTS, "Objects", gpApp->m_pAtlantis->m_Objects);
+    gpApp->ViewShortNamedObjects(false, SZ_SECT_OBJECTS, "Objects", gpGameData->m_pAtlantis->m_Objects);
 }
 
 //--------------------------------------------------------------------
@@ -844,7 +844,7 @@ void CMapFrame::OnWindowEditors(wxCommandEvent& event)
 
 void CMapFrame::OnApplyDefaultOrders(wxCommandEvent& event)
 {
-    gpApp->SetOrdersChanged(gpApp->m_pAtlantis->ApplyDefaultOrders(true) //(bool)atol(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_DEFAULT_EMPTY_ONLY)))
+    gpApp->SetOrdersChanged(gpGameData->m_pAtlantis->ApplyDefaultOrders(true) //(bool)atol(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_DEFAULT_EMPTY_ONLY)))
                             || gpApp->GetOrdersChanged());
 
     CUnitPane * p = (CUnitPane*)gpApp->m_Panes[AH_PANE_UNITS_HEX];

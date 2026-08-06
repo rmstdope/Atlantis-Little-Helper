@@ -185,7 +185,7 @@ void CListHeaderEditDlg::LoadListSrc()
 {
     m_SourceIdx       = -1;
     m_lstSource->ClearAll();
-    for (const auto& propname : gpApp->m_pAtlantis->m_UnitPropertyNames)
+    for (const auto& propname : gpGameData->m_pAtlantis->m_UnitPropertyNames)
     {
         m_lstSource->InsertItem(m_lstSource->GetItemCount() , wxString::FromAscii(propname.c_str()));
     }
@@ -307,8 +307,8 @@ void  CListHeaderEditDlg::AddItem()
     else
     {
         {
-            auto it__ = gpApp->m_pAtlantis->m_UnitPropertyTypes.find(Dummy.PropName.c_str());
-            if (it__ != gpApp->m_pAtlantis->m_UnitPropertyTypes.end())
+            auto it__ = gpGameData->m_pAtlantis->m_UnitPropertyTypes.find(Dummy.PropName.c_str());
+            if (it__ != gpGameData->m_pAtlantis->m_UnitPropertyTypes.end())
                 if (eLong == (EValueType)it__->second)
                     flags = LIST_FLAG_ALIGN_RIGHT;
         }

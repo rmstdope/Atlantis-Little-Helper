@@ -99,8 +99,9 @@ CAhApp::CAhApp() : m_HexDescrSrc    (),
     m_pGameRules = std::make_unique<GameRules>();
     gpGameRules  = m_pGameRules.get();
 
-    m_pAtlantis.reset(new CAtlaParser(gpGameRules));
-    m_pAtlantis->m_pConfig = &gpConfigManager->m_Config[CONFIG_FILE_CONFIG];
+    m_pGameData = std::make_unique<GameDataManager>();
+    gpGameData  = m_pGameData.get();
+
     m_Brightness_Delta = 0;
     m_nStdoutLastPos = 0;
     m_nStderrLastPos = 0;
@@ -108,6 +109,7 @@ CAhApp::CAhApp() : m_HexDescrSrc    (),
 
 CAhApp::~CAhApp()
 {
+    gpGameData = nullptr;
     gpGameRules = nullptr;
     gpConfigManager = nullptr;
     gpApp = nullptr;
@@ -191,19 +193,8 @@ bool CAhApp::OnInit()
 
 
     gpGameRules->Init();
+    gpGameData->Init();
 
-    // Read list of year/month for report
-    i = gpConfigManager->GetSectionFirst(SZ_SECT_REPORTS, szName, szValue);
-    while (i>=0)
-    {
-        {
-            long _val = atol(szName);
-            auto _it = std::lower_bound(m_ReportDates.begin(), m_ReportDates.end(), _val);
-            if (_it == m_ReportDates.end() || *_it != _val)
-                m_ReportDates.insert(_it, _val);
-        }
-        i = gpConfigManager->GetSectionNext (i, SZ_SECT_REPORTS, szName, szValue);
-    }
     StdRedirectInit();
 
     CreateAccelerator();
@@ -230,10 +221,10 @@ bool CAhApp::OnInit()
         for (i=1; i<argc; i++)
             LoadReport(wxString(argv[i]).mb_str(), i>1);
     else
-        if (atol(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_LOAD_REP)) && (((int)m_ReportDates.size()) > 0) )
+        if (atol(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_LOAD_REP)) && (((int)gpGameData->m_ReportDates.size()) > 0) )
         {
             S.clear();
-            S << m_ReportDates[(int)m_ReportDates.size()-1];
+            S << gpGameData->m_ReportDates[(int)gpGameData->m_ReportDates.size()-1];
             S2 = gpConfigManager->GetConfig(SZ_SECT_REPORTS, S.c_str());
             const char * p = S2.c_str();
             bool         join = false;
@@ -274,12 +265,12 @@ int CAhApp::OnExit()
     {
         gpConfigManager->Save();
 
-        if (m_pAtlantis && ERR_OK==m_pAtlantis->m_ParseErr)
+        if (gpGameData->m_pAtlantis && ERR_OK==gpGameData->m_pAtlantis->m_ParseErr)
             SaveHistory(SZ_HISTORY_FILE);
     }
 
-    m_Reports.clear();
-    m_pAtlantis.reset();
+    gpGameData->m_Reports.clear();
+    gpGameData->m_pAtlantis.reset();
     m_pAccel.reset();
 
     for (i=0; i<FONT_COUNT; i++)
@@ -519,14 +510,14 @@ void CAhApp::GetShortFactName(std::string & S, int FactionId)
 
     S.clear();
 //    Dummy.Id = FactionId;
-//    if (m_pAtlantis->m_Factions.Search(&Dummy, idx))
+//    if (gpGameData->m_pAtlantis->m_Factions.Search(&Dummy, idx))
 //    {
-//        pFaction = (CFaction*)m_pAtlantis->m_Factions.At(idx);
+//        pFaction = (CFaction*)gpGameData->m_pAtlantis->m_Factions.At(idx);
 //        S = pFaction->Name;
 //    }
 //    else
 //        S << (long)FactionId;
-    pFaction = m_pAtlantis->GetFaction(FactionId);
+    pFaction = gpGameData->m_pAtlantis->GetFaction(FactionId);
     if (pFaction)
         S = pFaction->Name;
     else
@@ -565,7 +556,7 @@ void CAhApp::SetMapFrameTitle()
 
     if (pMapPane)
     {
-        pPlane = (CPlane*)m_pAtlantis->m_Planes.At(pMapPane->m_SelPlane);
+        pPlane = (CPlane*)gpGameData->m_pAtlantis->m_Planes.At(pMapPane->m_SelPlane);
 
         S << " (" << pMapPane->m_SelHexX << "," << pMapPane->m_SelHexY;
         if (pPlane && 0!=stricmp(DEFAULT_PLANE, pPlane->Name.c_str()))
@@ -599,14 +590,14 @@ int CAhApp::SaveOrders(bool UsingExistingName)
     std::string S, FName, Section;
     int  i, id, err=ERR_OK;
 
-    for (i=0; i<((int)m_pAtlantis->m_OurFactions.size()); i++)
+    for (i=0; i<((int)gpGameData->m_pAtlantis->m_OurFactions.size()); i++)
     {
-        id = m_pAtlantis->m_OurFactions[i];
+        id = gpGameData->m_pAtlantis->m_OurFactions[i];
         if (UsingExistingName)
         {
             gpConfigManager->ComposeConfigOrdersSection(Section, id);
             S.clear();
-            S << (long)m_pAtlantis->m_YearMon;
+            S << (long)gpGameData->m_pAtlantis->m_YearMon;
             FName = gpConfigManager->GetConfig(Section.c_str(), S.c_str());
             TrimRight(FName, TRIM_ALL);
         }
@@ -639,7 +630,7 @@ int  CAhApp::SaveOrders(const char * FNameOut, int FactionId)
     gpConfigManager->ComposeConfigOrdersSection(Section, FactionId);
     if (FName.empty())
     {
-        Format(S, "%d", m_pAtlantis->m_YearMon);
+        Format(S, "%d", gpGameData->m_pAtlantis->m_YearMon);
         FName = gpConfigManager->GetConfig(Section.c_str(), S.c_str());
         TrimRight(FName, TRIM_ALL);
 
@@ -648,9 +639,9 @@ int  CAhApp::SaveOrders(const char * FNameOut, int FactionId)
             GetShortFactName(S, FactionId);
             if (S.empty())
                 S << (long)FactionId;
-            Format(FName, "%s%04d.ord", S.c_str(), m_pAtlantis->m_YearMon);
+            Format(FName, "%s%04d.ord", S.c_str(), gpGameData->m_pAtlantis->m_YearMon);
         }
-        pFaction = m_pAtlantis->GetFaction(FactionId);
+        pFaction = gpGameData->m_pAtlantis->GetFaction(FactionId);
 
         Prompt = "Save orders for ";
         if (pFaction)
@@ -697,14 +688,14 @@ int  CAhApp::SaveOrders(const char * FNameOut, int FactionId)
     Key.clear();
     Key << (long)FactionId;
 
-    err = m_pAtlantis->SaveOrders(FName.c_str(),
+    err = gpGameData->m_pAtlantis->SaveOrders(FName.c_str(),
                                   gpConfigManager->GetConfig(SZ_SECT_PASSWORDS, Key.c_str()),
                                   (bool)atol(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_DECORATE_ORDERS)),
                                   FactionId
                                  );
     if (ERR_OK==err)
     {
-        snprintf(buf, sizeof(buf), "%ld", m_pAtlantis->m_YearMon);
+        snprintf(buf, sizeof(buf), "%ld", gpGameData->m_pAtlantis->m_YearMon);
         gpConfigManager->SetConfig(Section.c_str(), buf, FName.c_str());
     }
 
@@ -712,7 +703,7 @@ int  CAhApp::SaveOrders(const char * FNameOut, int FactionId)
     gpConfigManager->m_Config[CONFIG_FILE_CONFIG].Save(SZ_CONFIG_FILE);
     gpConfigManager->m_Config[CONFIG_FILE_STATE ].Save(SZ_CONFIG_STATE_FILE);
 
-    if (ERR_OK==m_pAtlantis->m_ParseErr)
+    if (ERR_OK==gpGameData->m_pAtlantis->m_ParseErr)
         SaveHistory(SZ_HISTORY_FILE);
 
     return err;
@@ -729,7 +720,7 @@ void CAhApp::RedrawTracks()
     if (!pMapPane)
         return;
 
-    pPlane   = (CPlane*)m_pAtlantis->m_Planes.At(pMapPane->m_SelPlane);
+    pPlane   = (CPlane*)gpGameData->m_pAtlantis->m_Planes.At(pMapPane->m_SelPlane);
     pMapPane->RedrawTracksForUnit(pPlane, pUnit, nullptr, true);
 }
 
@@ -757,11 +748,11 @@ int  CAhApp::LoadOrders  (const char * FNameIn)
 
 
     FName = FNameIn;  // FNameIn can be coming from config, so do not use it directly!
-    err = m_pAtlantis->LoadOrders(FName.c_str(), factid);
+    err = gpGameData->m_pAtlantis->LoadOrders(FName.c_str(), factid);
     if (ERR_OK==err)
     {
         S.clear();
-        S << (long)m_pAtlantis->m_YearMon;
+        S << (long)gpGameData->m_pAtlantis->m_YearMon;
         gpConfigManager->ComposeConfigOrdersSection(Sect, factid);
         gpConfigManager->SetConfig(Sect.c_str(), S.c_str(), FName.c_str());
 
@@ -843,9 +834,9 @@ void CAhApp::LoadComments()
     char          buf[32];
     std::string          S;
 
-    for (i=0; i<m_pAtlantis->m_Units.Count(); i++)
+    for (i=0; i<gpGameData->m_pAtlantis->m_Units.Count(); i++)
     {
-        pUnit = (CUnit*)m_pAtlantis->m_Units.At(i);
+        pUnit = (CUnit*)gpGameData->m_pAtlantis->m_Units.At(i);
         snprintf(buf, sizeof(buf), "%ld", pUnit->Id);
 
         DecodeConfigLine(pUnit->DefOrders, gpConfigManager->GetConfig(SZ_SECT_DEF_ORDERS, buf));
@@ -866,10 +857,10 @@ void CAhApp::SaveComments()
     std::string          S;
     const char  * p;
 
-    for (i=0; i<m_pAtlantis->m_Units.Count(); i++)
+    for (i=0; i<gpGameData->m_pAtlantis->m_Units.Count(); i++)
     {
         S.clear();
-        pUnit = (CUnit*)m_pAtlantis->m_Units.At(i);
+        pUnit = (CUnit*)gpGameData->m_pAtlantis->m_Units.At(i);
         TrimRight(pUnit->DefOrders, TRIM_ALL);
         if (pUnit->DefOrders.size() > 0)
         {
@@ -894,9 +885,9 @@ void CAhApp::LoadUnitFlags()
     char          buf[32];
     std::string          S;
 
-    for (i=0; i<m_pAtlantis->m_Units.Count(); i++)
+    for (i=0; i<gpGameData->m_pAtlantis->m_Units.Count(); i++)
     {
-        pUnit = (CUnit*)m_pAtlantis->m_Units.At(i);
+        pUnit = (CUnit*)gpGameData->m_pAtlantis->m_Units.At(i);
         snprintf(buf, sizeof(buf), "%ld", pUnit->Id);
 
         x = atol(gpConfigManager->GetConfig(SZ_SECT_UNIT_FLAGS, buf));
@@ -918,9 +909,9 @@ void CAhApp::SaveUnitFlags()
     char          buf[32];
     std::string          S;
 
-    for (i=0; i<m_pAtlantis->m_Units.Count(); i++)
+    for (i=0; i<gpGameData->m_pAtlantis->m_Units.Count(); i++)
     {
-        pUnit = (CUnit*)m_pAtlantis->m_Units.At(i);
+        pUnit = (CUnit*)gpGameData->m_pAtlantis->m_Units.At(i);
         snprintf(buf, sizeof(buf), "%ld", pUnit->Id);
 
         S.clear();
@@ -947,9 +938,9 @@ void CAhApp::SetAllLandUnitFlags()
 
     if ((ID_BTN_SET_ALL_LAND==rc || ID_BTN_RMV_ALL_LAND==rc) && dlg.m_LandFlags>0)
     {
-        for (n=0; n<m_pAtlantis->m_Planes.Count(); n++)
+        for (n=0; n<gpGameData->m_pAtlantis->m_Planes.Count(); n++)
         {
-            pPlane = (CPlane*)m_pAtlantis->m_Planes.At(n);
+            pPlane = (CPlane*)gpGameData->m_pAtlantis->m_Planes.At(n);
             for (i=0; i<pPlane->Lands.Count(); i++)
             {
                 pLand = (CLand*)pPlane->Lands.At(i);
@@ -982,9 +973,9 @@ void CAhApp::SetAllLandUnitFlags()
 
     if ( (ID_BTN_SET_ALL_UNIT==rc || ID_BTN_RMV_ALL_UNIT==rc) && dlg.m_UnitFlags>0 )
     {
-        for (i=0; i<m_pAtlantis->m_Units.Count(); i++)
+        for (i=0; i<gpGameData->m_pAtlantis->m_Units.Count(); i++)
         {
-            pUnit = (CUnit*)m_pAtlantis->m_Units.At(i);
+            pUnit = (CUnit*)gpGameData->m_pAtlantis->m_Units.At(i);
 
             if (ID_BTN_SET_ALL_UNIT==rc)
             {
@@ -1017,9 +1008,9 @@ void CAhApp::SaveLandFlags()
     long         ym_first;
     const char * p;
 
-    for (n=0; n<m_pAtlantis->m_Planes.Count(); n++)
+    for (n=0; n<gpGameData->m_pAtlantis->m_Planes.Count(); n++)
     {
-        pPlane = (CPlane*)m_pAtlantis->m_Planes.At(n);
+        pPlane = (CPlane*)gpGameData->m_pAtlantis->m_Planes.At(n);
         for (i=0; i<pPlane->Lands.Count(); i++)
         {
             pLand = (CLand*)pPlane->Lands.At(i);
@@ -1034,7 +1025,7 @@ void CAhApp::SaveLandFlags()
                     sData << (long)f << ":" << pLand->FlagText[f];
                 }
             }
-            m_pAtlantis->ComposeLandStrCoord(pLand, sName);
+            gpGameData->m_pAtlantis->ComposeLandStrCoord(pLand, sName);
 
 
             if (!sData.empty() || (pLand->Flags & LAND_HAS_FLAGS)) // allow to remove flags
@@ -1046,16 +1037,16 @@ void CAhApp::SaveLandFlags()
                 p        = GetToken(sData, gpConfigManager->GetConfig(SZ_SECT_LAND_VISITED, sName.c_str()), ',');
                 ym_last  = atol(sData.c_str());
                 if (sData.empty())
-                    ym_first = m_pAtlantis->m_YearMon;
+                    ym_first = gpGameData->m_pAtlantis->m_YearMon;
                 else
                 {
                     p        = GetToken(sData, SkipSpaces(p), ',');
                     ym_first = atol(sData.c_str());
                 }
-                if (ym_last < m_pAtlantis->m_YearMon)
+                if (ym_last < gpGameData->m_pAtlantis->m_YearMon)
                 {
                     sData.clear();
-                    sData << m_pAtlantis->m_YearMon << "," << ym_first;
+                    sData << gpGameData->m_pAtlantis->m_YearMon << "," << ym_first;
                     gpConfigManager->SetConfig(SZ_SECT_LAND_VISITED, sName.c_str(), sData.c_str());
                 }
             }
@@ -1080,7 +1071,7 @@ void CAhApp::LoadLandFlags()
     sectidx = gpConfigManager->GetSectionFirst(SZ_SECT_LAND_FLAGS, szName, szValue);
     while (sectidx >= 0)
     {
-        pLand   = m_pAtlantis->GetLand(szName);
+        pLand   = gpGameData->m_pAtlantis->GetLand(szName);
         if (pLand)
         {
             DecodeConfigLine(sData, szValue);
@@ -1124,9 +1115,9 @@ void CAhApp::UpdateEdgeStructs()
     CLand      * pLand, * adj_land;
     CStruct    * pEdge;
 
-    for (n=0; n<m_pAtlantis->m_Planes.Count(); n++)
+    for (n=0; n<gpGameData->m_pAtlantis->m_Planes.Count(); n++)
     {
-        pPlane = (CPlane*)m_pAtlantis->m_Planes.At(n);
+        pPlane = (CPlane*)gpGameData->m_pAtlantis->m_Planes.At(n);
         for (i=0; i<pPlane->Lands.Count(); i++)
         {
             pLand = (CLand*)pPlane->Lands.At(i);
@@ -1193,12 +1184,12 @@ void CAhApp::WriteMagesCSV()
 
 
 //    GetShortFactName(S);
-//    Format(FName, "%s_%s%04d.csv", S.c_str(), "mages", m_pAtlantis->m_YearMon);
-    Format(FName, "%s%04d.csv", "mages", m_pAtlantis->m_YearMon);
+//    Format(FName, "%s_%s%04d.csv", S.c_str(), "mages", gpGameData->m_pAtlantis->m_YearMon);
+    Format(FName, "%s%04d.csv", "mages", gpGameData->m_pAtlantis->m_YearMon);
 
     CExportMagesCSVDlg Dlg(m_Frames[AH_FRAME_MAP], FName.c_str());
     if (wxID_OK == Dlg.ShowModal())
-        m_pAtlantis->WriteMagesCSV(Dlg.m_pFileName->GetValue().mb_str(),
+        gpGameData->m_pAtlantis->WriteMagesCSV(Dlg.m_pFileName->GetValue().mb_str(),
                                    0==SafeCmp(Dlg.m_pOrientation->GetValue().mb_str(), SZ_VERTICAL),
                                    Dlg.m_pSeparator->GetValue().mb_str(),
                                    Dlg.m_nFormat
@@ -1252,7 +1243,7 @@ void CAhApp::CheckTaxDetails  (CLand  * pLand, CTaxProdDetailsCollByFaction & Ta
         pDetail = (CTaxProdDetails*)Factions.At(x);
         OneLine.clear();
 
-        m_pAtlantis->ComposeLandStrCoord(pLand, sCoord);
+        gpGameData->m_pAtlantis->ComposeLandStrCoord(pLand, sCoord);
         OneLine << pLand->TerrainType << " (" << sCoord << ") ";
         while (OneLine.size() < 24)
             AddCh(OneLine, ' ');
@@ -1290,7 +1281,7 @@ void CAhApp::CheckTradeDetails(CLand  * pLand, CTaxProdDetailsCollByFaction & Tr
     CTaxProdDetailsCollByFaction AllFactions;
     std::string OneLine;
 
-//    m_pAtlantis->ComposeLandStrCoord(pLand, sCoord);
+//    gpGameData->m_pAtlantis->ComposeLandStrCoord(pLand, sCoord);
 //    Details << pLand->TerrainType << " (" << sCoord << "). ";
 
     for (k=0; k<pLand->Products.Count(); k++)
@@ -1357,7 +1348,7 @@ void CAhApp::CheckTradeDetails(CLand  * pLand, CTaxProdDetailsCollByFaction & Tr
         {
             pFactionInfo = (CTaxProdDetails*)Factions.At(x);
 
-            m_pAtlantis->ComposeLandStrCoord(pLand, sCoord);
+            gpGameData->m_pAtlantis->ComposeLandStrCoord(pLand, sCoord);
             OneLine.clear();
             OneLine << pLand->TerrainType << " (" << sCoord << ") ";
             while (OneLine.size() < 24)
@@ -1400,9 +1391,9 @@ void CAhApp::CheckTaxTrade()
     CTaxProdDetailsCollByFaction  Trades;
     CTaxProdDetails              *pDetails;
 
-    for (n=0; n<m_pAtlantis->m_Planes.Count(); n++)
+    for (n=0; n<gpGameData->m_pAtlantis->m_Planes.Count(); n++)
     {
-        pPlane = (CPlane*)m_pAtlantis->m_Planes.At(n);
+        pPlane = (CPlane*)gpGameData->m_pAtlantis->m_Planes.At(n);
         for (i=0; i<pPlane->Lands.Count(); i++)
         {
             pLand = (CLand*)pPlane->Lands.At(i);
@@ -1444,16 +1435,16 @@ void CAhApp::CheckProduction()
     CUnit  * pUnit;
     std::string Error, S;
 
-    for (n=0; n<m_pAtlantis->m_Planes.Count(); n++)
+    for (n=0; n<gpGameData->m_pAtlantis->m_Planes.Count(); n++)
     {
-        pPlane = (CPlane*)m_pAtlantis->m_Planes.At(n);
+        pPlane = (CPlane*)gpGameData->m_pAtlantis->m_Planes.At(n);
         for (i=0; i<pPlane->Lands.Count(); i++)
         {
             pLand = (CLand*)pPlane->Lands.At(i);
             for (x=0; x<pLand->Units.Count(); x++)
             {
                 pUnit = (CUnit*)pLand->Units.At(x);
-                if (!m_pAtlantis->CheckResourcesForProduction(pUnit, pLand, S))
+                if (!gpGameData->m_pAtlantis->CheckResourcesForProduction(pUnit, pLand, S))
                     Error << "Unit " << pUnit->Id << " " << S << EOL_SCR;
             }
         }
@@ -1479,13 +1470,13 @@ void CAhApp::CheckSailing()
     CStruct* pStruct;
     std::string Error, S, sCoord;
 
-    for (n=0; n<m_pAtlantis->m_Planes.Count(); n++)
+    for (n=0; n<gpGameData->m_pAtlantis->m_Planes.Count(); n++)
     {
-        pPlane = (CPlane*)m_pAtlantis->m_Planes.At(n);
+        pPlane = (CPlane*)gpGameData->m_pAtlantis->m_Planes.At(n);
         for (i=0; i<pPlane->Lands.Count(); i++)
         {
             pLand = (CLand*)pPlane->Lands.At(i);
-            m_pAtlantis->ComposeLandStrCoord(pLand, sCoord);
+            gpGameData->m_pAtlantis->ComposeLandStrCoord(pLand, sCoord);
             for (x=0; x<pLand->Structs.Count(); x++)
             {
                 pStruct = (CStruct*)pLand->Structs.At(x);
@@ -1514,8 +1505,8 @@ void CAhApp::CheckSailing()
 
 #define SET_UNIT_PROP_NAME(_name, _type)                                 \
 {                                                                        \
-    m_pAtlantis->m_UnitPropertyNames.insert(_name);                      \
-    m_pAtlantis->m_UnitPropertyTypes.emplace(_name, (int)(_type));       \
+    gpGameData->m_pAtlantis->m_UnitPropertyNames.insert(_name);                      \
+    gpGameData->m_pAtlantis->m_UnitPropertyTypes.emplace(_name, (int)(_type));       \
 }
 
 void CAhApp::PreLoadReport()
@@ -1529,7 +1520,7 @@ void CAhApp::PreLoadReport()
     if (GetOrdersChanged())
         SaveOrders(true);
 
-    if (ERR_OK==m_pAtlantis->m_ParseErr)
+    if (ERR_OK==gpGameData->m_pAtlantis->m_ParseErr)
         SaveHistory(SZ_HISTORY_FILE);
 
 
@@ -1562,26 +1553,26 @@ void CAhApp::PostLoadReport()
 
     // count number of our men in every hex
 
-    m_pAtlantis->CountMenForTheFaction(m_pAtlantis->m_CrntFactionId);
+    gpGameData->m_pAtlantis->CountMenForTheFaction(gpGameData->m_pAtlantis->m_CrntFactionId);
 
     if (pMapFrame)
     {
         m_sTitle.clear();
 
-        for (i=0; i<((int)m_pAtlantis->m_OurFactions.size()); i++)
+        for (i=0; i<((int)gpGameData->m_pAtlantis->m_OurFactions.size()); i++)
         {
-            pFaction = m_pAtlantis->GetFaction(m_pAtlantis->m_OurFactions[i]);
+            pFaction = gpGameData->m_pAtlantis->GetFaction(gpGameData->m_pAtlantis->m_OurFactions[i]);
             if (pFaction)
             {
                 if (!m_sTitle.empty())
                     m_sTitle << ", ";
-                if (((int)m_pAtlantis->m_OurFactions.size())<3)
+                if (((int)gpGameData->m_pAtlantis->m_OurFactions.size())<3)
                     m_sTitle << pFaction->Name << " ";
                 m_sTitle << (long)pFaction->Id;
             }
         }
-        year = (long)(m_pAtlantis->m_YearMon/100);
-        mon  = m_pAtlantis->m_YearMon % 100 - 1;
+        year = (long)(gpGameData->m_pAtlantis->m_YearMon/100);
+        mon  = gpGameData->m_pAtlantis->m_YearMon % 100 - 1;
         if ( (mon >= 0) && (mon < 12) )
             m_sTitle << ". " << Monthes[mon] << " year " << year;
         SetMapFrameTitle();
@@ -1622,29 +1613,29 @@ void CAhApp::PostLoadReport()
 
 
     // If no orders loaded, no movement will be calculated. Force it.
-    if (!m_pAtlantis->m_OrdersLoaded)
+    if (!gpGameData->m_pAtlantis->m_OrdersLoaded)
     {
-        for (i=0; i<m_pAtlantis->m_Units.Count(); i++)
+        for (i=0; i<gpGameData->m_pAtlantis->m_Units.Count(); i++)
         {
-            pUnit = (CUnit*)m_pAtlantis->m_Units.At(i);
+            pUnit = (CUnit*)gpGameData->m_pAtlantis->m_Units.At(i);
             pUnit->ResetNormalProperties();
         }
 
-        for (n=0; n<m_pAtlantis->m_Planes.Count(); n++)
+        for (n=0; n<gpGameData->m_pAtlantis->m_Planes.Count(); n++)
         {
-            pPlane = (CPlane*)m_pAtlantis->m_Planes.At(n);
+            pPlane = (CPlane*)gpGameData->m_pAtlantis->m_Planes.At(n);
             for (i=0; i<pPlane->Lands.Count(); i++)
             {
                 ((CLand*)pPlane->Lands.At(i))->CalcStructsLoad();
-                ((CLand*)pPlane->Lands.At(i))->SetFlagsFromUnits(m_pAtlantis.get()); // maybe not needed here...
+                ((CLand*)pPlane->Lands.At(i))->SetFlagsFromUnits(gpGameData->m_pAtlantis.get()); // maybe not needed here...
             }
         }
     }
 
     // skills
-    for (i=0; i<m_pAtlantis->m_Skills.Count(); i++)
+    for (i=0; i<gpGameData->m_pAtlantis->m_Skills.Count(); i++)
     {
-        pItem = (CShortNamedObj*)m_pAtlantis->m_Skills.At(i);
+        pItem = (CShortNamedObj*)gpGameData->m_pAtlantis->m_Skills.At(i);
 
 
         EncodeConfigLine(S, pItem->Description.c_str());
@@ -1652,18 +1643,18 @@ void CAhApp::PostLoadReport()
     }
 
     // Items
-    for (i=0; i<m_pAtlantis->m_Items.Count(); i++)
+    for (i=0; i<gpGameData->m_pAtlantis->m_Items.Count(); i++)
     {
-        pItem = (CShortNamedObj*)m_pAtlantis->m_Items.At(i);
+        pItem = (CShortNamedObj*)gpGameData->m_pAtlantis->m_Items.At(i);
 
         EncodeConfigLine(S, pItem->Description.c_str());
         gpConfigManager->SetConfig(SZ_SECT_ITEMS, pItem->Name.c_str(), S.c_str());
     }
 
     // Objects
-    for (i=0; i<m_pAtlantis->m_Objects.Count(); i++)
+    for (i=0; i<gpGameData->m_pAtlantis->m_Objects.Count(); i++)
     {
-        pItem = (CShortNamedObj*)m_pAtlantis->m_Objects.At(i);
+        pItem = (CShortNamedObj*)gpGameData->m_pAtlantis->m_Objects.At(i);
 
         EncodeConfigLine(S, pItem->Description.c_str());
         gpConfigManager->SetConfig(SZ_SECT_OBJECTS, pItem->Name.c_str(), S.c_str());
@@ -1678,7 +1669,7 @@ void CAhApp::PostLoadReport()
 
     long savedUnitId = 0;
     // Restore the last selected unit in the selected hex
-    if (pMapPane && m_pAtlantis)
+    if (pMapPane && gpGameData->m_pAtlantis)
     {
         std::string   sSection;
         sSection << "PLANE_" << pMapPane->m_SelPlane;
@@ -1687,7 +1678,7 @@ void CAhApp::PostLoadReport()
             savedUnitId = atol(savedUnitStr);
         if (savedUnitId)
         {
-            CLand * pLand = m_pAtlantis->GetLand(pMapPane->m_SelHexX, pMapPane->m_SelHexY, pMapPane->m_SelPlane, true);
+            CLand * pLand = gpGameData->m_pAtlantis->GetLand(pMapPane->m_SelHexX, pMapPane->m_SelHexY, pMapPane->m_SelPlane, true);
             if (pLand)
                 pLand->guiUnit = savedUnitId;
         }
@@ -1696,24 +1687,24 @@ void CAhApp::PostLoadReport()
     OnMapSelectionChange();
 
     // if there were Hex Events, show them
-    if (!m_pAtlantis->m_HexEvents.Description.empty())
+    if (!gpGameData->m_pAtlantis->m_HexEvents.Description.empty())
     {
         CBaseColl   Coll;
-        Coll.Insert(&m_pAtlantis->m_HexEvents);
+        Coll.Insert(&gpGameData->m_pAtlantis->m_HexEvents);
         ShowDescriptionList(Coll, "Hex Events");
     }
 
     // show newly discovered products (advanced resources), if any
-    if (m_pAtlantis->m_NewProducts.Count() > 0)
-        ShowDescriptionList(m_pAtlantis->m_NewProducts, "New products");
+    if (gpGameData->m_pAtlantis->m_NewProducts.Count() > 0)
+        ShowDescriptionList(gpGameData->m_pAtlantis->m_NewProducts, "New products");
 
     if (pUnitPaneF)
         pUnitPaneF->Update(nullptr);
 
     CheckRedirectedOutputFiles();
     
-    if (!m_pAtlantis->m_SecurityEvents.Description.empty())
-        m_pAtlantis->m_SecurityEvents.Description << EOL_SCR << EOL_SCR;
+    if (!gpGameData->m_pAtlantis->m_SecurityEvents.Description.empty())
+        gpGameData->m_pAtlantis->m_SecurityEvents.Description << EOL_SCR << EOL_SCR;
 }
 
 //-------------------------------------------------------------------------
@@ -1739,34 +1730,34 @@ int  CAhApp::LoadReport  (const char * FNameIn, bool Join)
 
         if (!m_FirstLoad && !Join)
         {
-            auto cachedCurrent = std::move(m_pAtlantis);
+            auto cachedCurrent = std::move(gpGameData->m_pAtlantis);
             if (cachedCurrent)
             {
                 const long cachedYear = cachedCurrent->m_YearMon;
-                auto reportIt = std::lower_bound(m_Reports.begin(), m_Reports.end(), cachedYear,
+                auto reportIt = std::lower_bound(gpGameData->m_Reports.begin(), gpGameData->m_Reports.end(), cachedYear,
                     [](const std::unique_ptr<CAtlaParser>& report, long year)
                     {
                         return report->m_YearMon < year;
                     });
-                if (reportIt != m_Reports.end() && (*reportIt)->m_YearMon == cachedYear)
-                    reportIt = m_Reports.erase(reportIt);
-                m_Reports.insert(reportIt, std::move(cachedCurrent));
+                if (reportIt != gpGameData->m_Reports.end() && (*reportIt)->m_YearMon == cachedYear)
+                    reportIt = gpGameData->m_Reports.erase(reportIt);
+                gpGameData->m_Reports.insert(reportIt, std::move(cachedCurrent));
             }
-            m_pAtlantis.reset(new CAtlaParser(gpGameRules));
-            m_pAtlantis->m_pConfig = &gpConfigManager->m_Config[CONFIG_FILE_CONFIG];
+            gpGameData->m_pAtlantis.reset(new CAtlaParser(gpGameRules));
+            gpGameData->m_pAtlantis->m_pConfig = &gpConfigManager->m_Config[CONFIG_FILE_CONFIG];
         }
 
         if (!Join)
         {
-            m_pAtlantis->Clear();
-            m_pAtlantis->ParseRep(SZ_HISTORY_FILE, false, true);
+            gpGameData->m_pAtlantis->Clear();
+            gpGameData->m_pAtlantis->ParseRep(SZ_HISTORY_FILE, false, true);
         }
 
         // Append unit group property names here so they are available while parsing
         for (auto & upg__ : m_UnitPropertyGroups)
             SET_UNIT_PROP_NAME(upg__.first.c_str(), eLong)
 
-        err = m_pAtlantis->ParseRep(FName.c_str(), Join, false);
+        err = gpGameData->m_pAtlantis->ParseRep(FName.c_str(), Join, false);
         switch (err)
         {
             case ERR_INV_TURN:
@@ -1775,29 +1766,29 @@ int  CAhApp::LoadReport  (const char * FNameIn, bool Join)
         }
         SetOrdersChanged(false);
         m_CommentsChanged = false;
-        if ( ERR_OK==err && m_pAtlantis->m_YearMon != 0 && m_pAtlantis->m_CrntFactionId != 0 )
+        if ( ERR_OK==err && gpGameData->m_pAtlantis->m_YearMon != 0 && gpGameData->m_pAtlantis->m_CrntFactionId != 0 )
         {
             {
-                long _ym = m_pAtlantis->m_YearMon;
-                auto _it = std::lower_bound(m_ReportDates.begin(), m_ReportDates.end(), _ym);
-                if (_it == m_ReportDates.end() || *_it != _ym)
-                    m_ReportDates.insert(_it, _ym);
+                long _ym = gpGameData->m_pAtlantis->m_YearMon;
+                auto _it = std::lower_bound(gpGameData->m_ReportDates.begin(), gpGameData->m_ReportDates.end(), _ym);
+                if (_it == gpGameData->m_ReportDates.end() || *_it != _ym)
+                    gpGameData->m_ReportDates.insert(_it, _ym);
             }
             gpConfigManager->UpgradeConfigByFactionId();
 
-            if (atol(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_PWD_READ)) && !m_pAtlantis->m_CrntFactionPwd.empty())
+            if (atol(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_PWD_READ)) && !gpGameData->m_pAtlantis->m_CrntFactionPwd.empty())
             {
                 S.clear();
-                S << (long)m_pAtlantis->m_CrntFactionId;
-                gpConfigManager->SetConfig(SZ_SECT_PASSWORDS, S.c_str(), m_pAtlantis->m_CrntFactionPwd.c_str() );
+                S << (long)gpGameData->m_pAtlantis->m_CrntFactionId;
+                gpConfigManager->SetConfig(SZ_SECT_PASSWORDS, S.c_str(), gpGameData->m_pAtlantis->m_CrntFactionPwd.c_str() );
             }
 
             LoadOrd = atol(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_LOAD_ORDER));
             if (LoadOrd)
             {
                 S.clear();
-                S << (long)m_pAtlantis->m_YearMon;
-                gpConfigManager->ComposeConfigOrdersSection(Sect, m_pAtlantis->m_CrntFactionId);
+                S << (long)gpGameData->m_pAtlantis->m_YearMon;
+                gpConfigManager->ComposeConfigOrdersSection(Sect, gpGameData->m_pAtlantis->m_CrntFactionId);
                 LoadOrders(gpConfigManager->GetConfig(Sect.c_str(), S.c_str()));
             }
         }
@@ -1807,11 +1798,11 @@ int  CAhApp::LoadReport  (const char * FNameIn, bool Join)
         LoadUnitFlags();
         PostLoadReport();
 
-        if ( (ERR_OK==err) && (m_pAtlantis->m_YearMon != 0) )
+        if ( (ERR_OK==err) && (gpGameData->m_pAtlantis->m_YearMon != 0) )
         {
             // doing it after PostLoadReport() since it will check the section
             S.clear();
-            S << (long)m_pAtlantis->m_YearMon;
+            S << (long)gpGameData->m_pAtlantis->m_YearMon;
             if (!Join)
                 gpConfigManager->SetConfig(SZ_SECT_REPORTS, S.c_str(), FName.c_str());
             else
@@ -1831,22 +1822,22 @@ int  CAhApp::LoadReport  (const char * FNameIn, bool Join)
                 n = 1;
 
             const long maxCachedReports = n - 1;
-            auto currentPos = std::lower_bound(m_Reports.begin(), m_Reports.end(), m_pAtlantis->m_YearMon,
+            auto currentPos = std::lower_bound(gpGameData->m_Reports.begin(), gpGameData->m_Reports.end(), gpGameData->m_pAtlantis->m_YearMon,
                 [](const std::unique_ptr<CAtlaParser>& report, long year)
                 {
                     return report->m_YearMon < year;
                 });
-            long currentInsertIdx = currentPos - m_Reports.begin();
-            while ((long)m_Reports.size() > maxCachedReports)
+            long currentInsertIdx = currentPos - gpGameData->m_Reports.begin();
+            while ((long)gpGameData->m_Reports.size() > maxCachedReports)
             {
                 if (currentInsertIdx > maxCachedReports/2)
                 {
-                    m_Reports.erase(m_Reports.begin());
+                    gpGameData->m_Reports.erase(gpGameData->m_Reports.begin());
                     if (currentInsertIdx > 0)
                         --currentInsertIdx;
                 }
                 else
-                    m_Reports.pop_back();
+                    gpGameData->m_Reports.pop_back();
             }
         }
         m_FirstLoad = false;
@@ -1908,14 +1899,14 @@ void CAhApp::EditPaneChanged(CEditPane * pPane)
 
     if (pPane && pMapPane)
     {
-        pLand = m_pAtlantis->GetLand(pMapPane->m_SelHexX, pMapPane->m_SelHexY, pMapPane->m_SelPlane, true);
+        pLand = gpGameData->m_pAtlantis->GetLand(pMapPane->m_SelHexX, pMapPane->m_SelHexY, pMapPane->m_SelPlane, true);
 
         if (pPane == m_Panes[AH_PANE_UNIT_COMMANDS])
         {
             // selected unit's orders have been changed
 
             // TBD: is it needed? m_pCurLand->guiUnit = m_pUnitListPane->GetCurrentUnitId();
-            m_pAtlantis->RunOrders(pLand);
+            gpGameData->m_pAtlantis->RunOrders(pLand);
             UpdateHexUnitList(pLand);
             UpdateHexEditPane(pLand);
             SetOrdersChanged(m_OrdersAreChanged); // this hack is needed since EditPanes are modifying the vars directly...
@@ -1976,14 +1967,14 @@ void CAhApp::SelectUnit(CUnit * pUnit)
 
     if (!pUnit || !pMapPane)
         return;
-    pLand = m_pAtlantis->GetLand(pUnit->LandId);
+    pLand = gpGameData->m_pAtlantis->GetLand(pUnit->LandId);
     if (!pLand)
         return;
 
     pLand->guiUnit = pUnit->Id;
 
     LandIdToCoord(pLand->Id, nx, ny, nz);
-    pPlane   = (CPlane*)m_pAtlantis->m_Planes.At(nz);
+    pPlane   = (CPlane*)gpGameData->m_pAtlantis->m_Planes.At(nz);
 
     refresh = pMapPane->EnsureLandVisible(nx, ny, nz, false);
     if (refresh)
@@ -2016,7 +2007,7 @@ void CAhApp::SelectLand(CLand * pLand)
     if (pLand)
     {
         LandIdToCoord(pLand->Id, nx, ny, nz);
-        pPlane   = (CPlane*)gpApp->m_pAtlantis->m_Planes.At(nz);
+        pPlane   = (CPlane*)gpGameData->m_pAtlantis->m_Planes.At(nz);
 
         refresh = pMapPane->EnsureLandVisible(nx, ny, nz, true);
         if (refresh)
@@ -2032,7 +2023,7 @@ void CAhApp::SelectLand(CLand * pLand)
 
 bool CAhApp::SelectLand(const char * landcoords) //  "48,52[,somewhere]"
 {
-    CLand       * pLand     = m_pAtlantis->GetLand(landcoords);
+    CLand       * pLand     = gpGameData->m_pAtlantis->GetLand(landcoords);
 
     if (pLand)
     {
@@ -2091,9 +2082,9 @@ void CAhApp::EditPaneDClicked(CEditPane * pPane)
         {
             GetToken(S, p, " \t", ch, TRIM_ALL);
             Dummy.Id = atol(S.c_str());
-            if (m_pAtlantis->m_Units.Search(&Dummy, idx))
+            if (gpGameData->m_pAtlantis->m_Units.Search(&Dummy, idx))
             {
-                pUnit = (CUnit*)m_pAtlantis->m_Units.At(idx);
+                pUnit = (CUnit*)gpGameData->m_pAtlantis->m_Units.At(idx);
                 SelectUnit(pUnit);
                 return;
             }
@@ -2106,9 +2097,9 @@ void CAhApp::EditPaneDClicked(CEditPane * pPane)
         {
             GetToken(S, p, ")\n", ch, TRIM_ALL);
             Dummy.Id = atol(S.c_str());
-            if (')'==ch && m_pAtlantis->m_Units.Search(&Dummy, idx))
+            if (')'==ch && gpGameData->m_pAtlantis->m_Units.Search(&Dummy, idx))
             {
-                pUnit = (CUnit*)m_pAtlantis->m_Units.At(idx);
+                pUnit = (CUnit*)gpGameData->m_pAtlantis->m_Units.At(idx);
                 SelectUnit(pUnit);
                 return;
             }
@@ -2136,35 +2127,35 @@ void CAhApp::SwitchToYearMon(long YearMon)
     if (GetOrdersChanged())
         return;
 
-    auto reportIt = std::lower_bound(m_Reports.begin(), m_Reports.end(), YearMon,
+    auto reportIt = std::lower_bound(gpGameData->m_Reports.begin(), gpGameData->m_Reports.end(), YearMon,
         [](const std::unique_ptr<CAtlaParser>& report, long year)
         {
             return report->m_YearMon < year;
         });
-    if (reportIt != m_Reports.end() && (*reportIt)->m_YearMon == YearMon)
+    if (reportIt != gpGameData->m_Reports.end() && (*reportIt)->m_YearMon == YearMon)
     {
-        if (m_pAtlantis && m_pAtlantis->m_YearMon != YearMon)
+        if (gpGameData->m_pAtlantis && gpGameData->m_pAtlantis->m_YearMon != YearMon)
         {
-            auto cachedCurrent = std::move(m_pAtlantis);
+            auto cachedCurrent = std::move(gpGameData->m_pAtlantis);
             const long cachedYear = cachedCurrent->m_YearMon;
-            auto cachedIt = std::lower_bound(m_Reports.begin(), m_Reports.end(), cachedYear,
+            auto cachedIt = std::lower_bound(gpGameData->m_Reports.begin(), gpGameData->m_Reports.end(), cachedYear,
                 [](const std::unique_ptr<CAtlaParser>& report, long year)
                 {
                     return report->m_YearMon < year;
                 });
-            if (cachedIt != m_Reports.end() && (*cachedIt)->m_YearMon == cachedYear)
-                cachedIt = m_Reports.erase(cachedIt);
-            m_Reports.insert(cachedIt, std::move(cachedCurrent));
+            if (cachedIt != gpGameData->m_Reports.end() && (*cachedIt)->m_YearMon == cachedYear)
+                cachedIt = gpGameData->m_Reports.erase(cachedIt);
+            gpGameData->m_Reports.insert(cachedIt, std::move(cachedCurrent));
         }
 
-        reportIt = std::lower_bound(m_Reports.begin(), m_Reports.end(), YearMon,
+        reportIt = std::lower_bound(gpGameData->m_Reports.begin(), gpGameData->m_Reports.end(), YearMon,
             [](const std::unique_ptr<CAtlaParser>& report, long year)
             {
             return report->m_YearMon < year;
             });
-        m_pAtlantis = std::move(*reportIt);
-        m_Reports.erase(reportIt);
-        if (m_pAtlantis) m_pAtlantis->m_pConfig = &gpConfigManager->m_Config[CONFIG_FILE_CONFIG];
+        gpGameData->m_pAtlantis = std::move(*reportIt);
+        gpGameData->m_Reports.erase(reportIt);
+        if (gpGameData->m_pAtlantis) gpGameData->m_pAtlantis->m_pConfig = &gpConfigManager->m_Config[CONFIG_FILE_CONFIG];
         PostLoadReport();
     }
     else
@@ -2193,7 +2184,7 @@ void CAhApp::SwitchToRep(eRepSeq whichrep)
     m_DisableErrs = true;
 
     if (CanSwitchToRep(whichrep, i))
-        SwitchToYearMon(m_ReportDates[i]);
+        SwitchToYearMon(gpGameData->m_ReportDates[i]);
 
     m_DisableErrs = false;
 }
@@ -2216,20 +2207,20 @@ bool CAhApp::CanSwitchToRep(eRepSeq whichrep, int & RepIdx)
         break;
 
     case repLast:
-        if (m_ReportDates.empty())
+        if (gpGameData->m_ReportDates.empty())
             RepIdx = -1;
-        else if (m_pAtlantis->m_YearMon == m_ReportDates[(int)gpApp->m_ReportDates.size()-1] )
+        else if (gpGameData->m_pAtlantis->m_YearMon == gpGameData->m_ReportDates[(int)gpGameData->m_ReportDates.size()-1] )
             RepIdx = -1;
         else
-            RepIdx = ((int)m_ReportDates.size())-1;
+            RepIdx = ((int)gpGameData->m_ReportDates.size())-1;
         break;
 
     case repPrev:
         {
-            auto _it = std::lower_bound(m_ReportDates.begin(), m_ReportDates.end(), (long)m_pAtlantis->m_YearMon);
-            if (_it != m_ReportDates.end() && *_it == m_pAtlantis->m_YearMon)
+            auto _it = std::lower_bound(gpGameData->m_ReportDates.begin(), gpGameData->m_ReportDates.end(), (long)gpGameData->m_pAtlantis->m_YearMon);
+            if (_it != gpGameData->m_ReportDates.end() && *_it == gpGameData->m_pAtlantis->m_YearMon)
             {
-                RepIdx = (int)(_it - m_ReportDates.begin());
+                RepIdx = (int)(_it - gpGameData->m_ReportDates.begin());
                 RepIdx--;
             }
         }
@@ -2237,10 +2228,10 @@ bool CAhApp::CanSwitchToRep(eRepSeq whichrep, int & RepIdx)
 
     case repNext:
         {
-            auto _it = std::lower_bound(m_ReportDates.begin(), m_ReportDates.end(), (long)m_pAtlantis->m_YearMon);
-            if (_it != m_ReportDates.end() && *_it == m_pAtlantis->m_YearMon)
+            auto _it = std::lower_bound(gpGameData->m_ReportDates.begin(), gpGameData->m_ReportDates.end(), (long)gpGameData->m_pAtlantis->m_YearMon);
+            if (_it != gpGameData->m_ReportDates.end() && *_it == gpGameData->m_pAtlantis->m_YearMon)
             {
-                RepIdx = (int)(_it - m_ReportDates.begin());
+                RepIdx = (int)(_it - gpGameData->m_ReportDates.begin());
                 RepIdx++;
             }
         }
@@ -2248,23 +2239,23 @@ bool CAhApp::CanSwitchToRep(eRepSeq whichrep, int & RepIdx)
 
     case repLastVisited:
         pMapPane = (CMapPane* )m_Panes[AH_PANE_MAP];
-        pLand    = m_pAtlantis->GetLand(pMapPane->m_SelHexX, pMapPane->m_SelHexY, pMapPane->m_SelPlane, true);
-        m_pAtlantis->ComposeLandStrCoord(pLand, sName);
+        pLand    = gpGameData->m_pAtlantis->GetLand(pMapPane->m_SelHexX, pMapPane->m_SelHexY, pMapPane->m_SelPlane, true);
+        gpGameData->m_pAtlantis->ComposeLandStrCoord(pLand, sName);
 //        ym       = atol(GetConfig(SZ_SECT_LAND_VISITED, sName.c_str()));
         GetToken(sData, gpConfigManager->GetConfig(SZ_SECT_LAND_VISITED, sName.c_str()), ',');
         ym = atol(sData.c_str());
 
         {
-            auto _it = std::lower_bound(m_ReportDates.begin(), m_ReportDates.end(), ym);
-            bool _found = _it != m_ReportDates.end() && *_it == ym;
-            RepIdx = _found ? (int)(_it - m_ReportDates.begin()) : -1;
-            if (ym==m_pAtlantis->m_YearMon || !_found)
+            auto _it = std::lower_bound(gpGameData->m_ReportDates.begin(), gpGameData->m_ReportDates.end(), ym);
+            bool _found = _it != gpGameData->m_ReportDates.end() && *_it == ym;
+            RepIdx = _found ? (int)(_it - gpGameData->m_ReportDates.begin()) : -1;
+            if (ym==gpGameData->m_pAtlantis->m_YearMon || !_found)
                 RepIdx = -1;
         }
         break;
     }
 
-    return (RepIdx>=0 && RepIdx<((int)m_ReportDates.size()));
+    return (RepIdx>=0 && RepIdx<((int)gpGameData->m_ReportDates.size()));
 }
 
 //-------------------------------------------------------------------------
@@ -2279,14 +2270,14 @@ bool CAhApp::GetPrevTurnReport(CAtlaParser *& pPrevTurn)
     {
         std::string          S, S2;
     
-        long YearMon = m_ReportDates[idx];
+        long YearMon = gpGameData->m_ReportDates[idx];
     
-        auto reportIt = std::lower_bound(m_Reports.begin(), m_Reports.end(), YearMon,
+        auto reportIt = std::lower_bound(gpGameData->m_Reports.begin(), gpGameData->m_Reports.end(), YearMon,
             [](const std::unique_ptr<CAtlaParser>& report, long year)
             {
                 return report->m_YearMon < year;
             });
-        if (reportIt != m_Reports.end() && (*reportIt)->m_YearMon == YearMon)
+        if (reportIt != gpGameData->m_Reports.end() && (*reportIt)->m_YearMon == YearMon)
         {
             pPrevTurn = reportIt->get();
         }
@@ -2314,14 +2305,14 @@ bool CAhApp::GetPrevTurnReport(CAtlaParser *& pPrevTurn)
             if (prevTurn->m_YearMon == YearMon)
             {
                 pPrevTurn = prevTurn.get();
-                auto insertIt = std::lower_bound(m_Reports.begin(), m_Reports.end(), YearMon,
+                auto insertIt = std::lower_bound(gpGameData->m_Reports.begin(), gpGameData->m_Reports.end(), YearMon,
                     [](const std::unique_ptr<CAtlaParser>& report, long year)
                     {
                         return report->m_YearMon < year;
                     });
-                if (insertIt != m_Reports.end() && (*insertIt)->m_YearMon == YearMon)
-                    insertIt = m_Reports.erase(insertIt);
-                m_Reports.insert(insertIt, std::move(prevTurn));
+                if (insertIt != gpGameData->m_Reports.end() && (*insertIt)->m_YearMon == YearMon)
+                    insertIt = gpGameData->m_Reports.erase(insertIt);
+                gpGameData->m_Reports.insert(insertIt, std::move(prevTurn));
             }
             else
                 pPrevTurn = nullptr;
@@ -2351,13 +2342,13 @@ bool CAhApp::GetPrevTurnReport(CAtlaParser *& pPrevTurn)
         PreLoadReport();
 
         if (!m_FirstLoad && !Join)
-            m_pAtlantis = new CAtlaParser(&ThisGameDataHelper);
-            m_pAtlantis->m_pConfig = &gpConfigManager->m_Config[CONFIG_FILE_CONFIG];
+            gpGameData->m_pAtlantis = new CAtlaParser(&ThisGameDataHelper);
+            gpGameData->m_pAtlantis->m_pConfig = &gpConfigManager->m_Config[CONFIG_FILE_CONFIG];
 
         if (!Join)
         {
-            m_pAtlantis->Clear();
-            m_pAtlantis->ParseRep(SZ_HISTORY_FILE, false, true);
+            gpGameData->m_pAtlantis->Clear();
+            gpGameData->m_pAtlantis->ParseRep(SZ_HISTORY_FILE, false, true);
         }
 
         // Append unit group property names here so they are available while parsing
@@ -2365,7 +2356,7 @@ bool CAhApp::GetPrevTurnReport(CAtlaParser *& pPrevTurn)
             SET_UNIT_PROP_NAME(upg__.first.c_str(), eLong)
 
 
-        err = m_pAtlantis->ParseRep(FName.c_str(), Join, false);
+        err = gpGameData->m_pAtlantis->ParseRep(FName.c_str(), Join, false);
         switch (err)
         {
             case ERR_INV_TURN:
@@ -2374,29 +2365,29 @@ bool CAhApp::GetPrevTurnReport(CAtlaParser *& pPrevTurn)
         }
         SetOrdersChanged(false);
         m_CommentsChanged = false;
-        if ( ERR_OK==err && m_pAtlantis->m_YearMon != 0 && m_pAtlantis->m_CrntFactionId != 0 )
+        if ( ERR_OK==err && gpGameData->m_pAtlantis->m_YearMon != 0 && gpGameData->m_pAtlantis->m_CrntFactionId != 0 )
         {
             {
-                long _ym = m_pAtlantis->m_YearMon;
-                auto _it = std::lower_bound(m_ReportDates.begin(), m_ReportDates.end(), _ym);
-                if (_it == m_ReportDates.end() || *_it != _ym)
-                    m_ReportDates.insert(_it, _ym);
+                long _ym = gpGameData->m_pAtlantis->m_YearMon;
+                auto _it = std::lower_bound(gpGameData->m_ReportDates.begin(), gpGameData->m_ReportDates.end(), _ym);
+                if (_it == gpGameData->m_ReportDates.end() || *_it != _ym)
+                    gpGameData->m_ReportDates.insert(_it, _ym);
             }
             gpConfigManager->UpgradeConfigByFactionId();
 
-            if (atol(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_PWD_READ)) && !m_pAtlantis->m_CrntFactionPwd.empty())
+            if (atol(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_PWD_READ)) && !gpGameData->m_pAtlantis->m_CrntFactionPwd.empty())
             {
                 S.clear();
-                S << (long)m_pAtlantis->m_CrntFactionId;
-                gpConfigManager->SetConfig(SZ_SECT_PASSWORDS, S.c_str(), m_pAtlantis->m_CrntFactionPwd.c_str() );
+                S << (long)gpGameData->m_pAtlantis->m_CrntFactionId;
+                gpConfigManager->SetConfig(SZ_SECT_PASSWORDS, S.c_str(), gpGameData->m_pAtlantis->m_CrntFactionPwd.c_str() );
             }
 
             LoadOrd = atol(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_LOAD_ORDER));
             if (LoadOrd)
             {
                 S.clear();
-                S << (long)m_pAtlantis->m_YearMon;
-                gpConfigManager->ComposeConfigOrdersSection(Sect, m_pAtlantis->m_CrntFactionId);
+                S << (long)gpGameData->m_pAtlantis->m_YearMon;
+                gpConfigManager->ComposeConfigOrdersSection(Sect, gpGameData->m_pAtlantis->m_CrntFactionId);
                 LoadOrders(gpConfigManager->GetConfig(Sect.c_str(), S.c_str()));
             }
         }
@@ -2406,11 +2397,11 @@ bool CAhApp::GetPrevTurnReport(CAtlaParser *& pPrevTurn)
         LoadUnitFlags();
         PostLoadReport();
 
-        if ( (ERR_OK==err) && (m_pAtlantis->m_YearMon != 0) )
+        if ( (ERR_OK==err) && (gpGameData->m_pAtlantis->m_YearMon != 0) )
         {
             // doing it after PostLoadReport() since it will check the section
             S.clear();
-            S << (long)m_pAtlantis->m_YearMon;
+            S << (long)gpGameData->m_pAtlantis->m_YearMon;
             if (!Join)
                 gpConfigManager->SetConfig(SZ_SECT_REPORTS, S.c_str(), FName.c_str());
             else
@@ -2425,21 +2416,21 @@ bool CAhApp::GetPrevTurnReport(CAtlaParser *& pPrevTurn)
 
         if (!m_FirstLoad && !Join)
         {
-            if (([&]() -> bool { auto _ri = std::lower_bound(m_Reports.begin(), m_Reports.end(), m_pAtlantis, [](CAtlaParser* a, CAtlaParser* b){ return a->m_YearMon < b->m_YearMon; }); if (_ri != m_Reports.end() && (*_ri)->m_YearMon == (m_pAtlantis)->m_YearMon) { i = (int)(_ri - m_Reports.begin()); return true; } return false; })())
-                { delete m_Reports[i]; m_Reports.erase(m_Reports.begin() + (i)); }
-            { auto _ri = std::lower_bound(m_Reports.begin(), m_Reports.end(), m_pAtlantis, [](CAtlaParser* a, CAtlaParser* b){ return a->m_YearMon < b->m_YearMon; }); m_Reports.insert(_ri, m_pAtlantis); }
+            if (([&]() -> bool { auto _ri = std::lower_bound(gpGameData->m_Reports.begin(), gpGameData->m_Reports.end(), gpGameData->m_pAtlantis, [](CAtlaParser* a, CAtlaParser* b){ return a->m_YearMon < b->m_YearMon; }); if (_ri != gpGameData->m_Reports.end() && (*_ri)->m_YearMon == (gpGameData->m_pAtlantis)->m_YearMon) { i = (int)(_ri - gpGameData->m_Reports.begin()); return true; } return false; })())
+                { delete gpGameData->m_Reports[i]; gpGameData->m_Reports.erase(gpGameData->m_Reports.begin() + (i)); }
+            { auto _ri = std::lower_bound(gpGameData->m_Reports.begin(), gpGameData->m_Reports.end(), gpGameData->m_pAtlantis, [](CAtlaParser* a, CAtlaParser* b){ return a->m_YearMon < b->m_YearMon; }); gpGameData->m_Reports.insert(_ri, gpGameData->m_pAtlantis); }
 
             n = atol(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_REP_CACHE_COUNT));
             if (n<=0)
                 n = 1;
-            if ((int)m_Reports.size()>n)
+            if ((int)gpGameData->m_Reports.size()>n)
             {
                 if (i > n/2)
                     n = 0;
                 else
-                    n = (int)m_Reports.size()-1;
-                if (m_pAtlantis != m_Reports[n])
-                    { delete m_Reports[n]; m_Reports.erase(m_Reports.begin() + (n)); }
+                    n = (int)gpGameData->m_Reports.size()-1;
+                if (gpGameData->m_pAtlantis != gpGameData->m_Reports[n])
+                    { delete gpGameData->m_Reports[n]; gpGameData->m_Reports.erase(gpGameData->m_Reports.begin() + (n)); }
             }
         }
         m_FirstLoad = false;
@@ -2470,7 +2461,7 @@ void CAhApp::UpdateHexEditPane(CLand * pLand)
             m_HexDescrSrc << pLand->Description;
 
             m_HexDescrSrc << EOL_SCR;
-            m_pAtlantis->ComposeProductsLine(pLand, EOL_SCR, m_HexDescrSrc);
+            gpGameData->m_pAtlantis->ComposeProductsLine(pLand, EOL_SCR, m_HexDescrSrc);
 
             if (pLand->Structs.Count()>0)
             {
@@ -2533,7 +2524,7 @@ void CAhApp::OnMapSelectionChange()
     CMapPane    * pMapPane = (CMapPane* )m_Panes[AH_PANE_MAP];
 
     if (pMapPane)
-        pLand   = m_pAtlantis->GetLand(pMapPane->m_SelHexX, pMapPane->m_SelHexY, pMapPane->m_SelPlane, true);
+        pLand   = gpGameData->m_pAtlantis->GetLand(pMapPane->m_SelHexX, pMapPane->m_SelHexY, pMapPane->m_SelPlane, true);
 
     UpdateHexEditPane(pLand);  // nullptr is Ok!
     UpdateHexUnitList(pLand);
@@ -2578,8 +2569,8 @@ void CAhApp::OnUnitHexSelectionChange(long idx)
         ReadOnly = (!pUnit->IsOurs || pUnit->Id<=0) ;
     }
 
-    if (!ReadOnly && !m_ReportDates.empty())
-        ReadOnly = (m_pAtlantis->m_YearMon != m_ReportDates[(int)gpApp->m_ReportDates.size()-1] );
+    if (!ReadOnly && !gpGameData->m_ReportDates.empty())
+        ReadOnly = (gpGameData->m_pAtlantis->m_YearMon != gpGameData->m_ReportDates[(int)gpGameData->m_ReportDates.size()-1] );
 
     if (pDescription)
         pDescription->SetSource(&m_UnitDescrSrc, nullptr);
@@ -2593,7 +2584,7 @@ void CAhApp::OnUnitHexSelectionChange(long idx)
             if (pUnit)
             {
                 Id = pUnit->Id;
-                pLand = m_pAtlantis->GetLand(pUnit->LandId);
+                pLand = gpGameData->m_pAtlantis->GetLand(pUnit->LandId);
 
             }
 
@@ -2740,7 +2731,7 @@ void CAhApp::ViewSkills(bool ViewAll)
         Skills.FreeAll();
     }
     else
-        ShowDescriptionList(m_pAtlantis->m_Skills, "Skills");
+        ShowDescriptionList(gpGameData->m_pAtlantis->m_Skills, "Skills");
 }
 */
 //--------------------------------------------------------------------------
@@ -2781,15 +2772,15 @@ void CAhApp::ViewEvents(bool DoEvents)
 
     if (DoEvents)
     {
-        Coll.Insert(&m_pAtlantis->m_Events);
+        Coll.Insert(&gpGameData->m_pAtlantis->m_Events);
         ShowDescriptionList(Coll, "Events");
     }
     else
     {
-//        Coll.Insert(&m_pAtlantis->m_Errors);
+//        Coll.Insert(&gpGameData->m_pAtlantis->m_Errors);
 //        ShowDescriptionList(Coll, "Errors");
         m_MsgSrc.clear();
-        ShowError(m_pAtlantis->m_Errors.Description.c_str(), m_pAtlantis->m_Errors.Description.size(), true);
+        ShowError(gpGameData->m_pAtlantis->m_Errors.Description.c_str(), gpGameData->m_pAtlantis->m_Errors.Description.size(), true);
 
     }
     Coll.DeleteAll();
@@ -2801,34 +2792,34 @@ void CAhApp::ViewSecurityEvents()
 {
 /*    CBaseColl   Coll;
 
-    Coll.Insert(&m_pAtlantis->m_SecurityEvents);
+    Coll.Insert(&gpGameData->m_pAtlantis->m_SecurityEvents);
     ShowDescriptionList(Coll, "Security Events");
 
     Coll.DeleteAll();*/
     
         m_MsgSrc.clear();
-        ShowError(m_pAtlantis->m_SecurityEvents.Description.c_str(), m_pAtlantis->m_SecurityEvents.Description.size(), true);
+        ShowError(gpGameData->m_pAtlantis->m_SecurityEvents.Description.c_str(), gpGameData->m_pAtlantis->m_SecurityEvents.Description.size(), true);
 }
 
 //--------------------------------------------------------------------------
 
 void CAhApp::ViewNewProducts()
 {
-    ShowDescriptionList(m_pAtlantis->m_NewProducts, "New products");
+    ShowDescriptionList(gpGameData->m_pAtlantis->m_NewProducts, "New products");
 }
 
 //--------------------------------------------------------------------------
 
 void CAhApp::ViewBattlesAll()
 {
-    ShowDescriptionList(m_pAtlantis->m_Battles, "Battles");
+    ShowDescriptionList(gpGameData->m_pAtlantis->m_Battles, "Battles");
 }
 
 //--------------------------------------------------------------------------
 
 void CAhApp::ViewGates()
 {
-    ShowDescriptionList(m_pAtlantis->m_Gates, "Gates");
+    ShowDescriptionList(gpGameData->m_pAtlantis->m_Gates, "Gates");
 }
 
 //--------------------------------------------------------------------------
@@ -2842,9 +2833,9 @@ void CAhApp::ViewCities()
     //int                x,y,z;
     std::string               sCoord;
 
-    for (np=0; np<m_pAtlantis->m_Planes.Count(); np++)
+    for (np=0; np<gpGameData->m_pAtlantis->m_Planes.Count(); np++)
     {
-        pPlane = (CPlane*)m_pAtlantis->m_Planes.At(np);
+        pPlane = (CPlane*)gpGameData->m_pAtlantis->m_Planes.At(np);
         for (nl=0; nl<pPlane->Lands.Count(); nl++)
         {
             pLand    = (CLand*)pPlane->Lands.At(nl);
@@ -2854,7 +2845,7 @@ void CAhApp::ViewCities()
                 pObj->Name = pLand->CityName;
 
                 //LandIdToCoord(pLand->Id, x, y, z);
-                m_pAtlantis->ComposeLandStrCoord(pLand, sCoord);
+                gpGameData->m_pAtlantis->ComposeLandStrCoord(pLand, sCoord);
                 pObj->Description << pLand->TerrainType << " (" << sCoord << ") in " << pLand->Name;
                 pObj->Description << ", contains " << pLand->CityName << " [" << pLand->CityType << "]";
 
@@ -2881,9 +2872,9 @@ void CAhApp::ViewProvinces()
 
     for (loop=0; loop<2; loop++)
     {
-        for (np=0; np<m_pAtlantis->m_Planes.Count(); np++)
+        for (np=0; np<gpGameData->m_pAtlantis->m_Planes.Count(); np++)
         {
-            pPlane = (CPlane*)m_pAtlantis->m_Planes.At(np);
+            pPlane = (CPlane*)gpGameData->m_pAtlantis->m_Planes.At(np);
             for (nl=0; nl<pPlane->Lands.Count(); nl++)
             {
                 pLand      = (CLand*)pPlane->Lands.At(nl);
@@ -2892,7 +2883,7 @@ void CAhApp::ViewProvinces()
                     std::unique_ptr<CBaseObject> pObj(new CBaseObject);
                     pObj->Name = pLand->Name;
 
-                    m_pAtlantis->ComposeLandStrCoord(pLand, sCoord);
+                    gpGameData->m_pAtlantis->ComposeLandStrCoord(pLand, sCoord);
                     pObj->Description << pLand->TerrainType << " (" << sCoord << ") in " << pLand->Name;
 
                     if (coll.Insert(pObj.get()))
@@ -2917,9 +2908,9 @@ void CAhApp::ViewFactionInfo()
     long               nLandsTotal = 0, nLandsVisited=0;
 
     sMoreInfo << EOL_SCR << "-------------------------" << EOL_SCR;
-    for (np=0; np<m_pAtlantis->m_Planes.Count(); np++)
+    for (np=0; np<gpGameData->m_pAtlantis->m_Planes.Count(); np++)
     {
-        pPlane = (CPlane*)m_pAtlantis->m_Planes.At(np);
+        pPlane = (CPlane*)gpGameData->m_pAtlantis->m_Planes.At(np);
         for (nl=0; nl<pPlane->Lands.Count(); nl++)
         {
             pLand    = (CLand*)pPlane->Lands.At(nl);
@@ -2932,7 +2923,7 @@ void CAhApp::ViewFactionInfo()
               << "Visited hexes: " << nLandsVisited << EOL_SCR ;
 
 
-    sInfo << m_pAtlantis->m_FactionInfo << sMoreInfo;
+    sInfo << gpGameData->m_pAtlantis->m_FactionInfo << sMoreInfo;
     CShowOneDescriptionDlg dlg(gpApp->m_Frames[AH_FRAME_MAP],
                                "Faction Info",
                                sInfo.c_str());
@@ -3017,7 +3008,7 @@ void CAhApp::ViewFactionOverview()
             if (pUnit->GetProperty(PRP_MEN, type, value, eOriginal) && (eLong==type) )
                 men = (long)value;
 
-            for (const auto& propnameStr : m_pAtlantis->m_UnitPropertyNames)
+            for (const auto& propnameStr : gpGameData->m_pAtlantis->m_UnitPropertyNames)
             {
                 propname = propnameStr.c_str();
 
@@ -3522,7 +3513,7 @@ void CAhApp::ShowLandFinancial(CLand * pCurLand)
         }
     }
 
-    m_pAtlantis->ComposeLandStrCoord(pCurLand, sCoord);
+    gpGameData->m_pAtlantis->ComposeLandStrCoord(pCurLand, sCoord);
     Report.Name << "Financial report for " << sCoord;
     coll.Insert(&Report);
 
@@ -3534,11 +3525,11 @@ void CAhApp::ShowLandFinancial(CLand * pCurLand)
 
 void CAhApp::AddTempHex(int X, int Y, int Plane)
 {
-    CLand  * pCurLand = m_pAtlantis->GetLand(X, Y, Plane, true);
+    CLand  * pCurLand = gpGameData->m_pAtlantis->GetLand(X, Y, Plane, true);
     if (pCurLand)
         return;
         
-    CPlane * pPlane = (CPlane*)m_pAtlantis->m_Planes.At(Plane);
+    CPlane * pPlane = (CPlane*)gpGameData->m_pAtlantis->m_Planes.At(Plane);
     if (!pPlane)
         return;
         
@@ -3567,11 +3558,11 @@ void CAhApp::AddTempHex(int X, int Y, int Plane)
 void CAhApp::DelTempHex(int X, int Y, int Plane)
 {
     int      idx;
-    CLand  * pCurLand = m_pAtlantis->GetLand(X, Y, Plane, true);
+    CLand  * pCurLand = gpGameData->m_pAtlantis->GetLand(X, Y, Plane, true);
     if (!pCurLand)
         return;
         
-    CPlane * pPlane = (CPlane*)m_pAtlantis->m_Planes.At(Plane);
+    CPlane * pPlane = (CPlane*)gpGameData->m_pAtlantis->m_Planes.At(Plane);
     if (!pPlane)
         return;
         
@@ -3585,7 +3576,7 @@ void CAhApp::DelTempHex(int X, int Y, int Plane)
 
 void CAhApp::RerunOrders()
 {
-    m_pAtlantis->RunOrders(nullptr);
+    gpGameData->m_pAtlantis->RunOrders(nullptr);
     CUnitPane * pUnitPane = (CUnitPane*)gpApp->m_Panes[AH_PANE_UNITS_HEX];
     if (pUnitPane)
         pUnitPane->Update(pUnitPane->m_pCurLand);
@@ -3605,18 +3596,18 @@ int CAhApp::SaveHistory(const char * FNameOut)
     options.AlwaysSaveImmobStructs = true;
     options.SaveResources          = true;
 
-    if ( (m_pAtlantis->m_Planes.Count()>0) &&
-         (0==m_pAtlantis->m_ParseErr)      && // don't destroy if not loaded!
+    if ( (gpGameData->m_pAtlantis->m_Planes.Count()>0) &&
+         (0==gpGameData->m_pAtlantis->m_ParseErr)      && // don't destroy if not loaded!
          Dest.Open(FNameOut)
        )
     {
-        for (np=0; np<m_pAtlantis->m_Planes.Count(); np++)
+        for (np=0; np<gpGameData->m_pAtlantis->m_Planes.Count(); np++)
         {
-            pPlane = (CPlane*)m_pAtlantis->m_Planes.At(np);
+            pPlane = (CPlane*)gpGameData->m_pAtlantis->m_Planes.At(np);
             for (nl=0; nl<pPlane->Lands.Count(); nl++)
             {
                 pLand    = (CLand*)pPlane->Lands.At(nl);
-                m_pAtlantis->SaveOneHex(Dest, pLand, pPlane, &options);
+                gpGameData->m_pAtlantis->SaveOneHex(Dest, pLand, pPlane, &options);
             }
         }
         Dest.Close();
@@ -3647,7 +3638,7 @@ bool CAhApp::GetExportHexOptions(std::string & FName, std::string & FMode, SAVE_
     options.SaveUnits = true;
 
     if (stFName.empty())
-        Format(stFName, "map.%04d", m_pAtlantis->m_YearMon);
+        Format(stFName, "map.%04d", gpGameData->m_pAtlantis->m_YearMon);
 
     dlg.m_tcFName         ->SetValue(wxString::FromAscii(stFName.c_str()));
 
@@ -3716,13 +3707,13 @@ void CAhApp::ExportOneHex(CFileWriter & Dest, CPlane * pPlane, CLand * pLand, SA
     int                ym_first = 0;
     int                ym_last  = 0;
 
-    m_pAtlantis->ComposeLandStrCoord(pLand, sName);
+    gpGameData->m_pAtlantis->ComposeLandStrCoord(pLand, sName);
 
     p  = GetToken(sData, gpConfigManager->GetConfig(SZ_SECT_LAND_VISITED, sName.c_str()), ',');
     if (sData.empty())
     {
-/*        ym_first = m_pAtlantis->m_YearMon;
-        ym_last  = m_pAtlantis->m_YearMon;*/
+/*        ym_first = gpGameData->m_pAtlantis->m_YearMon;
+        ym_last  = gpGameData->m_pAtlantis->m_YearMon;*/
     }
     else
     {
@@ -3736,9 +3727,9 @@ void CAhApp::ExportOneHex(CFileWriter & Dest, CPlane * pPlane, CLand * pLand, SA
     else
         options.WriteTurnNo = 0;
 
-    if (ym_first==m_pAtlantis->m_YearMon || !OnlyNew)
+    if (ym_first==gpGameData->m_pAtlantis->m_YearMon || !OnlyNew)
     {
-        m_pAtlantis->SaveOneHex(Dest, pLand, pPlane, &options);
+        gpGameData->m_pAtlantis->SaveOneHex(Dest, pLand, pPlane, &options);
     }
 }
 
@@ -3762,8 +3753,8 @@ void CAhApp::ExportHexes()
     {
         if (HexCurrent==HexIncl)
         {
-            pPlane   = (CPlane*)m_pAtlantis->m_Planes.At(pMapPane->m_SelPlane);
-            pLand    = m_pAtlantis->GetLand(pMapPane->m_SelHexX, pMapPane->m_SelHexY, pMapPane->m_SelPlane, true);
+            pPlane   = (CPlane*)gpGameData->m_pAtlantis->m_Planes.At(pMapPane->m_SelPlane);
+            pLand    = gpGameData->m_pAtlantis->GetLand(pMapPane->m_SelHexX, pMapPane->m_SelHexY, pMapPane->m_SelPlane, true);
             ExportOneHex(Dest, pPlane, pLand, options, InclTurnNoAcl, false);
         }
         else
@@ -3844,9 +3835,9 @@ void CAhApp::FindTradeRoutes()
                     
                     if (nBuyPrice > nSalePrice)
                     {
-                        m_pAtlantis->ComposeLandStrCoord(pSellLand, sCoord);
+                        gpGameData->m_pAtlantis->ComposeLandStrCoord(pSellLand, sCoord);
                         Report << pSellLand->TerrainType << " (" << sCoord << ") " << EOL_SCR;
-                        m_pAtlantis->ComposeLandStrCoord(pBuyLand, sCoord);
+                        gpGameData->m_pAtlantis->ComposeLandStrCoord(pBuyLand, sCoord);
                         Report << "         to " << pBuyLand->TerrainType << " (" << sCoord << ")   ("
                                << nBuyPrice << "-" << nSalePrice << ")*" << std::min(nSaleAmount,nBuyAmount)
                                << " " << GoodsName

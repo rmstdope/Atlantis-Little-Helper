@@ -18,6 +18,7 @@ ah_sources = files(
   'src/atlaparser.cpp',
   'src/configmanager.cpp',
   'src/gamerules.cpp',
+  'src/gamedatamanager.cpp',
   'src/ahapp.cpp',
   'src/ahframe.cpp',
   'src/consts_ah.cpp',
