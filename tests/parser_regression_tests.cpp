@@ -415,6 +415,31 @@ TEST_CASE("ParseRep creates a land and an own unit", "[parser]")
     CHECK(unit->IsOurs);
 }
 
+TEST_CASE("ParseRep does not treat section names that only prefix-match Combatspell as combat spell sections", "[parser]")
+{
+    ParserHarness harness;
+    auto report = makeReport(
+        "Atlantis Report For:\n"
+        "Test Faction (123)\n"
+        "January, Year 2\n"
+        "\n"
+        "plain (0,0) in Start, 10 peasants (humans), $0.\n"
+        "Exits:\n"
+        "* Hero (1), Test Faction (123).\n"
+        "CombatspellX: fireball [FIRE].\n"
+        "\n");
+
+    REQUIRE(harness.parser.ParseRep(report.path().c_str(), false, false) == ERR_OK);
+    REQUIRE(harness.parser.m_Units.Count() == 1);
+
+    auto * unit = static_cast<CUnit *>(harness.parser.m_Units.At(0));
+    REQUIRE(unit != nullptr);
+
+    EValueType type;
+    const void * value;
+    CHECK_FALSE(unit->GetProperty(PRP_COMBAT, type, value));
+}
+
 TEST_CASE("SaveOrders and LoadOrders round-trip a simple unit order", "[parser]")
 {
     ParserHarness harness;
