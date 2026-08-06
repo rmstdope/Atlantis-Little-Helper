@@ -230,15 +230,15 @@ void COptionsDialog::Init()
     {
         m_bFontChanged[i]      = false;
 
-        m_FontData[i].size     = gpApp->m_Fonts[i]->GetPointSize();
-        m_FontData[i].family   = gpApp->m_Fonts[i]->GetFamily()   ;
-        m_FontData[i].style    = gpApp->m_Fonts[i]->GetStyle()    ;
-        m_FontData[i].weight   = gpApp->m_Fonts[i]->GetWeight()   ;
-        m_FontData[i].encoding = gpApp->m_Fonts[i]->GetEncoding() ;
-        m_FontData[i].face     = gpApp->m_Fonts[i]->GetFaceName() ;
+        m_FontData[i].size     = gpUIController->m_Fonts[i]->GetPointSize();
+        m_FontData[i].family   = gpUIController->m_Fonts[i]->GetFamily()   ;
+        m_FontData[i].style    = gpUIController->m_Fonts[i]->GetStyle()    ;
+        m_FontData[i].weight   = gpUIController->m_Fonts[i]->GetWeight()   ;
+        m_FontData[i].encoding = gpUIController->m_Fonts[i]->GetEncoding() ;
+        m_FontData[i].face     = gpUIController->m_Fonts[i]->GetFaceName() ;
 
-        m_pComboFonts->Append(wxString::FromAscii(gpApp->m_FontDescr[i]), (void*)i);
-//        m_pComboFonts->Append(gpApp->m_FontDescr[i]);
+        m_pComboFonts->Append(wxString::FromAscii(gpUIController->m_FontDescr[i]), (void*)i);
+//        m_pComboFonts->Append(gpUIController->m_FontDescr[i]);
 //        m_pComboFonts->SetClientData(m_pComboFonts->GetCount()-1, (void*)i);
     }
 
@@ -357,9 +357,9 @@ void COptionsDialog::OnOk    (wxCommandEvent& event)
 
 
         if (DoApplyColors)
-            gpApp->ApplyColors();
-        gpApp->ApplyIcons();
-        gpApp->Redraw();
+            gpUIController->ApplyColors();
+        gpUIController->ApplyIcons();
+        gpUIController->Redraw();
     }
     StoreSize();
     EndModal(wxID_OK);
@@ -378,14 +378,14 @@ void COptionsDialog::OnCancel(wxCommandEvent& event)
         {
             if (m_bFontChanged[i])
             {
-/*              gpApp->m_Fonts[i]->SetPointSize(m_FontData[i].size    ) ;
-                gpApp->m_Fonts[i]->SetFamily   (m_FontData[i].family  ) ;
-                gpApp->m_Fonts[i]->SetStyle    (m_FontData[i].style   ) ;
-                gpApp->m_Fonts[i]->SetWeight   (m_FontData[i].weight  ) ;
-                gpApp->m_Fonts[i]->SetEncoding (m_FontData[i].encoding) ;
-                gpApp->m_Fonts[i]->SetFaceName (m_FontData[i].face    ) ;*/
-                delete gpApp->m_Fonts[i];
-                gpApp->m_Fonts[i] = new wxFont(m_FontData[i].size,
+/*              gpUIController->m_Fonts[i]->SetPointSize(m_FontData[i].size    ) ;
+                gpUIController->m_Fonts[i]->SetFamily   (m_FontData[i].family  ) ;
+                gpUIController->m_Fonts[i]->SetStyle    (m_FontData[i].style   ) ;
+                gpUIController->m_Fonts[i]->SetWeight   (m_FontData[i].weight  ) ;
+                gpUIController->m_Fonts[i]->SetEncoding (m_FontData[i].encoding) ;
+                gpUIController->m_Fonts[i]->SetFaceName (m_FontData[i].face    ) ;*/
+                delete gpUIController->m_Fonts[i];
+                gpUIController->m_Fonts[i] = new wxFont(m_FontData[i].size,
                                             static_cast<wxFontFamily>(m_FontData[i].family),
                                             static_cast<wxFontStyle>(m_FontData[i].style),
                                             static_cast<wxFontWeight>(m_FontData[i].weight),
@@ -403,8 +403,8 @@ void COptionsDialog::OnCancel(wxCommandEvent& event)
         for (size_t i2=0; i2<m_FactionData.size(); i2++)
             gpConfigManager->SetConfig(SZ_SECT_PASSWORDS, m_FactionData[i2].first.c_str(), m_FactionData[i2].second.c_str());
 
-        gpApp->ApplyFonts();
-        gpApp->ApplyColors();
+        gpUIController->ApplyFonts();
+        gpUIController->ApplyColors();
     }
 
     StoreSize();
@@ -425,31 +425,31 @@ void COptionsDialog::OnFont    (wxCommandEvent& event)
         return;
 
     wxFontData data;
-    data.SetInitialFont(*gpApp->m_Fonts[fontidx]);
+    data.SetInitialFont(*gpUIController->m_Fonts[fontidx]);
     data.EnableEffects(false);
 
     wxFontDialog *dialog = new wxFontDialog(this, data);
-    wxString      title  = wxString::FromAscii(gpApp->m_FontDescr[fontidx]);
+    wxString      title  = wxString::FromAscii(gpUIController->m_FontDescr[fontidx]);
     dialog->SetTitle(title);
     if (dialog->ShowModal() == wxID_OK)
     {
         wxFontData retData = dialog->GetFontData();
         wxFont     retFont = retData.GetChosenFont();
 
-        gpApp->m_Fonts[fontidx]->SetPointSize(retFont.GetPointSize());
-        gpApp->m_Fonts[fontidx]->SetFamily   (retFont.GetFamily   ());
-        gpApp->m_Fonts[fontidx]->SetStyle    (retFont.GetStyle    ());
-        gpApp->m_Fonts[fontidx]->SetWeight   (retFont.GetWeight   ());
-        gpApp->m_Fonts[fontidx]->SetEncoding (retFont.GetEncoding ());
-        gpApp->m_Fonts[fontidx]->SetFaceName (retFont.GetFaceName ());
+        gpUIController->m_Fonts[fontidx]->SetPointSize(retFont.GetPointSize());
+        gpUIController->m_Fonts[fontidx]->SetFamily   (retFont.GetFamily   ());
+        gpUIController->m_Fonts[fontidx]->SetStyle    (retFont.GetStyle    ());
+        gpUIController->m_Fonts[fontidx]->SetWeight   (retFont.GetWeight   ());
+        gpUIController->m_Fonts[fontidx]->SetEncoding (retFont.GetEncoding ());
+        gpUIController->m_Fonts[fontidx]->SetFaceName (retFont.GetFaceName ());
 
         m_bFontChanged[fontidx] = true;
-//        delete gpApp->m_Fonts[fontidx];
-//        gpApp->m_Fonts[fontidx] = new wxFont(retFont);
+//        delete gpUIController->m_Fonts[fontidx];
+//        gpUIController->m_Fonts[fontidx] = new wxFont(retFont);
 
 
 
-        gpApp->ApplyFonts();
+        gpUIController->ApplyFonts();
     }
     dialog->Destroy();
 }
@@ -482,7 +482,7 @@ void COptionsDialog::OnColor    (wxCommandEvent& event)
 
         ColorToStr(newcolour, sizeof(newcolour), &col);
         gpConfigManager->SetConfig(SZ_SECT_COLORS, colname.mb_str(), newcolour);
-        gpApp->ApplyColors();
+        gpUIController->ApplyColors();
     }
     dialog->Destroy();
 }

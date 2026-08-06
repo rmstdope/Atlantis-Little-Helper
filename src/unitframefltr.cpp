@@ -67,7 +67,7 @@ void CUnitFrameFltr::Init(int layout, const char * szConfigSection)
     const char    * szConfigSectionHdr;
 
     szConfigSection    = GetConfigSection(layout);
-    szConfigSectionHdr = gpApp->GetListColSection(SZ_SECT_LIST_COL_UNIT, SZ_KEY_LIS_COL_UNITS_FILTER);
+    szConfigSectionHdr = gpUIController->GetListColSection(SZ_SECT_LIST_COL_UNIT, SZ_KEY_LIS_COL_UNITS_FILTER);
     CAhFrame::Init(layout, szConfigSection);
 
     p1 = new CUnitPaneFltr(this);
@@ -84,7 +84,7 @@ void CUnitFrameFltr::Done(bool SetClosedFlag)
 {
     CUnitPaneFltr * pUnitPane;
 
-    pUnitPane  = (CUnitPaneFltr*)gpApp->m_Panes[AH_PANE_UNITS_FILTER];
+    pUnitPane  = (CUnitPaneFltr*)gpUIController->m_Panes[AH_PANE_UNITS_FILTER];
     if (pUnitPane)
         pUnitPane->Done();
 
@@ -97,7 +97,7 @@ void CUnitFrameFltr::Done(bool SetClosedFlag)
 
 void CUnitFrameFltr::OnCloseWindow(wxCloseEvent& event)
 {
-    gpApp->FrameClosing(this);
+    gpUIController->FrameClosing(this);
     Destroy();
 }
 

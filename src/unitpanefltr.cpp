@@ -73,7 +73,7 @@ CUnitPaneFltr::CUnitPaneFltr(wxWindow *parent, wxWindowID id)
 
 void CUnitPaneFltr::Done()
 {
-    CMapPane       * pMapPane = (CMapPane* )gpApp->m_Panes[AH_PANE_MAP];
+    CMapPane       * pMapPane = (CMapPane* )gpUIController->m_Panes[AH_PANE_MAP];
 
     CUnitPane::Done();
     m_NewUnits.FreeAll();
@@ -104,7 +104,7 @@ void CUnitPaneFltr::Update(CUnitFilterDlg * pFilter)
     std::string             S;
     bool             bUsePython = false;
     CPythonEmbedder  Python(gpGameData->m_pAtlantis.get());
-    Python.SetErrorCallback([](const char* msg, int len){ gpApp->ShowError(msg, len, true); });
+    Python.SetErrorCallback([](const char* msg, int len){ gpUIController->ShowError(msg, len, true); });
     eEErr            rcPy = E_OK;
     std::string             sPythonText, sRealPythonText;
     std::string             sConfSect;
@@ -113,7 +113,7 @@ void CUnitPaneFltr::Update(CUnitFilterDlg * pFilter)
     int              unitidx;
     bool             Selected = false;
     bool             ShowOnMap= false;
-    CMapPane       * pMapPane = (CMapPane* )gpApp->m_Panes[AH_PANE_MAP];
+    CMapPane       * pMapPane = (CMapPane* )gpUIController->m_Panes[AH_PANE_MAP];
     int              nl;
     bool             ShowGoneUnits = false;
     CAtlaParser    * pPrevTurn = nullptr;
@@ -207,7 +207,7 @@ void CUnitPaneFltr::Update(CUnitFilterDlg * pFilter)
         if (!gpApp->GetPrevTurnReport(pPrevTurn))
             goto Failed;
         
-        CUnitPane * pUnitPane = (CUnitPane*)gpApp->m_Panes[AH_PANE_UNITS_HEX];
+        CUnitPane * pUnitPane = (CUnitPane*)gpUIController->m_Panes[AH_PANE_UNITS_HEX];
         if (!pUnitPane)
             goto Failed;
             
@@ -314,14 +314,14 @@ Failed:
         {
             S.clear();
             S << EOL_SCR << "----------- Python code -------------" << EOL_SCR;
-            gpApp->ShowError(S.c_str(), S.size(), true);
-            gpApp->ShowError(sRealPythonText.c_str(), sRealPythonText.size(), true);
+            gpUIController->ShowError(S.c_str(), S.size(), true);
+            gpUIController->ShowError(sRealPythonText.c_str(), sRealPythonText.size(), true);
             S.clear();
             S << EOL_SCR << "------------------------" << EOL_SCR << EOL_SCR;
-            gpApp->ShowError(S.c_str(), S.size(), true);
+            gpUIController->ShowError(S.c_str(), S.size(), true);
 
-            gpApp->ShowError(sErr.c_str(), sErr.size(), true);
-            gpApp->ShowError(sOut.c_str(), sOut.size(), true);
+            gpUIController->ShowError(sErr.c_str(), sErr.size(), true);
+            gpUIController->ShowError(sOut.c_str(), sOut.size(), true);
         }
     }
 }
@@ -450,7 +450,7 @@ void CUnitPaneFltr::OnPopupMenuFilter  (wxCommandEvent& event)
         Update(&dlg);
     else
     {
-        CMapPane * pMapPane = (CMapPane* )gpApp->m_Panes[AH_PANE_MAP];
+        CMapPane * pMapPane = (CMapPane* )gpUIController->m_Panes[AH_PANE_MAP];
         pMapPane->RemoveRectangle();
         pMapPane->Refresh(false);
     }
@@ -476,7 +476,7 @@ void CUnitPaneFltr::OnPopupMenuIssueOrders(wxCommandEvent& event)
         return;
 
 
-    pOrders = (CEditPane*)gpApp->m_Panes[AH_PANE_UNIT_COMMANDS];
+    pOrders = (CEditPane*)gpUIController->m_Panes[AH_PANE_UNIT_COMMANDS];
     if (pOrders)
         pOrders->SaveModifications();
 
@@ -505,7 +505,7 @@ void CUnitPaneFltr::OnPopupMenuIssueOrders(wxCommandEvent& event)
             pLand = gpGameData->m_pAtlantis->GetLand(landId);
             gpGameData->m_pAtlantis->RunOrders(pLand);
         }
-        pUnitPane = (CUnitPane*)gpApp->m_Panes[AH_PANE_UNITS_HEX];
+        pUnitPane = (CUnitPane*)gpUIController->m_Panes[AH_PANE_UNITS_HEX];
         if (pUnitPane)
             pUnitPane->Update(pUnitPane->m_pCurLand);
     }

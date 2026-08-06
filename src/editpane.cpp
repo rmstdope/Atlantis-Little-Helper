@@ -167,13 +167,13 @@ void CEditPane::GetValue(std::string & value)
 
 void CEditPane::ApplyFonts()
 {
-    m_pEditor->SetFont(*gpApp->m_Fonts[m_WhichFont]);
+    m_pEditor->SetFont(*gpUIController->m_Fonts[m_WhichFont]);
 
     if (m_pHeader)
     {
         wxCoord           w, h, descent, ext;
 
-        m_pHeader->SetFont(*gpApp->m_Fonts[FONT_EDIT_HDR]);
+        m_pHeader->SetFont(*gpUIController->m_Fonts[FONT_EDIT_HDR]);
         m_pHeader->GetTextExtent(wxT("A"), &w, &h, &descent, &ext);
 
         m_HdrHeight = h+2;
@@ -196,7 +196,7 @@ void CEditPane::SetReadOnly(bool ReadOnly)
 void CEditPane::OnKillFocus() 
 {
     if (SaveModifications())
-        gpApp->EditPaneChanged(this);
+        gpUIController->EditPaneChanged(this);
 }
 
 //--------------------------------------------------------------------
@@ -216,5 +216,5 @@ void CEditPane::OnSize(wxSizeEvent& event)
 
 void CEditPane::OnMouseDClick()
 {
-    gpApp->EditPaneDClicked(this);
+    gpUIController->EditPaneDClicked(this);
 }

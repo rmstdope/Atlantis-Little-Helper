@@ -78,7 +78,7 @@ CShowOneDescriptionDlg::CShowOneDescriptionDlg(wxWindow * parent, const char * t
     CResizableDlg::SetSize();
 
     pText->SetValue(wxString::FromAscii(description));
-    pText->SetFont(*gpApp->m_Fonts[FONT_VIEW_DLG]);
+    pText->SetFont(*gpUIController->m_Fonts[FONT_VIEW_DLG]);
     m_descr = description;
 
     p = description;

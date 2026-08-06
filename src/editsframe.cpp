@@ -145,7 +145,7 @@ void CEditsFrame::Done(bool SetClosedFlag)
 
 void CEditsFrame::OnCloseWindow(wxCloseEvent& event)
 {
-    gpApp->FrameClosing(this);
+    gpUIController->FrameClosing(this);
     Destroy();
 }
 

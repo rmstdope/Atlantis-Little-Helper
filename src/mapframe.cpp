@@ -340,7 +340,7 @@ void CMapFrame::Init(int layout, const char * szConfigSection)
     const char        * szConfigSectionHdr;
 
     szConfigSection    = GetConfigSection(layout);
-    szConfigSectionHdr = gpApp->GetListColSection(SZ_SECT_LIST_COL_UNIT, SZ_KEY_LIS_COL_UNITS_HEX);
+    szConfigSectionHdr = gpUIController->GetListColSection(SZ_SECT_LIST_COL_UNIT, SZ_KEY_LIS_COL_UNITS_HEX);
     CAhFrame::Init(layout, szConfigSection);
 
     switch (layout)
@@ -467,7 +467,7 @@ void CMapFrame::Done(bool SetClosedFlag)
         gpConfigManager->SetConfig(m_sConfigSection.c_str(), SZ_KEY_HEIGHT_2, m_Splitter3->GetSashPosition());
         gpConfigManager->SetConfig(m_sConfigSection.c_str(), SZ_KEY_WIDTH_1 , m_Splitter4->GetSashPosition());
 
-        pUnitPane  = (CUnitPane*)gpApp->m_Panes[AH_PANE_UNITS_HEX];
+        pUnitPane  = (CUnitPane*)gpUIController->m_Panes[AH_PANE_UNITS_HEX];
         if (pUnitPane)
             pUnitPane->Done();
 
@@ -481,7 +481,7 @@ void CMapFrame::Done(bool SetClosedFlag)
         break;
     }
 
-    pMapPane  = (CMapPane* )gpApp->m_Panes[AH_PANE_MAP];
+    pMapPane  = (CMapPane* )gpUIController->m_Panes[AH_PANE_MAP];
     if (pMapPane)
         pMapPane->Done();
 
@@ -501,7 +501,7 @@ void CMapFrame::OnQuit(wxCommandEvent& WXUNUSED(event))
 
 void CMapFrame::OnQuitNoSave(wxCommandEvent& WXUNUSED(event))
 {
-    gpApp->m_DiscardChanges = true;
+    gpUIController->m_DiscardChanges = true;
 
     // true is to force the frame to close
     Close(true);
@@ -535,8 +535,8 @@ void CMapFrame::OnAbout(wxCommandEvent& WXUNUSED(event))
 
 void CMapFrame::OnToolbarCmd(wxCommandEvent& event)
 {
-    if (gpApp->m_Panes[AH_PANE_MAP])
-        ((CMapPane*)gpApp->m_Panes[AH_PANE_MAP])->OnToolbarCmd(event);
+    if (gpUIController->m_Panes[AH_PANE_MAP])
+        ((CMapPane*)gpUIController->m_Panes[AH_PANE_MAP])->OnToolbarCmd(event);
 }
 
 //--------------------------------------------------------------------
@@ -544,8 +544,8 @@ void CMapFrame::OnToolbarCmd(wxCommandEvent& event)
 void CMapFrame::OnToolbarUpdate(wxUpdateUIEvent& event)
 {
     bool Ok = false;
-    if (gpApp->m_Panes[AH_PANE_MAP])
-        Ok = ((CMapPane*)gpApp->m_Panes[AH_PANE_MAP])->IsToolActive(event);
+    if (gpUIController->m_Panes[AH_PANE_MAP])
+        Ok = ((CMapPane*)gpUIController->m_Panes[AH_PANE_MAP])->IsToolActive(event);
 
     event.Enable(false!=Ok); // otherwise that bitch VC++, well, bitches
 }
@@ -656,9 +656,9 @@ void CMapFrame::OnViewGatesUpdate(wxUpdateUIEvent& event)
 void CMapFrame::OnCloseWindow(wxCloseEvent& event)
 {
     // This is the cental shutdown point!
-    if (gpApp->CanCloseApp())
+    if (gpUIController->CanCloseApp())
     {
-        gpApp->FrameClosing(this);
+        gpUIController->FrameClosing(this);
         Destroy();
     }
     else
@@ -697,7 +697,7 @@ void CMapFrame::OnSaveOrdersAs(wxCommandEvent& WXUNUSED(event))
 
 void CMapFrame::OnOptions(wxCommandEvent& event)
 {
-    gpApp->OpenOptionsDlg();
+    gpUIController->OpenOptionsDlg();
 }
 
 //--------------------------------------------------------------------
@@ -816,28 +816,28 @@ void CMapFrame::OnViewFactionOverview(wxCommandEvent& event)
 
 void CMapFrame::OnWindowUnits(wxCommandEvent& event)
 {
-    gpApp->OpenUnitFrame();
+    gpUIController->OpenUnitFrame();
 }
 
 //--------------------------------------------------------------------
 
 void CMapFrame::OnWindowUnitsFltr(wxCommandEvent& event)
 {
-    gpApp->OpenUnitFrameFltr(true);
+    gpUIController->OpenUnitFrameFltr(true);
 }
 
 //--------------------------------------------------------------------
 
 void CMapFrame::OnWindowMessages(wxCommandEvent& event)
 {
-    gpApp->OpenMsgFrame();
+    gpUIController->OpenMsgFrame();
 }
 
 //--------------------------------------------------------------------
 
 void CMapFrame::OnWindowEditors(wxCommandEvent& event)
 {
-    gpApp->OpenEditsFrame();
+    gpUIController->OpenEditsFrame();
 }
 
 //--------------------------------------------------------------------
@@ -847,7 +847,7 @@ void CMapFrame::OnApplyDefaultOrders(wxCommandEvent& event)
     gpApp->SetOrdersChanged(gpGameData->m_pAtlantis->ApplyDefaultOrders(true) //(bool)atol(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_DEFAULT_EMPTY_ONLY)))
                             || gpApp->GetOrdersChanged());
 
-    CUnitPane * p = (CUnitPane*)gpApp->m_Panes[AH_PANE_UNITS_HEX];
+    CUnitPane * p = (CUnitPane*)gpUIController->m_Panes[AH_PANE_UNITS_HEX];
     if (p)
         p->Update(p->m_pCurLand);
 
@@ -902,7 +902,7 @@ void CMapFrame::OnFindHexes(wxCommandEvent& event)
 {
     CMapPane * pMapPane;
 
-    pMapPane  = (CMapPane* )gpApp->m_Panes[AH_PANE_MAP];
+    pMapPane  = (CMapPane* )gpUIController->m_Panes[AH_PANE_MAP];
     if (pMapPane)
         pMapPane->FindHexes();
 
@@ -922,7 +922,7 @@ void CMapFrame::OnFindTradeRoutes(wxCommandEvent& event)
 {
     gpApp->FindTradeRoutes();
     
-    CMapPane * pMapPane  = (CMapPane* )gpApp->m_Panes[AH_PANE_MAP];
+    CMapPane * pMapPane  = (CMapPane* )gpUIController->m_Panes[AH_PANE_MAP];
     if (pMapPane)
     {
         pMapPane->RemoveRectangle();
@@ -934,7 +934,7 @@ void CMapFrame::OnFindTradeRoutes(wxCommandEvent& event)
 
 void CMapFrame::OnListCol(wxCommandEvent& event)
 {
-    gpApp->EditListColumns(event.GetId());
+    gpUIController->EditListColumns(event.GetId());
 }
 
 //--------------------------------------------------------------------

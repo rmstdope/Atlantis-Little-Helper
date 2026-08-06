@@ -718,7 +718,7 @@ void GameRules::SetAttitudeForFaction(int id, int attitude)
 
 void GameRules::ReportError(const char * msg, int msglen, bool orderrelated)
 {
-    gpApp->ShowError(msg, msglen, !orderrelated);
+    gpUIController->ShowError(msg, msglen, !orderrelated);
 }
 
 const char * GameRules::GetConfString(const char * section, const char * param)

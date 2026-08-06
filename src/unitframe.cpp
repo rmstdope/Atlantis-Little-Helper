@@ -79,7 +79,7 @@ void CUnitFrame::Init(int layout, const char * szConfigSection)
     const char        * szConfigSectionHdr;
 
     szConfigSection    = GetConfigSection(layout);
-    szConfigSectionHdr = gpApp->GetListColSection(SZ_SECT_LIST_COL_UNIT, SZ_KEY_LIS_COL_UNITS_HEX);
+    szConfigSectionHdr = gpUIController->GetListColSection(SZ_SECT_LIST_COL_UNIT, SZ_KEY_LIS_COL_UNITS_HEX);
     CAhFrame::Init(layout, szConfigSection);
 
     switch (layout)
@@ -158,7 +158,7 @@ void CUnitFrame::Done(bool SetClosedFlag)
         break;
     }
 
-    pUnitPane  = (CUnitPane*)gpApp->m_Panes[AH_PANE_UNITS_HEX];
+    pUnitPane  = (CUnitPane*)gpUIController->m_Panes[AH_PANE_UNITS_HEX];
     if (pUnitPane)
         pUnitPane->Done();
 
@@ -171,7 +171,7 @@ void CUnitFrame::Done(bool SetClosedFlag)
 
 void CUnitFrame::OnCloseWindow(wxCloseEvent& event)
 {
-    gpApp->FrameClosing(this);
+    gpUIController->FrameClosing(this);
     Destroy();
 }
 

@@ -32,54 +32,7 @@
 #include "configmanager.h"
 #include "gamerules.h"
 #include "gamedatamanager.h"
-
-enum
-{
-    AH_FRAME_MAP          =  0,
-    AH_FRAME_UNITS            ,
-    AH_FRAME_MSG              ,
-    AH_FRAME_EDITS            ,
-    AH_FRAME_UNITS_FLTR       ,
-
-    AH_FRAME_COUNT
-};
-
-enum
-{
-    AH_PANE_MAP            = 0,
-    AH_PANE_MAP_DESCR         ,
-    AH_PANE_UNITS_HEX         ,
-    AH_PANE_UNITS_FILTER      ,
-    AH_PANE_UNIT_DESCR        ,
-    AH_PANE_UNIT_COMMANDS     ,
-    AH_PANE_UNIT_COMMENTS     ,
-    AH_PANE_MSG               ,
-
-    AH_PANE_COUNT             // whenever adding new panes, update CAhApp::ApplyFonts and CAhApp::ApplyColors!
-};
-
-enum
-{
-    AH_LAYOUT_2_WIN        = 0,
-    AH_LAYOUT_3_WIN           ,
-    AH_LAYOUT_1_WIN           ,
-
-    AH_LAYOUT_COUNT
-};
-
-enum
-{
-    FONT_EDIT_DESCR        = 0,
-    FONT_EDIT_ORDER           ,
-    FONT_MAP_COORD            ,
-    FONT_MAP_TEXT             ,
-    FONT_UNIT_LIST            ,
-    FONT_EDIT_HDR             ,
-    FONT_VIEW_DLG             ,
-    FONT_ERR_DLG              ,
-
-    FONT_COUNT
-};
+#include "uicontroller.h"
 
 class CAhFrame;
 class CEditPane;
@@ -102,10 +55,6 @@ void MakePathFull(const char * cur_dir, std::string & path);
 void GetDirFromPath(const char * path, std::string & dir);
 void GetFileFromPath(const char * path, std::string & file);
 
-#define APPLY_COLOR_DELTA(x) ((unsigned char )(std::max(std::min((int)(x)-(int)gpApp->m_Brightness_Delta,255),0)))
-
-
-
 //-------------------------------------------------------------------------------
 
 class CAhApp : public wxApp
@@ -118,26 +67,11 @@ public:
     virtual int          OnExit() override;
 
 
-    void                 EditPaneChanged(CEditPane * pPane);
-    void                 EditPaneDClicked(CEditPane * pPane);
-
-
-    void                 FrameClosing(CAhFrame * pFrame);
-
-    void                 ShowError (const char * msg, int msglen, bool ignore_disabled);
-
-
-
     int                  LoadReport(bool Join);
     int                  LoadReport(const char * FNameIn, bool Join);
     int                  SaveOrders(bool UsingExistingName);
     void                 LoadOrders();
     CUnit              * GetSelectedUnit();
-    bool                 CanCloseApp();
-    void                 Redraw();
-    void                 ApplyFonts();
-    void                 ApplyColors();
-    void                 ApplyIcons();
 
     void                 SelectUnit(CUnit * pUnit);
     bool                 SelectLand(const char * landcoords); //  "48,52[,somewhere]"
@@ -149,11 +83,6 @@ public:
     void                 OnMapSelectionChange();
     void                 OnUnitHexSelectionChange(long idx);
 
-    void                 OpenOptionsDlg();
-    void                 OpenUnitFrame();
-    void                 OpenMsgFrame();
-    void                 OpenEditsFrame();
-    void                 OpenUnitFrameFltr(bool PopUpSettings);
     void                 WriteMagesCSV();
     void                 ShowDescriptionList(CBaseColl & Items, const char * title); // Collection of CBaseObject
     void                 ShowDescriptionList(CBaseCollById & Items, const char * title);
@@ -177,12 +106,8 @@ public:
     void                 CheckTaxTrade();
     void                 ExportHexes();
     void                 FindTradeRoutes();
-    void                 EditListColumns(int command);
-    const char         * GetListColSection(const char * sectprefix, const char * key);
     void                 ViewMovedUnits();
-    bool                 GetPrevTurnReport(CAtlaParser *& pPrevTurn); 
-
-    void                 CreateAccelerator();
+    bool                 GetPrevTurnReport(CAtlaParser *& pPrevTurn);
 
     bool                 GetOrdersChanged(){return m_OrdersAreChanged;};
     void                 SetOrdersChanged(bool Changed);
@@ -200,49 +125,50 @@ public:
     void                 SelectUnitsPane();
     void                 SelectOrdersPane();
 
+    // TEMPORARY: public only because UIController (step 4) bridges through
+    // gpApp-> to reach these until SelectionState/ReportLoader (steps 5/6)
+    // extract them for real and make them properly public there.
+    void                 SaveComments();
+    void                 SaveLandFlags();
+    void                 SaveUnitFlags();
+    void                 UpdateHexEditPane(CLand * pLand);
+    void                 UpdateHexUnitList(CLand * pLand);
+
+    // TEMPORARY: public only because UIController (step 4) bridges through
+    // gpApp-> to reach these until SelectionState/ReportLoader (steps 5/6)
+    // extract them for real.
+    std::string          m_MsgSrc;
+    bool                 m_DisableErrs;
+
     std::unique_ptr<ConfigManager> m_pConfigManager;
     std::unique_ptr<GameRules> m_pGameRules;
     std::unique_ptr<GameDataManager> m_pGameData;
+    std::unique_ptr<UIController> m_pUIController;
 
-    CAhFrame           * m_Frames[AH_FRAME_COUNT];
-    wxWindow           * m_Panes [AH_PANE_COUNT ];
-    wxFont             * m_Fonts [FONT_COUNT];
-    const char         * m_FontDescr[FONT_COUNT];
     std::multimap<std::string, std::string> m_UnitPropertyGroups;
 
 //    bool                 m_LandFlagsChanged;
     bool                 m_CommentsChanged;
-    bool                 m_DiscardChanges;
-    std::unique_ptr<wxAcceleratorTable> m_pAccel;
-    long                 m_Brightness_Delta;
 
 
 private:
-    void                 ForgetFrame(int no, bool frameclosed);
     int                  LoadOrders  (const char * FNameIn);
     int                  SaveOrders  (const char * FNameOut, int FactionId);
     int                  SaveHistory (const char * FNameOut);
     void                 LoadComments();
-    void                 SaveComments();
     void                 PostLoadReport();
     void                 PreLoadReport();
     void                 RedrawTracks();
-    void                 OpenMapFrame();
     void                 GetShortFactName(std::string & S, int FactionId);
-    void                 SaveLandFlags();
     void                 LoadLandFlags();
     void                 UpdateEdgeStructs();
     void                 LoadUnitFlags();
-    void                 SaveUnitFlags();
 
-    void                 UpdateHexEditPane(CLand * pLand);
-    void                 UpdateHexUnitList(CLand * pLand);
     void                 SwitchToYearMon(long YearMon);
 
     bool                 GetExportHexOptions(std::string & FName, std::string & FMode, SAVE_HEX_OPTIONS & options, eHexIncl & HexIncl,
                                              bool & InclTurnNoAcl);
     void                 ExportOneHex(CFileWriter & Dest, CPlane * pPlane, CLand * pLand, SAVE_HEX_OPTIONS & options, bool InclTurnNoAcl, bool OnlyNew);
-    void                 SetMapFrameTitle();
     void                 StdRedirectInit();
     void                 StdRedirectDone();
     void                 SelectTempUnit(CUnit * pUnit);
@@ -251,12 +177,8 @@ private:
     bool                 m_FirstLoad;
     std::string                 m_HexDescrSrc;
     std::string                 m_UnitDescrSrc;
-    std::string                 m_MsgSrc;
     long                 m_SelUnitIdx;
-    int                  m_layout;
-    bool                 m_DisableErrs;
     bool                 m_OrdersAreChanged;
-    std::string                 m_sTitle;
     int                  m_nStdoutLastPos;
     int                  m_nStderrLastPos;
 

@@ -99,8 +99,8 @@ void CAhFrame::Init(int layout, const char * szConfigSection)
 
     SetSize(x, y, w, h, wxSIZE_ALLOW_MINUS_ONE);
 
-    if (gpApp->m_pAccel)
-        SetAcceleratorTable(*gpApp->m_pAccel);
+    if (gpUIController->m_pAccel)
+        SetAcceleratorTable(*gpUIController->m_pAccel);
 }
 
 //--------------------------------------------------------------------------
@@ -138,7 +138,7 @@ void CAhFrame::Done(bool SetClosedFlag)
 void CAhFrame::SetPane(int no, wxWindow * pane)
 {
     m_Panes[no] = pane;
-    gpApp->m_Panes[no] = pane;
+    gpUIController->m_Panes[no] = pane;
 }
 
 //--------------------------------------------------------------------------

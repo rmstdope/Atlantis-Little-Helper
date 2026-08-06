@@ -62,7 +62,7 @@ CUnitFilterDlg::CUnitFilterDlg(wxWindow *parent, const char * szConfigSection)
                :CResizableDlg( parent, "Unit Locator's filter", SZ_SECT_WND_UNITS_FLTR_DLG), m_bReady(0)
                 
 {
-    CMapPane   * pMapPane   = (CMapPane  * )gpApp->m_Panes[AH_PANE_MAP];
+    CMapPane   * pMapPane   = (CMapPane  * )gpUIController->m_Panes[AH_PANE_MAP];
 
     wxBoxSizer * topsizer;
     wxBoxSizer * sizer   ;

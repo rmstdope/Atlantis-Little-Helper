@@ -74,24 +74,8 @@ CAhApp::CAhApp() : m_HexDescrSrc    (),
     m_FirstLoad         = true;
     m_OrdersAreChanged  = false;
     m_CommentsChanged   = false;
-    m_DiscardChanges    = false;
     m_SelUnitIdx        = -1;
-    m_layout            = 0;
     m_DisableErrs       = false;
-    m_pAccel            = nullptr;
-
-    memset(m_Frames, 0, sizeof(m_Frames));
-    memset(m_Panes , 0, sizeof(m_Panes ));
-    memset(m_Fonts , 0, sizeof(m_Fonts ));
-
-    m_FontDescr[FONT_EDIT_DESCR]  = "Descriptions";
-    m_FontDescr[FONT_EDIT_ORDER]  = "Orders & comments";
-    m_FontDescr[FONT_MAP_COORD ]  = "Map coordinates";
-    m_FontDescr[FONT_MAP_TEXT  ]  = "Map text";
-    m_FontDescr[FONT_UNIT_LIST ]  = "Unit list";
-    m_FontDescr[FONT_EDIT_HDR  ]  = "Edit pane header";
-    m_FontDescr[FONT_VIEW_DLG  ]  = "View dialogs";
-    m_FontDescr[FONT_ERR_DLG   ]  = "Messages and Errors";
 
     m_pConfigManager = std::make_unique<ConfigManager>();
     gpConfigManager  = m_pConfigManager.get();
@@ -102,13 +86,16 @@ CAhApp::CAhApp() : m_HexDescrSrc    (),
     m_pGameData = std::make_unique<GameDataManager>();
     gpGameData  = m_pGameData.get();
 
-    m_Brightness_Delta = 0;
+    m_pUIController = std::make_unique<UIController>();
+    gpUIController  = m_pUIController.get();
+
     m_nStdoutLastPos = 0;
     m_nStderrLastPos = 0;
 }
 
 CAhApp::~CAhApp()
 {
+    gpUIController = nullptr;
     gpGameData = nullptr;
     gpGameRules = nullptr;
     gpConfigManager = nullptr;
@@ -133,22 +120,7 @@ bool CAhApp::OnInit()
     gpConfigManager->Init();
     CUnit::LoadCustomFlagNames(gpConfigManager->GetConfigFile(SZ_SECT_UNIT_FLAG_NAMES));
 
-    m_layout = atol(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_LAYOUT));
-    if (m_layout<0)
-        m_layout = 0;
-    if (m_layout>=AH_LAYOUT_COUNT)
-        m_layout = AH_LAYOUT_COUNT-1;
-
-    m_Brightness_Delta = atol(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_BRIGHT_DELTA));
-
-
-    for (i=0; i<FONT_COUNT; i++)
-    {
-        S.clear();
-        S << (long)i;
-        szValue = gpConfigManager->GetConfig(SZ_SECT_FONTS_2, S.c_str());
-        m_Fonts[i] = NewFontFromStr(szValue);
-    }
+    gpUIController->Init();
 
     if (0==stricmp(SZ_EOL_MS, gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_EOL)))
         EOL_FILE = EOL_MS;
@@ -185,7 +157,7 @@ bool CAhApp::OnInit()
                 {
                     S = "Group name \"";
                     S << lastKey.c_str() << "\" can be resolved as alias for \"" << p << "\"!\r\n";
-                    ShowError(S.c_str(), S.size(), true);
+                    gpUIController->ShowError(S.c_str(), S.size(), true);
                 }
             }
         }
@@ -197,24 +169,22 @@ bool CAhApp::OnInit()
 
     StdRedirectInit();
 
-    CreateAccelerator();
+    gpUIController->OpenMapFrame();
 
-    OpenMapFrame();
-
-    if ((AH_LAYOUT_3_WIN==m_layout || AH_LAYOUT_2_WIN==m_layout) &&
-        atol(gpConfigManager->GetConfig(CUnitFrame::GetConfigSection(m_layout), SZ_KEY_OPEN)) )
+    if ((AH_LAYOUT_3_WIN==gpUIController->m_layout || AH_LAYOUT_2_WIN==gpUIController->m_layout) &&
+        atol(gpConfigManager->GetConfig(CUnitFrame::GetConfigSection(gpUIController->m_layout), SZ_KEY_OPEN)) )
     {
-        OpenUnitFrame();
+        gpUIController->OpenUnitFrame();
     }
 
-    if ((AH_LAYOUT_3_WIN==m_layout) &&
-        (atol(gpConfigManager->GetConfig(CEditsFrame::GetConfigSection(m_layout), SZ_KEY_OPEN))) )
+    if ((AH_LAYOUT_3_WIN==gpUIController->m_layout) &&
+        (atol(gpConfigManager->GetConfig(CEditsFrame::GetConfigSection(gpUIController->m_layout), SZ_KEY_OPEN))) )
     {
-        OpenEditsFrame();
+        gpUIController->OpenEditsFrame();
     }
 
-    SetTopWindow(m_Frames[AH_FRAME_MAP]);
-    m_Frames[AH_FRAME_MAP]->SetFocus();
+    SetTopWindow(gpUIController->m_Frames[AH_FRAME_MAP]);
+    gpUIController->m_Frames[AH_FRAME_MAP]->SetFocus();
 
 
     if (argc>1)
@@ -235,9 +205,9 @@ bool CAhApp::OnInit()
                 join = true;
             }
         }
-    if (atol(gpConfigManager->GetConfig(CUnitFrameFltr::GetConfigSection(m_layout), SZ_KEY_OPEN)) )
+    if (atol(gpConfigManager->GetConfig(CUnitFrameFltr::GetConfigSection(gpUIController->m_layout), SZ_KEY_OPEN)) )
     {
-        OpenUnitFrameFltr(false);
+        gpUIController->OpenUnitFrameFltr(false);
     }
 
     return true;
@@ -253,15 +223,9 @@ int CAhApp::OnExit()
 
     CUnit::ResetCustomFlagNames();
 
-    for (i=0; i<FONT_COUNT; i++)
-    {
-        FontToStr(m_Fonts[i], S);
-        Name.clear();
-        Name << (long)i;
-        gpConfigManager->SetConfig(SZ_SECT_FONTS_2, Name.c_str(), S.c_str());
-    }
+    gpUIController->Shutdown();
 
-    if (!m_DiscardChanges)
+    if (!gpUIController->m_DiscardChanges)
     {
         gpConfigManager->Save();
 
@@ -271,230 +235,10 @@ int CAhApp::OnExit()
 
     gpGameData->m_Reports.clear();
     gpGameData->m_pAtlantis.reset();
-    m_pAccel.reset();
-
-    for (i=0; i<FONT_COUNT; i++)
-        delete m_Fonts[i];
 
     StdRedirectDone();
 
     return 0;
-}
-
-//-------------------------------------------------------------------------
-
-void CAhApp::CreateAccelerator()
-{
-    static wxAcceleratorEntry entries[5];
-    entries[0].Set(wxACCEL_CTRL,  (int)'S',     menu_SaveOrders);
-    entries[1].Set(wxACCEL_CTRL,  (int)'N',     accel_NextUnit );
-    entries[2].Set(wxACCEL_CTRL,  (int)'P',     accel_PrevUnit );
-    entries[3].Set(wxACCEL_CTRL,  (int)'U',     accel_UnitList );
-    entries[4].Set(wxACCEL_CTRL,  (int)'O',     accel_Orders   );
-    
-    m_pAccel.reset(new wxAcceleratorTable(5, entries));
-}
-
-//-------------------------------------------------------------------------
-
-void CAhApp::Redraw()
-{
-    int i;
-
-    for (i=0; i<AH_PANE_COUNT; i++)
-        if (m_Panes[i])
-            m_Panes[i]->Refresh(false);
-}
-
-
-//-------------------------------------------------------------------------
-
-void CAhApp::ApplyFonts()
-{
-
-    if (m_Panes[AH_PANE_MAP          ]) ((CMapPane *)m_Panes[AH_PANE_MAP          ])->ApplyFonts();
-    if (m_Panes[AH_PANE_MAP_DESCR    ]) ((CEditPane*)m_Panes[AH_PANE_MAP_DESCR    ])->ApplyFonts();
-    if (m_Panes[AH_PANE_UNITS_HEX    ]) ((CUnitPane*)m_Panes[AH_PANE_UNITS_HEX    ])->ApplyFonts();
-    if (m_Panes[AH_PANE_UNITS_FILTER ]) ((CUnitPane*)m_Panes[AH_PANE_UNITS_FILTER ])->ApplyFonts();
-    if (m_Panes[AH_PANE_UNIT_DESCR   ]) ((CEditPane*)m_Panes[AH_PANE_UNIT_DESCR   ])->ApplyFonts();
-    if (m_Panes[AH_PANE_UNIT_COMMANDS]) ((CEditPane*)m_Panes[AH_PANE_UNIT_COMMANDS])->ApplyFonts();
-    if (m_Panes[AH_PANE_UNIT_COMMENTS]) ((CEditPane*)m_Panes[AH_PANE_UNIT_COMMENTS])->ApplyFonts();
-    if (m_Panes[AH_PANE_MSG          ]) ((CEditPane*)m_Panes[AH_PANE_MSG          ])->ApplyFonts();
-
-}
-
-//-------------------------------------------------------------------------
-
-void CAhApp::ApplyColors()
-{
-    if (m_Panes[AH_PANE_MAP          ]) ((CMapPane *)m_Panes[AH_PANE_MAP          ])->ApplyColors();
-}
-
-//-------------------------------------------------------------------------
-
-void CAhApp::ApplyIcons()
-{
-    if (m_Panes[AH_PANE_MAP          ]) ((CMapPane *)m_Panes[AH_PANE_MAP          ])->ApplyIcons();
-}
-        
-//-------------------------------------------------------------------------
-
-void CAhApp::OpenOptionsDlg()
-{
-    int rc;
-
-    COptionsDialog *dialog = new COptionsDialog(m_Frames[AH_FRAME_MAP]);
-    {
-        dialog->Init();
-        rc = dialog->ShowModal();
-        if (wxID_OK==rc)
-        {
-        }
-        dialog->Done();
-    }
-    //dialog->Close(true);
-}
-
-//-------------------------------------------------------------------------
-
-void CAhApp::OpenMapFrame()
-{
-    if (!m_Frames[AH_FRAME_MAP])
-    {
-        m_Frames[AH_FRAME_MAP] = new CMapFrame(nullptr, m_layout);
-        m_Frames[AH_FRAME_MAP]->Init(m_layout, nullptr);
-        m_Frames[AH_FRAME_MAP]->Show(true);
-    }
-    else
-        m_Frames[AH_FRAME_MAP]->Raise();
-}
-
-//-------------------------------------------------------------------------
-
-void CAhApp::OpenUnitFrame()
-{
-    if (!m_Frames[AH_FRAME_UNITS])
-    {
-        m_Frames[AH_FRAME_UNITS] = new CUnitFrame(m_Frames[AH_FRAME_MAP]);
-        m_Frames[AH_FRAME_UNITS]->Init(m_layout, nullptr);
-        m_Frames[AH_FRAME_UNITS]->Show(true);
-    }
-    else
-        m_Frames[AH_FRAME_UNITS]->Raise();
-}
-
-//-------------------------------------------------------------------------
-
-void CAhApp::OpenUnitFrameFltr(bool PopUpSettings)
-{
-    if (!m_Frames[AH_FRAME_UNITS_FLTR])
-    {
-        m_Frames[AH_FRAME_UNITS_FLTR] = new CUnitFrameFltr(m_Frames[AH_FRAME_MAP]);
-        m_Frames[AH_FRAME_UNITS_FLTR]->Init(m_layout, nullptr);
-        m_Frames[AH_FRAME_UNITS_FLTR]->Show(true);
-
-        CUnitPaneFltr   * pUnitPaneF = (CUnitPaneFltr*)m_Panes [AH_PANE_UNITS_FILTER];
-        wxCommandEvent    event;
-
-        if (pUnitPaneF)
-        {
-            if  (PopUpSettings)
-                pUnitPaneF->OnPopupMenuFilter(event);
-            else
-                pUnitPaneF->Update(nullptr);
-        }
-    }
-    else
-        m_Frames[AH_FRAME_UNITS_FLTR]->Raise();
-
-
-}
-
-//-------------------------------------------------------------------------
-
-void CAhApp::OpenMsgFrame()
-{
-    if (!m_Frames[AH_FRAME_MSG])
-    {
-        m_Frames[AH_FRAME_MSG] = new CMsgFrame(m_Frames[AH_FRAME_MAP]);
-        m_Frames[AH_FRAME_MSG]->Init(m_layout, nullptr);
-        m_MsgSrc.clear();
-        m_Frames[AH_FRAME_MSG]->Show(true);
-    }
-    else
-        m_Frames[AH_FRAME_MSG]->Raise();
-}
-
-//-------------------------------------------------------------------------
-
-void CAhApp::OpenEditsFrame()
-{
-    if (!m_Frames[AH_FRAME_EDITS])
-    {
-        m_Frames[AH_FRAME_EDITS] = new CEditsFrame(m_Frames[AH_FRAME_MAP]);
-        m_Frames[AH_FRAME_EDITS]->Init(m_layout, nullptr);
-        m_Frames[AH_FRAME_EDITS]->Show(true);
-    }
-    else
-        m_Frames[AH_FRAME_EDITS]->Raise();
-}
-
-//-------------------------------------------------------------------------
-
-void CAhApp::ForgetFrame(int no, bool frameclosed)
-{
-    int i;
-
-    if (m_Frames[no])
-    {
-        m_Frames[no]->Done(frameclosed);
-
-        for (i=0; i<AH_PANE_COUNT; i++)
-            if (m_Frames[no]->m_Panes[i])
-                m_Panes[i] = nullptr;
-
-        m_Frames[no] = nullptr;
-    }
-}
-
-
-//-------------------------------------------------------------------------
-
-void CAhApp::FrameClosing(CAhFrame * pFrame)
-{
-    int  no;
-
-    if (pFrame)
-        for (no=0; no<AH_FRAME_COUNT; no++)
-            if (m_Frames[no] == pFrame)
-            {
-                if (AH_FRAME_MAP==no)
-                {
-                    // shutdown in progress
-                    for (no=0; no<AH_FRAME_COUNT; no++)
-                        ForgetFrame(no, false);
-                }
-                else
-                    ForgetFrame(no, true);
-                break;
-            }
-}
-
-//-------------------------------------------------------------------------
-
-void CAhApp::ShowError(const char * msg, int msglen, bool ignore_disabled)
-{
-    CEditPane * p;
-
-    if (m_DisableErrs && !ignore_disabled)
-       return;
-
-    OpenMsgFrame();
-    AddStr(m_MsgSrc, msg, msglen);
-
-    p = (CEditPane*)m_Panes[AH_PANE_MSG];
-    if (p)
-        p->SetSource(&m_MsgSrc, nullptr);
 }
 
 //-------------------------------------------------------------------------
@@ -544,42 +288,12 @@ void CAhApp::GetShortFactName(std::string & S, int FactionId)
 
 //-------------------------------------------------------------------------
 
-void CAhApp::SetMapFrameTitle()
-{
-    CMapFrame   * pMapFrame  = (CMapFrame *)m_Frames[AH_FRAME_MAP];
-    CMapPane    * pMapPane   = (CMapPane  * )m_Panes[AH_PANE_MAP];
-    CPlane      * pPlane     = nullptr;
-
-    std::string          S;
-
-    S = m_sTitle;
-
-    if (pMapPane)
-    {
-        pPlane = (CPlane*)gpGameData->m_pAtlantis->m_Planes.At(pMapPane->m_SelPlane);
-
-        S << " (" << pMapPane->m_SelHexX << "," << pMapPane->m_SelHexY;
-        if (pPlane && 0!=stricmp(DEFAULT_PLANE, pPlane->Name.c_str()))
-        {
-            S << "," << pPlane->Name;
-        }
-        S << ")";
-    }
-
-    if (m_OrdersAreChanged)
-        S << " [modified]";
-    if (pMapFrame)
-        pMapFrame->SetTitle(wxString::FromAscii(S.c_str()));
-}
-
-//-------------------------------------------------------------------------
-
 void CAhApp::SetOrdersChanged(bool Changed)
 {
     m_OrdersAreChanged = Changed;
 
-    if (!m_sTitle.empty())
-        SetMapFrameTitle();
+    if (!gpUIController->m_sTitle.empty())
+        gpUIController->SetMapFrameTitle();
 }
 
 
@@ -661,7 +375,7 @@ int  CAhApp::SaveOrders(const char * FNameOut, int FactionId)
         GetFileFromPath(FName.c_str(), File);
 
         MakePathFull(CurrentDir.mb_str(), Dir);
-        wxFileDialog dialog((CMapFrame*)m_Frames[AH_FRAME_MAP],
+        wxFileDialog dialog((CMapFrame*)gpUIController->m_Frames[AH_FRAME_MAP],
                             wxString::FromAscii(Prompt.c_str()),
                             wxString::FromAscii(Dir.c_str()),
                             wxString::FromAscii(File.c_str()),
@@ -715,7 +429,7 @@ void CAhApp::RedrawTracks()
 {
     CUnit       * pUnit = GetSelectedUnit();
     CPlane      * pPlane;
-    CMapPane    * pMapPane  = (CMapPane* )m_Panes[AH_PANE_MAP];
+    CMapPane    * pMapPane  = (CMapPane* )gpUIController->m_Panes[AH_PANE_MAP];
 
     if (!pMapPane)
         return;
@@ -729,7 +443,7 @@ void CAhApp::RedrawTracks()
 CUnit * CAhApp::GetSelectedUnit()
 {
     CUnit       * pUnit = nullptr;
-    CUnitPane   * pUnitPane = (CUnitPane*)m_Panes[AH_PANE_UNITS_HEX];
+    CUnitPane   * pUnitPane = (CUnitPane*)gpUIController->m_Panes[AH_PANE_UNITS_HEX];
 
     if (pUnitPane)
         pUnit = (CUnit*)pUnitPane->m_pUnits->At(m_SelUnitIdx);
@@ -764,8 +478,8 @@ int  CAhApp::LoadOrders  (const char * FNameIn)
         RedrawTracks();
     }
     else
-       if (m_Frames[AH_FRAME_MSG])
-           ((CAhFrame*)m_Frames[AH_FRAME_MSG])->Raise();
+       if (gpUIController->m_Frames[AH_FRAME_MSG])
+           ((CAhFrame*)gpUIController->m_Frames[AH_FRAME_MSG])->Raise();
 
     return err;
 }
@@ -925,14 +639,14 @@ void CAhApp::SaveUnitFlags()
 
 void CAhApp::SetAllLandUnitFlags()
 {
-    CUnitPane  * pUnitPane = (CUnitPane*)m_Panes[AH_PANE_UNITS_HEX];
+    CUnitPane  * pUnitPane = (CUnitPane*)gpUIController->m_Panes[AH_PANE_UNITS_HEX];
     CPlane     * pPlane;
     CLand      * pLand;
     CUnit      * pUnit;
     int          i, n, f, x;
     int          rc;
 
-    CUnitFlagsDlg dlg(m_Frames[AH_FRAME_MAP], eAll, 0);
+    CUnitFlagsDlg dlg(gpUIController->m_Frames[AH_FRAME_MAP], eAll, 0);
 
     rc = dlg.ShowModal();
 
@@ -967,8 +681,8 @@ void CAhApp::SetAllLandUnitFlags()
             }
         }
 
-        if (m_Panes[AH_PANE_MAP])
-            (m_Panes[AH_PANE_MAP])->Refresh(false);
+        if (gpUIController->m_Panes[AH_PANE_MAP])
+            (gpUIController->m_Panes[AH_PANE_MAP])->Refresh(false);
     }
 
     if ( (ID_BTN_SET_ALL_UNIT==rc || ID_BTN_RMV_ALL_UNIT==rc) && dlg.m_UnitFlags>0 )
@@ -1187,7 +901,7 @@ void CAhApp::WriteMagesCSV()
 //    Format(FName, "%s_%s%04d.csv", S.c_str(), "mages", gpGameData->m_pAtlantis->m_YearMon);
     Format(FName, "%s%04d.csv", "mages", gpGameData->m_pAtlantis->m_YearMon);
 
-    CExportMagesCSVDlg Dlg(m_Frames[AH_FRAME_MAP], FName.c_str());
+    CExportMagesCSVDlg Dlg(gpUIController->m_Frames[AH_FRAME_MAP], FName.c_str());
     if (wxID_OK == Dlg.ShowModal())
         gpGameData->m_pAtlantis->WriteMagesCSV(Dlg.m_pFileName->GetValue().mb_str(),
                                    0==SafeCmp(Dlg.m_pOrientation->GetValue().mb_str(), SZ_VERTICAL),
@@ -1422,7 +1136,7 @@ void CAhApp::CheckTaxTrade()
     Taxes.FreeAll();
     Trades.FreeAll();
 
-    ShowError(Report.c_str()      , Report.size()      , true);
+    gpUIController->ShowError(Report.c_str()      , Report.size()      , true);
 }
 
 //-------------------------------------------------------------------------
@@ -1456,7 +1170,7 @@ void CAhApp::CheckProduction()
     else
     {
         S << "The following problems were detected:" << EOL_SCR << EOL_SCR << Error;
-        ShowError(S.c_str(), S.size(), true);
+        gpUIController->ShowError(S.c_str(), S.size(), true);
     }
 }
 
@@ -1497,7 +1211,7 @@ void CAhApp::CheckSailing()
     else
     {
         S << "The following problems were detected:" << EOL_SCR << EOL_SCR << Error;
-        ShowError(S.c_str(), S.size(), true);
+        gpUIController->ShowError(S.c_str(), S.size(), true);
     }
 }
 
@@ -1531,10 +1245,10 @@ void CAhApp::PreLoadReport()
 void CAhApp::PostLoadReport()
 {
     std::string              S;
-    CMapFrame       * pMapFrame  = (CMapFrame    *)m_Frames[AH_FRAME_MAP];
-    CMapPane        * pMapPane   = (CMapPane     *)m_Panes [AH_PANE_MAP];
-    CUnitPaneFltr   * pUnitPaneF = (CUnitPaneFltr*)m_Panes [AH_PANE_UNITS_FILTER];
-    CUnitPane       * pUnitPane  = (CUnitPane    *)m_Panes [AH_PANE_UNITS_HEX];
+    CMapFrame       * pMapFrame  = (CMapFrame    *)gpUIController->m_Frames[AH_FRAME_MAP];
+    CMapPane        * pMapPane   = (CMapPane     *)gpUIController->m_Panes [AH_PANE_MAP];
+    CUnitPaneFltr   * pUnitPaneF = (CUnitPaneFltr*)gpUIController->m_Panes [AH_PANE_UNITS_FILTER];
+    CUnitPane       * pUnitPane  = (CUnitPane    *)gpUIController->m_Panes [AH_PANE_UNITS_HEX];
     long              year, mon;
     const char      * szName;
     const char      * szValue;
@@ -1557,25 +1271,25 @@ void CAhApp::PostLoadReport()
 
     if (pMapFrame)
     {
-        m_sTitle.clear();
+        gpUIController->m_sTitle.clear();
 
         for (i=0; i<((int)gpGameData->m_pAtlantis->m_OurFactions.size()); i++)
         {
             pFaction = gpGameData->m_pAtlantis->GetFaction(gpGameData->m_pAtlantis->m_OurFactions[i]);
             if (pFaction)
             {
-                if (!m_sTitle.empty())
-                    m_sTitle << ", ";
+                if (!gpUIController->m_sTitle.empty())
+                    gpUIController->m_sTitle << ", ";
                 if (((int)gpGameData->m_pAtlantis->m_OurFactions.size())<3)
-                    m_sTitle << pFaction->Name << " ";
-                m_sTitle << (long)pFaction->Id;
+                    gpUIController->m_sTitle << pFaction->Name << " ";
+                gpUIController->m_sTitle << (long)pFaction->Id;
             }
         }
         year = (long)(gpGameData->m_pAtlantis->m_YearMon/100);
         mon  = gpGameData->m_pAtlantis->m_YearMon % 100 - 1;
         if ( (mon >= 0) && (mon < 12) )
-            m_sTitle << ". " << Monthes[mon] << " year " << year;
-        SetMapFrameTitle();
+            gpUIController->m_sTitle << ". " << Monthes[mon] << " year " << year;
+        gpUIController->SetMapFrameTitle();
     }
 
     // if loaded for the very first time, center it
@@ -1583,8 +1297,8 @@ void CAhApp::PostLoadReport()
     {
         wxCommandEvent event(wxEVT_COMMAND_TOOL_CLICKED, tool_centerout);
 
-        if (m_Panes[AH_PANE_MAP])
-            ((CMapPane*)m_Panes[AH_PANE_MAP])->OnToolbarCmd(event);
+        if (gpUIController->m_Panes[AH_PANE_MAP])
+            ((CMapPane*)gpUIController->m_Panes[AH_PANE_MAP])->OnToolbarCmd(event);
     }
 
 
@@ -1864,7 +1578,7 @@ int  CAhApp::LoadReport(bool Join)
         Dir = ".";
 
     wxString CurrentDir = wxGetCwd();
-    wxFileDialog dialog(m_Frames[AH_FRAME_MAP],
+    wxFileDialog dialog(gpUIController->m_Frames[AH_FRAME_MAP],
                         wxT("Load Report"),
                         wxString::FromAscii(Dir.c_str()),
                         wxT(""),
@@ -1891,46 +1605,11 @@ int  CAhApp::LoadReport(bool Join)
 
 //-------------------------------------------------------------------------
 
-void CAhApp::EditPaneChanged(CEditPane * pPane)
-{
-    CMapPane  * pMapPane  = (CMapPane* )m_Panes[AH_PANE_MAP];
-    CLand     * pLand;
-    CUnit     * pUnit;
-
-    if (pPane && pMapPane)
-    {
-        pLand = gpGameData->m_pAtlantis->GetLand(pMapPane->m_SelHexX, pMapPane->m_SelHexY, pMapPane->m_SelPlane, true);
-
-        if (pPane == m_Panes[AH_PANE_UNIT_COMMANDS])
-        {
-            // selected unit's orders have been changed
-
-            // TBD: is it needed? m_pCurLand->guiUnit = m_pUnitListPane->GetCurrentUnitId();
-            gpGameData->m_pAtlantis->RunOrders(pLand);
-            UpdateHexUnitList(pLand);
-            UpdateHexEditPane(pLand);
-            SetOrdersChanged(m_OrdersAreChanged); // this hack is needed since EditPanes are modifying the vars directly...
-        }
-        else if (pPane == m_Panes[AH_PANE_UNIT_COMMENTS])
-        {
-            // selected unit's comments / default orders have been changed
-            pUnit = GetSelectedUnit(); // depends on m_SelUnitIdx
-            if (pUnit)
-            {
-                pUnit->ExtractCommentsFromDefOrders();
-                UpdateHexUnitList(pLand);
-            }
-        }
-    }
-}
-
-//-------------------------------------------------------------------------
-
 void CAhApp::SelectTempUnit(CUnit * pUnit)
 {
-    CEditPane   * pDescription = (CEditPane*)m_Panes[AH_PANE_UNIT_DESCR   ];
-    CEditPane   * pOrders      = (CEditPane*)m_Panes[AH_PANE_UNIT_COMMANDS];
-    CEditPane   * pComments    = (CEditPane*)m_Panes[AH_PANE_UNIT_COMMENTS];
+    CEditPane   * pDescription = (CEditPane*)gpUIController->m_Panes[AH_PANE_UNIT_DESCR   ];
+    CEditPane   * pOrders      = (CEditPane*)gpUIController->m_Panes[AH_PANE_UNIT_COMMANDS];
+    CEditPane   * pComments    = (CEditPane*)gpUIController->m_Panes[AH_PANE_UNIT_COMMENTS];
 
     OnUnitHexSelectionChange(-1); // unselect   
     m_UnitDescrSrc.clear();
@@ -1957,8 +1636,8 @@ void CAhApp::SelectTempUnit(CUnit * pUnit)
 
 void CAhApp::SelectUnit(CUnit * pUnit)
 {
-    CMapPane    * pMapPane  = (CMapPane* )gpApp->m_Panes[AH_PANE_MAP];
-    CUnitPane   * pUnitPane = (CUnitPane*)gpApp->m_Panes[AH_PANE_UNITS_HEX];
+    CMapPane    * pMapPane  = (CMapPane* )gpUIController->m_Panes[AH_PANE_MAP];
+    CUnitPane   * pUnitPane = (CUnitPane*)gpUIController->m_Panes[AH_PANE_UNITS_HEX];
     CLand       * pLand;
     CPlane      * pPlane;
     int           nx, ny, nz;
@@ -1998,8 +1677,8 @@ void CAhApp::SelectUnit(CUnit * pUnit)
 
 void CAhApp::SelectLand(CLand * pLand)
 {
-    CMapPane    * pMapPane  = (CMapPane* )gpApp->m_Panes[AH_PANE_MAP];
-    CUnitPane   * pUnitPane = (CUnitPane*)gpApp->m_Panes[AH_PANE_UNITS_HEX];
+    CMapPane    * pMapPane  = (CMapPane* )gpUIController->m_Panes[AH_PANE_MAP];
+    CUnitPane   * pUnitPane = (CUnitPane*)gpUIController->m_Panes[AH_PANE_UNITS_HEX];
     CPlane      * pPlane;
     int           nx, ny, nz;
     bool          refresh;
@@ -2032,89 +1711,6 @@ bool CAhApp::SelectLand(const char * landcoords) //  "48,52[,somewhere]"
     }
     else
         return false;
-}
-
-//-------------------------------------------------------------------------
-
-void CAhApp::EditPaneDClicked(CEditPane * pPane)
-{
-    const char  * p;
-    std::string          src, S;
-    char          ch;
-    CUnit       * pUnit;
-    CBaseObject   Dummy;
-    int           idx;
-    long          position;
-
-
-    if (pPane == m_Panes[AH_PANE_MSG])
-    {
-        pPane->GetValue(src);
-        position = pPane->m_pEditor->GetInsertionPoint();
-
-// There is a bug in win32 GetInsertionPoint() - returned value corresponds to "\r\n" end of lines,
-// while actual returned string has "\n" end of lines
-#ifdef __WXMSW__
-        long x = 0;
-        p = src.c_str();
-        while (x<position)
-        {
-            if ('\n' == p[x])
-                position--;
-            x++;
-        }
-#endif
-        if (position > src.size())
-            position = src.size();
-
-        p = src.c_str();
-        while (position > 0)
-
-        {
-            if (p[position-1]=='\n')
-                break;
-            position--;
-        }
-
-        p = &src.c_str()[position];
-        p = SkipSpaces(GetToken(S, p, " \t", ch, TRIM_ALL));
-        if (0==stricmp("UNIT", S.c_str()))  // that is an order problem report
-        {
-            GetToken(S, p, " \t", ch, TRIM_ALL);
-            Dummy.Id = atol(S.c_str());
-            if (gpGameData->m_pAtlantis->m_Units.Search(&Dummy, idx))
-            {
-                pUnit = (CUnit*)gpGameData->m_pAtlantis->m_Units.At(idx);
-                SelectUnit(pUnit);
-                return;
-            }
-        }
-
-
-        p = &src.c_str()[position];
-        p = SkipSpaces(GetToken(S, p, "(\n", ch, TRIM_ALL)); // must be an error from the report file
-        if ('('==ch)
-        {
-            GetToken(S, p, ")\n", ch, TRIM_ALL);
-            Dummy.Id = atol(S.c_str());
-            if (')'==ch && gpGameData->m_pAtlantis->m_Units.Search(&Dummy, idx))
-            {
-                pUnit = (CUnit*)gpGameData->m_pAtlantis->m_Units.At(idx);
-                SelectUnit(pUnit);
-                return;
-            }
-        }
-
-        // land
-        p = &src.c_str()[position];
-        p = SkipSpaces(GetToken(S, p, "(\n", ch, TRIM_ALL));
-        if ('('==ch)
-        {
-            p = SkipSpaces(GetToken(S, p, ")\n", ch, TRIM_ALL));
-            if (')' == ch && SelectLand(S.c_str()))
-                return;
-        }
-    }
 }
 
 //-------------------------------------------------------------------------
@@ -2238,7 +1834,7 @@ bool CAhApp::CanSwitchToRep(eRepSeq whichrep, int & RepIdx)
         break;
 
     case repLastVisited:
-        pMapPane = (CMapPane* )m_Panes[AH_PANE_MAP];
+        pMapPane = (CMapPane* )gpUIController->m_Panes[AH_PANE_MAP];
         pLand    = gpGameData->m_pAtlantis->GetLand(pMapPane->m_SelHexX, pMapPane->m_SelHexY, pMapPane->m_SelPlane, true);
         gpGameData->m_pAtlantis->ComposeLandStrCoord(pLand, sName);
 //        ym       = atol(GetConfig(SZ_SECT_LAND_VISITED, sName.c_str()));
@@ -2453,7 +2049,7 @@ void CAhApp::UpdateHexEditPane(CLand * pLand)
 
     m_HexDescrSrc.clear();
 
-    pEditPane = (CEditPane*)m_Panes[AH_PANE_MAP_DESCR];
+    pEditPane = (CEditPane*)gpUIController->m_Panes[AH_PANE_MAP_DESCR];
     if (pEditPane)
     {
         if (pLand)
@@ -2510,7 +2106,7 @@ void CAhApp::UpdateHexEditPane(CLand * pLand)
 
 void CAhApp::UpdateHexUnitList(CLand * pLand)
 {
-    CUnitPane   * pUnitPane = (CUnitPane*)m_Panes[AH_PANE_UNITS_HEX];
+    CUnitPane   * pUnitPane = (CUnitPane*)gpUIController->m_Panes[AH_PANE_UNITS_HEX];
 
     if (pUnitPane)
         pUnitPane->Update(pLand);
@@ -2521,14 +2117,14 @@ void CAhApp::UpdateHexUnitList(CLand * pLand)
 void CAhApp::OnMapSelectionChange()
 {
     CLand       * pLand    = nullptr;
-    CMapPane    * pMapPane = (CMapPane* )m_Panes[AH_PANE_MAP];
+    CMapPane    * pMapPane = (CMapPane* )gpUIController->m_Panes[AH_PANE_MAP];
 
     if (pMapPane)
         pLand   = gpGameData->m_pAtlantis->GetLand(pMapPane->m_SelHexX, pMapPane->m_SelHexY, pMapPane->m_SelPlane, true);
 
     UpdateHexEditPane(pLand);  // nullptr is Ok!
     UpdateHexUnitList(pLand);
-    SetMapFrameTitle();
+    gpUIController->SetMapFrameTitle();
 }
 
 //-------------------------------------------------------------------------
@@ -2552,9 +2148,9 @@ void CAhApp::OnUnitHexSelectionChange(long idx)
     pUnit        = GetSelectedUnit(); // depends on m_SelUnitIdx
     pFaction     = pUnit?pUnit->pFaction:nullptr;
 
-    pDescription = (CEditPane*)m_Panes[AH_PANE_UNIT_DESCR   ];
-    pOrders      = (CEditPane*)m_Panes[AH_PANE_UNIT_COMMANDS];
-    pComments    = (CEditPane*)m_Panes[AH_PANE_UNIT_COMMENTS];
+    pDescription = (CEditPane*)gpUIController->m_Panes[AH_PANE_UNIT_DESCR   ];
+    pOrders      = (CEditPane*)gpUIController->m_Panes[AH_PANE_UNIT_COMMANDS];
+    pComments    = (CEditPane*)gpUIController->m_Panes[AH_PANE_UNIT_COMMENTS];
 
     m_UnitDescrSrc.clear();
 
@@ -2637,7 +2233,7 @@ void CAhApp::LoadOrders()
         Dir = ".";
 
     wxString CurrentDir = wxGetCwd();
-    wxFileDialog dialog(m_Frames[AH_FRAME_MAP],
+    wxFileDialog dialog(gpUIController->m_Frames[AH_FRAME_MAP],
                         wxT("Load orders"),
                         wxString::FromAscii(Dir.c_str()),
                         wxT(""),
@@ -2661,17 +2257,6 @@ void CAhApp::LoadOrders()
 
 //-------------------------------------------------------------------------
 
-bool CAhApp::CanCloseApp()
-{
-    SaveLandFlags();
-    SaveUnitFlags();
-    if (m_CommentsChanged)
-        SaveComments();
-
-    return ( m_DiscardChanges || !GetOrdersChanged() || ERR_OK==SaveOrders(true));
-}
-
-//--------------------------------------------------------------------------
 
 void CAhApp::ShowDescriptionList(CBaseColl & Items, const char * title) // Collection of CBaseObject
 {
@@ -2682,12 +2267,12 @@ void CAhApp::ShowDescriptionList(CBaseColl & Items, const char * title) // Colle
         if (1 == Items.Count())
         {
             pObj = (CBaseObject*)Items.At(0);
-            CShowOneDescriptionDlg dlg(gpApp->m_Frames[AH_FRAME_MAP], pObj->Name.c_str(), pObj->Description.c_str());
+            CShowOneDescriptionDlg dlg(gpUIController->m_Frames[AH_FRAME_MAP], pObj->Name.c_str(), pObj->Description.c_str());
             dlg.ShowModal();
         }
         else
         {
-            CShowDescriptionListDlg dlg(gpApp->m_Frames[AH_FRAME_MAP], title, &Items);
+            CShowDescriptionListDlg dlg(gpUIController->m_Frames[AH_FRAME_MAP], title, &Items);
             dlg.ShowModal();
         }
     }
@@ -2780,7 +2365,7 @@ void CAhApp::ViewEvents(bool DoEvents)
 //        Coll.Insert(&gpGameData->m_pAtlantis->m_Errors);
 //        ShowDescriptionList(Coll, "Errors");
         m_MsgSrc.clear();
-        ShowError(gpGameData->m_pAtlantis->m_Errors.Description.c_str(), gpGameData->m_pAtlantis->m_Errors.Description.size(), true);
+        gpUIController->ShowError(gpGameData->m_pAtlantis->m_Errors.Description.c_str(), gpGameData->m_pAtlantis->m_Errors.Description.size(), true);
 
     }
     Coll.DeleteAll();
@@ -2798,7 +2383,7 @@ void CAhApp::ViewSecurityEvents()
     Coll.DeleteAll();*/
     
         m_MsgSrc.clear();
-        ShowError(gpGameData->m_pAtlantis->m_SecurityEvents.Description.c_str(), gpGameData->m_pAtlantis->m_SecurityEvents.Description.size(), true);
+        gpUIController->ShowError(gpGameData->m_pAtlantis->m_SecurityEvents.Description.c_str(), gpGameData->m_pAtlantis->m_SecurityEvents.Description.size(), true);
 }
 
 //--------------------------------------------------------------------------
@@ -2924,7 +2509,7 @@ void CAhApp::ViewFactionInfo()
 
 
     sInfo << gpGameData->m_pAtlantis->m_FactionInfo << sMoreInfo;
-    CShowOneDescriptionDlg dlg(gpApp->m_Frames[AH_FRAME_MAP],
+    CShowOneDescriptionDlg dlg(gpUIController->m_Frames[AH_FRAME_MAP],
                                "Faction Info",
                                sInfo.c_str());
     dlg.ShowModal();
@@ -2975,7 +2560,7 @@ void CAhApp::ViewFactionOverview()
     int             skilllen;
     int             maxproplen = 0;
     std::string Report;
-    CMapPane      * pMapPane  = (CMapPane* )m_Panes[AH_PANE_MAP];
+    CMapPane      * pMapPane  = (CMapPane* )gpUIController->m_Panes[AH_PANE_MAP];
     bool            Selected  = false;
     EValueType      type;
     const void    * value;
@@ -3146,7 +2731,7 @@ void CAhApp::ViewFactionOverview()
 
     //display data
 
-    CShowOneDescriptionDlg dlg(gpApp->m_Frames[AH_FRAME_MAP],
+    CShowOneDescriptionDlg dlg(gpUIController->m_Frames[AH_FRAME_MAP],
                                "Factions Overview",
                                Report.c_str());
     dlg.ShowModal();
@@ -3183,7 +2768,7 @@ void CAhApp::CheckMonthLongOrders()
     CBaseColl            Hexes(64);
     int                  nl, unitidx;
     CLand              * pLand;
-    CMapPane           * pMapPane  = (CMapPane* )m_Panes[AH_PANE_MAP];
+    CMapPane           * pMapPane  = (CMapPane* )gpUIController->m_Panes[AH_PANE_MAP];
 
 
     p = SkipSpaces(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_ORD_MONTH_LONG));
@@ -3205,8 +2790,8 @@ void CAhApp::CheckMonthLongOrders()
     if (1==atol(SkipSpaces(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_CHECK_OUTPUT_LIST))))
     {
         // Output will go into the unit filter window
-        OpenUnitFrameFltr(false);
-        pUnitPaneF = (CUnitPaneFltr*)m_Panes [AH_PANE_UNITS_FILTER];
+        gpUIController->OpenUnitFrameFltr(false);
+        pUnitPaneF = (CUnitPaneFltr*)gpUIController->m_Panes [AH_PANE_UNITS_FILTER];
     }
 
     if (pUnitPaneF)
@@ -3307,10 +2892,10 @@ void CAhApp::CheckMonthLongOrders()
         pUnitPaneF->InsertUnitDone();
 
     if (!pUnitPaneF && errcount>0)
-        ShowError(Errors.c_str(), Errors.size(), true);
+        gpUIController->ShowError(Errors.c_str(), Errors.size(), true);
 
     if (0==errcount)
-        wxMessageBox(wxT("No problems found."), wxT("Order checking"), wxOK | wxCENTRE, m_Frames[AH_FRAME_MAP]);
+        wxMessageBox(wxT("No problems found."), wxT("Order checking"), wxOK | wxCENTRE, gpUIController->m_Frames[AH_FRAME_MAP]);
 
 
 //int wxMessageBox(const wxString& message, const wxString& caption = "Message", int style = wxOK | wxCENTRE,
@@ -3353,8 +2938,8 @@ void CAhApp::ShowUnitsMovingIntoHex(long CurHexId, CPlane * pCurPlane)
         if (1==atol(SkipSpaces(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_CHECK_OUTPUT_LIST))))
         {
             // Output will go into the unit filter window
-            OpenUnitFrameFltr(false);
-            pUnitPaneF = (CUnitPaneFltr*)m_Panes [AH_PANE_UNITS_FILTER];
+            gpUIController->OpenUnitFrameFltr(false);
+            pUnitPaneF = (CUnitPaneFltr*)gpUIController->m_Panes [AH_PANE_UNITS_FILTER];
             pUnitPaneF->InsertUnitInit();
         }
 
@@ -3374,10 +2959,10 @@ void CAhApp::ShowUnitsMovingIntoHex(long CurHexId, CPlane * pCurPlane)
         if (pUnitPaneF)
             pUnitPaneF->InsertUnitDone();
         else
-            ShowError(UnitText.c_str(), UnitText.size(), true);
+            gpUIController->ShowError(UnitText.c_str(), UnitText.size(), true);
     }
     else
-        wxMessageBox(wxT("Found no units moving into the current hex."), wxT("Units moving"), wxOK | wxCENTRE, m_Frames[AH_FRAME_MAP]);
+        wxMessageBox(wxT("Found no units moving into the current hex."), wxT("Units moving"), wxOK | wxCENTRE, gpUIController->m_Frames[AH_FRAME_MAP]);
 
 
     FoundUnits.DeleteAll();
@@ -3577,7 +3162,7 @@ void CAhApp::DelTempHex(int X, int Y, int Plane)
 void CAhApp::RerunOrders()
 {
     gpGameData->m_pAtlantis->RunOrders(nullptr);
-    CUnitPane * pUnitPane = (CUnitPane*)gpApp->m_Panes[AH_PANE_UNITS_HEX];
+    CUnitPane * pUnitPane = (CUnitPane*)gpUIController->m_Panes[AH_PANE_UNITS_HEX];
     if (pUnitPane)
         pUnitPane->Update(pUnitPane->m_pCurLand);
 }
@@ -3632,7 +3217,7 @@ bool CAhApp::GetExportHexOptions(std::string & FName, std::string & FMode, SAVE_
     static bool     stInclTurnNoAcl = false;
     static bool     stInclResources = true;
 
-    CHexExportDlg   dlg(m_Frames[AH_FRAME_MAP]);
+    CHexExportDlg   dlg(gpUIController->m_Frames[AH_FRAME_MAP]);
 
     memset(&options, 0, sizeof(options));
     options.SaveUnits = true;
@@ -3738,7 +3323,7 @@ void CAhApp::ExportOneHex(CFileWriter & Dest, CPlane * pPlane, CLand * pLand, SA
 void CAhApp::ExportHexes()
 {
     std::string               sData, sName;
-    CMapPane         * pMapPane  = (CMapPane* )m_Panes[AH_PANE_MAP];
+    CMapPane         * pMapPane  = (CMapPane* )gpUIController->m_Panes[AH_PANE_MAP];
 
     CLand            * pLand;
     CFileWriter        Dest;
@@ -3777,7 +3362,7 @@ void CAhApp::ExportHexes()
 
 void CAhApp::FindTradeRoutes()
 {
-    CMapPane    * pMapPane  = (CMapPane* )m_Panes[AH_PANE_MAP];
+    CMapPane    * pMapPane  = (CMapPane* )gpUIController->m_Panes[AH_PANE_MAP];
     CBaseColl     Hexes(64);
     CLand       * pSellLand, * pBuyLand;
     int           i, j;
@@ -3852,61 +3437,10 @@ void CAhApp::FindTradeRoutes()
     if (Report.empty())
         wxMessageBox(wxT("No trade routes found."));
     else
-        ShowError(Report.c_str()      , Report.size()      , true);
+        gpUIController->ShowError(Report.c_str()      , Report.size()      , true);
 
     Hexes.DeleteAll();
     wxEndBusyCursor();
-}
-
-//--------------------------------------------------------------------------
-
-void CAhApp::EditListColumns(int command)
-{
-    CMapFrame   * pMapFrame  = (CMapFrame *)m_Frames[AH_FRAME_MAP];
-    CUnitPane   * pUnitPane  = nullptr;
-    const char  * szConfigSectionHdr;
-
-
-    const char * szKey = nullptr;
-    switch (command)
-    {
-    case menu_ListColUnits:
-        szKey = SZ_KEY_LIS_COL_UNITS_HEX;
-        pUnitPane = (CUnitPane*)m_Panes[AH_PANE_UNITS_HEX];
-        break;
-
-    case menu_ListColUnitsFltr:
-        szKey = SZ_KEY_LIS_COL_UNITS_FILTER;
-        pUnitPane = (CUnitPane*)m_Panes[AH_PANE_UNITS_FILTER];
-        break;
-
-    default:
-        return;
-    }
-    if (pUnitPane)
-        pUnitPane->SaveUnitListHdr();
-
-    CListHeaderEditDlg dlg(pMapFrame, szKey);
-
-    if (wxID_OK == dlg.ShowModal())
-    {
-        szConfigSectionHdr = GetListColSection(SZ_SECT_LIST_COL_UNIT, szKey);
-        if (pUnitPane)
-            pUnitPane->ReloadHdr(szConfigSectionHdr);
-    }
-}
-
-//--------------------------------------------------------------------------
-
-const char * CAhApp::GetListColSection(const char * sectprefix, const char * key)
-{
-    const char * sect;
-
-    sect = gpConfigManager->GetConfig(SZ_SECT_LIST_COL_CURRENT, key);
-    if (!sect || !*sect)
-        sect  = gpConfigManager->GetNextSectionName(CONFIG_FILE_CONFIG, sectprefix);
-
-    return sect;
 }
 
 //--------------------------------------------------------------------------
@@ -3980,10 +3514,10 @@ void CAhApp::CheckRedirectedOutputFiles()
 
     gpApp->StdRedirectReadMore(false, S);
     if (!S.empty())
-        ShowError(S.c_str(), S.size(), true);
+        gpUIController->ShowError(S.c_str(), S.size(), true);
     gpApp->StdRedirectReadMore(true, S);
     if (!S.empty())
-        ShowError(S.c_str(), S.size(), true);
+        gpUIController->ShowError(S.c_str(), S.size(), true);
 }
 
 //--------------------------------------------------------------------------
@@ -3996,32 +3530,32 @@ void CAhApp::StdRedirectDone()
 
 void CAhApp::SelectNextUnit()
 {
-    if (m_Panes[AH_PANE_UNITS_HEX]) 
-        ((CUnitPane*)m_Panes[AH_PANE_UNITS_HEX])->SelectNextUnit();
+    if (gpUIController->m_Panes[AH_PANE_UNITS_HEX]) 
+        ((CUnitPane*)gpUIController->m_Panes[AH_PANE_UNITS_HEX])->SelectNextUnit();
 }
 
 //--------------------------------------------------------------------------
 
 void CAhApp::SelectPrevUnit()
 {
-    if (m_Panes[AH_PANE_UNITS_HEX]) 
-        ((CUnitPane*)m_Panes[AH_PANE_UNITS_HEX])->SelectPrevUnit();
+    if (gpUIController->m_Panes[AH_PANE_UNITS_HEX]) 
+        ((CUnitPane*)gpUIController->m_Panes[AH_PANE_UNITS_HEX])->SelectPrevUnit();
 }
 
 //--------------------------------------------------------------------------
 
 void CAhApp::SelectUnitsPane()
 {
-    if (m_Panes[AH_PANE_UNITS_HEX]) 
-        ((CUnitPane*)m_Panes[AH_PANE_UNITS_HEX])->SetFocus();
+    if (gpUIController->m_Panes[AH_PANE_UNITS_HEX]) 
+        ((CUnitPane*)gpUIController->m_Panes[AH_PANE_UNITS_HEX])->SetFocus();
 }
 
 //--------------------------------------------------------------------------
 
 void CAhApp::SelectOrdersPane()
 {
-    if (m_Panes[AH_PANE_UNIT_COMMANDS]) 
-        ((CUnitPane*)m_Panes[AH_PANE_UNIT_COMMANDS])->SetFocus();
+    if (gpUIController->m_Panes[AH_PANE_UNIT_COMMANDS]) 
+        ((CUnitPane*)gpUIController->m_Panes[AH_PANE_UNIT_COMMANDS])->SetFocus();
 }
 
 //--------------------------------------------------------------------------

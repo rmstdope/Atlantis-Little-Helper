@@ -2588,7 +2588,7 @@ void CMapPane::DrawCitiesAndWeather(wxDC * pDC, wxRect * pRect, CPlane * pPlane)
     int               nx2, ny2, width, height;
 
     pDC->SetPen (*m_pPen);
-    pDC->SetFont(*gpApp->m_Fonts[FONT_MAP_TEXT]);
+    pDC->SetFont(*gpUIController->m_Fonts[FONT_MAP_TEXT]);
     pDC->SetBackgroundMode(wxTRANSPARENT);
 
     for (i=0; i<m_pCities->Count(); i++)
@@ -2701,7 +2701,7 @@ void CMapPane::OnPaint(wxPaintEvent &WXUNUSED(event))
     wxBrush         * pbrush;
 
     m_pCities->DeleteAll();
-    dc.SetFont (*gpApp->m_Fonts[FONT_MAP_TEXT]);
+    dc.SetFont (*gpUIController->m_Fonts[FONT_MAP_TEXT]);
 
     if (m_ShowState & SHOW_COORD)
     {
@@ -2812,7 +2812,7 @@ void CMapPane::DrawCoordPanes(wxDC * pDC, int mapwidth, int mapheight, CPlane * 
 
     pDC->SetBrush(*pBrush);
     pDC->SetPen  (*wxTRANSPARENT_PEN);
-    pDC->SetFont (*gpApp->m_Fonts[FONT_MAP_COORD]);
+    pDC->SetFont (*gpUIController->m_Fonts[FONT_MAP_COORD]);
     pDC->SetBackgroundMode(wxTRANSPARENT);
 
     pDC->DrawRectangle(0       , mapheight, mapwidth+COORD_PANE_WIDTH, COORD_PANE_HEIGHT);
@@ -2927,7 +2927,7 @@ void CMapPane::RedrawTracksForUnit(CPlane * pPlane, CUnit * pUnit, wxDC * pDC, b
 
 
     NormalizeCoordinates(pPlane, &rect);
-    pDC->SetFont (*gpApp->m_Fonts[FONT_MAP_TEXT]);
+    pDC->SetFont (*gpUIController->m_Fonts[FONT_MAP_TEXT]);
 
 
 
@@ -3259,7 +3259,7 @@ void CMapPane::SetSelection(int nx, int ny, CUnit * pUnit, CPlane * pPlane, bool
         oldy = m_SelHexY;
         m_SelHexX = nx;
         m_SelHexY = ny;
-        dc.SetFont (*gpApp->m_Fonts[FONT_MAP_TEXT]);
+        dc.SetFont (*gpUIController->m_Fonts[FONT_MAP_TEXT]);
 
         for (x=oldx-1; x<=oldx+1; x++)
             for (y=oldy-2; y<=oldy+2; y++)
@@ -3699,7 +3699,7 @@ void CMapPane::MarkFoundHexes(CHexFilterDlg * pFilter)
     else
     {
         Msg << "=====================" << EOL_SCR << LandList;
-        gpApp->ShowError(Msg.c_str(), Msg.size(), true);
+        gpUIController->ShowError(Msg.c_str(), Msg.size(), true);
     }
 }
 
@@ -3726,7 +3726,7 @@ void CMapPane::UnMarkFoundHexes()
 
 void CMapPane::FindHexes()
 {
-    CHexFilterDlg dlg(gpApp->m_Panes[AH_PANE_MAP], SZ_SECT_WND_HEX_FLTR);
+    CHexFilterDlg dlg(gpUIController->m_Panes[AH_PANE_MAP], SZ_SECT_WND_HEX_FLTR);
 
     UnMarkFoundHexes(); // yes, we need a way to just clean the old marks!
     if (wxID_OK == dlg.ShowModal())
@@ -3751,7 +3751,7 @@ void CMapPane::OnPopupMenuFlag(wxCommandEvent& WXUNUSED(event))
     if (m_pPopupLand)
     {
         wxPoint     point = ClientToScreen(m_PopupPoint);
-        CMapFlagDlg Dlg(gpApp->m_Frames[AH_FRAME_MAP], m_pPopupLand, point);
+        CMapFlagDlg Dlg(gpUIController->m_Frames[AH_FRAME_MAP], m_pPopupLand, point);
 
         Cmd = Dlg.ShowModal();
 

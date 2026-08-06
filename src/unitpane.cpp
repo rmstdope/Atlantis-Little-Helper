@@ -250,7 +250,7 @@ void CUnitPane::Sort()
 
 void CUnitPane::ApplyFonts()
 {
-    SetFont(*gpApp->m_Fonts[FONT_UNIT_LIST]);
+    SetFont(*gpUIController->m_Fonts[FONT_UNIT_LIST]);
 }
 
 //--------------------------------------------------------------------------
@@ -519,7 +519,7 @@ void CUnitPane::OnPopupMenuTeach (wxCommandEvent& event)
 
     if (pUnit)
     {
-        pOrders = (CEditPane*)gpApp->m_Panes[AH_PANE_UNIT_COMMANDS];
+        pOrders = (CEditPane*)gpUIController->m_Panes[AH_PANE_UNIT_COMMANDS];
         if (pOrders)
             pOrders->SaveModifications();
 
@@ -542,7 +542,7 @@ void CUnitPane::OnPopupMenuSplit(wxCommandEvent& event)
 
     if (pUnit)
     {
-        pOrders = (CEditPane*)gpApp->m_Panes[AH_PANE_UNIT_COMMANDS];
+        pOrders = (CEditPane*)gpUIController->m_Panes[AH_PANE_UNIT_COMMANDS];
         if (pOrders)
             pOrders->SaveModifications();
 
@@ -569,7 +569,7 @@ void CUnitPane::OnPopupMenuShareSilv  (wxCommandEvent& event)
 
     if (pUnit)
     {
-        pOrders = (CEditPane*)gpApp->m_Panes[AH_PANE_UNIT_COMMANDS];
+        pOrders = (CEditPane*)gpUIController->m_Panes[AH_PANE_UNIT_COMMANDS];
         if (pOrders)
             pOrders->SaveModifications();
 
@@ -594,7 +594,7 @@ void CUnitPane::OnPopupMenuGiveEverything (wxCommandEvent& event)
 
     if (pUnit)
     {
-        pOrders = (CEditPane*)gpApp->m_Panes[AH_PANE_UNIT_COMMANDS];
+        pOrders = (CEditPane*)gpUIController->m_Panes[AH_PANE_UNIT_COMMANDS];
         if (pOrders)
             pOrders->SaveModifications();
 
@@ -620,7 +620,7 @@ void CUnitPane::OnPopupMenuDiscardJunk(wxCommandEvent& WXUNUSED(event))
 
     if (pUnit)
     {
-        pOrders = (CEditPane*)gpApp->m_Panes[AH_PANE_UNIT_COMMANDS];
+        pOrders = (CEditPane*)gpUIController->m_Panes[AH_PANE_UNIT_COMMANDS];
         if (pOrders)
             pOrders->SaveModifications();
 
@@ -649,7 +649,7 @@ void CUnitPane::OnPopupMenuDetectSpies(wxCommandEvent& WXUNUSED(event))
             wxYES != wxMessageBox(wxT("Really generate orders for spy detection?  It might freeze the program on Linux!"), wxT("Confirm"), wxYES_NO, nullptr))
             return;
 
-        pOrders = (CEditPane*)gpApp->m_Panes[AH_PANE_UNIT_COMMANDS];
+        pOrders = (CEditPane*)gpUIController->m_Panes[AH_PANE_UNIT_COMMANDS];
         if (pOrders)
             pOrders->SaveModifications();
 
@@ -798,7 +798,7 @@ void CUnitPane::OnPopupMenuIssueOrders(wxCommandEvent& event)
         return;
 
 
-    pOrders = (CEditPane*)gpApp->m_Panes[AH_PANE_UNIT_COMMANDS];
+    pOrders = (CEditPane*)gpUIController->m_Panes[AH_PANE_UNIT_COMMANDS];
     if (pOrders)
         pOrders->SaveModifications();
 
