@@ -29,7 +29,11 @@
 #include "consts.h"
 #include "consts_ah.h"
 
-#include "ahapp.h"
+#include "configmanager.h"
+#include "gamedatamanager.h"
+#include "uicontroller.h"
+#include "selectionstate.h"
+#include "reportloader.h"
 #include "ahframe.h"
 #include "listpane.h"
 #include "unitpane.h"

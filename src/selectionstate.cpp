@@ -29,7 +29,7 @@
 #include "consts_ah.h"
 #include "gamedatamanager.h"
 #include "uicontroller.h"
-#include "ahapp.h"
+#include "reportloader.h"
 #include "ahframe.h"
 #include "mapframe.h"
 #include "editpane.h"

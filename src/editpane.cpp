@@ -26,7 +26,7 @@
 #include "data.h"
 
 #include "objs.h"
-#include "ahapp.h"
+#include "uicontroller.h"
 #include "editpane.h"
 
 //--------------------------------------------------------------------

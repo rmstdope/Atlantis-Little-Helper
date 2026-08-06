@@ -29,7 +29,7 @@
 #include "consts.h"
 #include "consts_ah.h"
 
-#include "ahapp.h"
+#include "uicontroller.h"
 #include "ahframe.h"
 #include "listpane.h"
 #include "unitpane.h"

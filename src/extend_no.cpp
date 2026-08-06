@@ -27,8 +27,6 @@
 #include "consts_ah.h"
 #include "objs.h"
 
-#include "ahapp.h"
-
 #include "extend.h"
 
 

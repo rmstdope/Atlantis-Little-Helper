@@ -28,7 +28,11 @@
 #include "consts.h"
 #include "consts_ah.h"
 
-#include "ahapp.h"
+#include "configmanager.h"
+#include "gamedatamanager.h"
+#include "uicontroller.h"
+#include "reportloader.h"
+#include "reportgenerator.h"
 #include "ahframe.h"
 #include "mapframe.h"
 #include "unitframe.h"
