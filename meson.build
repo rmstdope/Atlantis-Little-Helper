@@ -6,19 +6,20 @@ wx_dep = dependency('wxwidgets')
 
 root_inc = include_directories('.')
 src_inc = include_directories('src')
+model_inc = include_directories('src/model')
 tests_inc = include_directories('tests')
 
 ah_sources = files(
-  'src/cfgfile.cpp',
-  'src/string_utils.cpp',
-  'src/files.cpp',
-  'src/objs.cpp',
-  'src/data.cpp',
-  'src/errs.cpp',
-  'src/atlaparser.cpp',
-  'src/configmanager.cpp',
-  'src/gamerules.cpp',
-  'src/gamedatamanager.cpp',
+  'src/model/cfgfile.cpp',
+  'src/model/string_utils.cpp',
+  'src/model/files.cpp',
+  'src/model/objs.cpp',
+  'src/model/data.cpp',
+  'src/model/errs.cpp',
+  'src/model/atlaparser.cpp',
+  'src/model/configmanager.cpp',
+  'src/model/gamerules.cpp',
+  'src/model/gamedatamanager.cpp',
   'src/uicontroller.cpp',
   'src/selectionstate.cpp',
   'src/reportloader.cpp',
@@ -50,17 +51,17 @@ ah_sources = files(
 # Shared with the parser-tests target below: the parser/model/property layer,
 # deliberately excluding the wx UI translation units.
 shared_sources = files(
-  'src/string_utils.cpp',
-  'src/files.cpp',
-  'src/cfgfile.cpp',
-  'src/objs.cpp',
-  'src/data.cpp',
-  'src/errs.cpp',
+  'src/model/string_utils.cpp',
+  'src/model/files.cpp',
+  'src/model/cfgfile.cpp',
+  'src/model/objs.cpp',
+  'src/model/data.cpp',
+  'src/model/errs.cpp',
   'src/consts_ah.cpp',
-  'src/atlaparser.cpp',
-  'src/configmanager.cpp',
-  'src/gamerules.cpp',
-  'src/gamedatamanager.cpp',
+  'src/model/atlaparser.cpp',
+  'src/model/configmanager.cpp',
+  'src/model/gamerules.cpp',
+  'src/model/gamedatamanager.cpp',
 )
 
 test_sources = files(
@@ -116,12 +117,12 @@ if py_opt.allowed()
 endif
 
 executable('ah', ah_sources,
-  include_directories: [root_inc, src_inc],
+  include_directories: [root_inc, src_inc, model_inc],
   cpp_args: ah_extra_args,
   dependencies: ah_deps)
 
 parser_tests_exe = executable('parser-tests', test_sources + shared_sources,
-  include_directories: [root_inc, src_inc, tests_inc],
+  include_directories: [root_inc, src_inc, model_inc, tests_inc],
   cpp_args: ['-DALH_TESTING'],
   dependencies: [wx_dep])
 
