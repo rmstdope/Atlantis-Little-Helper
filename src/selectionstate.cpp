@@ -138,7 +138,8 @@ void SelectionState::SelectUnit(CUnit * pUnit)
 
     if (pUnit->Flags & UNIT_FLAG_TEMP)
     {
-        pUnitPane->SelectUnit(-1);
+        if (pUnitPane)
+            pUnitPane->SelectUnit(-1);
         SelectTempUnit(pUnit);  // just redraw description
     }
     else
@@ -156,7 +157,7 @@ void SelectionState::SelectLand(CLand * pLand)
     int           nx, ny, nz;
     bool          refresh;
 
-    if (pLand)
+    if (pLand && pMapPane)
     {
         LandIdToCoord(pLand->Id, nx, ny, nz);
         pPlane   = (CPlane*)gpGameData->m_pAtlantis->m_Planes.At(nz);
@@ -397,7 +398,7 @@ void SelectionState::SelectUnitsPane()
 void SelectionState::SelectOrdersPane()
 {
     if (gpUIController->m_Panes[AH_PANE_UNIT_COMMANDS])
-        ((CUnitPane*)gpUIController->m_Panes[AH_PANE_UNIT_COMMANDS])->SetFocus();
+        ((CEditPane*)gpUIController->m_Panes[AH_PANE_UNIT_COMMANDS])->SetFocus();
 }
 
 //-------------------------------------------------------------------------

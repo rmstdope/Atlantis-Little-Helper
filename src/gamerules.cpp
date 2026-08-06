@@ -398,7 +398,17 @@ void GameRules::GetMoveNames(const char **& movenames)
 bool GameRules::GetOrderId(const char * order, long & id)
 {
     bool  Ok;
-    auto it = m_OrderHash.find(order);
+
+    if (!order)
+    {
+        id = 0;
+        return false;
+    }
+
+    std::string lcorder = order;
+    ToLower(lcorder);
+
+    auto it = m_OrderHash.find(lcorder);
     Ok = it != m_OrderHash.end();
     id = Ok ? it->second : 0;
 

@@ -191,7 +191,7 @@ void UIController::OpenOptionsDlg()
         }
         dialog->Done();
     }
-    //dialog->Close(true);
+    dialog->Destroy();
 }
 
 //-------------------------------------------------------------------------

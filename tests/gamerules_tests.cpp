@@ -50,6 +50,22 @@ TEST_CASE("GameRules GetOrderId resolves the hardcoded order table and rejects u
     CHECK_FALSE(rules.GetOrderId("not-a-real-order", id));
 }
 
+TEST_CASE("GameRules GetOrderId is case-insensitive and rejects a null order", "[gamerules]")
+{
+    ScopedConfigManager scm;
+    GameRules rules;
+    rules.Init();
+
+    long id;
+    REQUIRE(rules.GetOrderId("MOVE", id));
+    CHECK(id == O_MOVE);
+
+    REQUIRE(rules.GetOrderId("Move", id));
+    CHECK(id == O_MOVE);
+
+    CHECK_FALSE(rules.GetOrderId(nullptr, id));
+}
+
 TEST_CASE("GameRules GetStructAttr parses attribute flags and the two-token MaxLoad/MinSailingPower attributes", "[gamerules]")
 {
     ScopedConfigManager scm;
