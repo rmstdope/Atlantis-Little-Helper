@@ -60,4 +60,6 @@ Each release also publishes SHA256SUMS.txt covering every archive:
 Building from source
 --------------------
 
-See README.md in the repository root.
+See README.md in the repository root:
+
+    https://github.com/rmstdope/Atlantis-Little-Helper/blob/master/README.md
