@@ -230,54 +230,54 @@ void COptionsDialog::Init()
     {
         m_bFontChanged[i]      = false;
 
-        m_FontData[i].size     = gpApp->m_Fonts[i]->GetPointSize();
-        m_FontData[i].family   = gpApp->m_Fonts[i]->GetFamily()   ;
-        m_FontData[i].style    = gpApp->m_Fonts[i]->GetStyle()    ;
-        m_FontData[i].weight   = gpApp->m_Fonts[i]->GetWeight()   ;
-        m_FontData[i].encoding = gpApp->m_Fonts[i]->GetEncoding() ;
-        m_FontData[i].face     = gpApp->m_Fonts[i]->GetFaceName() ;
+        m_FontData[i].size     = gpUIController->m_Fonts[i]->GetPointSize();
+        m_FontData[i].family   = gpUIController->m_Fonts[i]->GetFamily()   ;
+        m_FontData[i].style    = gpUIController->m_Fonts[i]->GetStyle()    ;
+        m_FontData[i].weight   = gpUIController->m_Fonts[i]->GetWeight()   ;
+        m_FontData[i].encoding = gpUIController->m_Fonts[i]->GetEncoding() ;
+        m_FontData[i].face     = gpUIController->m_Fonts[i]->GetFaceName() ;
 
-        m_pComboFonts->Append(wxString::FromAscii(gpApp->m_FontDescr[i]), (void*)i);
-//        m_pComboFonts->Append(gpApp->m_FontDescr[i]);
+        m_pComboFonts->Append(wxString::FromAscii(gpUIController->m_FontDescr[i]), (void*)i);
+//        m_pComboFonts->Append(gpUIController->m_FontDescr[i]);
 //        m_pComboFonts->SetClientData(m_pComboFonts->GetCount()-1, (void*)i);
     }
 
-    i = gpApp->GetSectionFirst(SZ_SECT_COLORS, szName, szValue);
+    i = gpConfigManager->GetSectionFirst(SZ_SECT_COLORS, szName, szValue);
     while (i>=0)
     {
         m_pComboColors->Append(wxString::FromAscii(szName));
         m_ColorData.push_back({szName, szValue ? szValue : ""});
-        i = gpApp->GetSectionNext(i, SZ_SECT_COLORS, szName, szValue);
+        i = gpConfigManager->GetSectionNext(i, SZ_SECT_COLORS, szName, szValue);
     }
 
-    i = gpApp->GetSectionFirst(SZ_SECT_PASSWORDS, szName, szValue);
+    i = gpConfigManager->GetSectionFirst(SZ_SECT_PASSWORDS, szName, szValue);
     while (i>=0)
     {
         m_pComboFactions->Append(wxString::FromAscii(szName));
         m_FactionData.push_back({szName, szValue ? szValue : ""});
-        i = gpApp->GetSectionNext(i, SZ_SECT_PASSWORDS, szName, szValue);
+        i = gpConfigManager->GetSectionNext(i, SZ_SECT_PASSWORDS, szName, szValue);
     }
 
 
-    m_pChkLoadOrd          ->SetValue(0!=atol(gpApp->GetConfig(SZ_SECT_COMMON, SZ_KEY_LOAD_ORDER)));
-    m_pChkLoadRep          ->SetValue(0!=atol(gpApp->GetConfig(SZ_SECT_COMMON, SZ_KEY_LOAD_REP)));
-    m_pChkUnixStyle        ->SetValue(0!=stricmp(SZ_EOL_MS, gpApp->GetConfig(SZ_SECT_COMMON, SZ_KEY_EOL)));
-    m_pChkHatchUnvisited   ->SetValue(0!=atol(gpApp->GetConfig(SZ_SECT_COMMON, SZ_KEY_HATCH_UNVISITED)));
-    m_pChkRClickCenters    ->SetValue(0!=atol(gpApp->GetConfig(SZ_SECT_COMMON, SZ_KEY_RCLICK_CENTERS)));
-//    m_pChk3WinLayout       ->SetValue(0!=atol(gpApp->GetConfig(SZ_SECT_COMMON, SZ_KEY_LAYOUT)));
-    m_pChkTeach            ->SetValue(0!=atol(gpApp->GetConfig(SZ_SECT_COMMON, SZ_KEY_CHECK_TEACH_LVL)));
-    m_pChkReadPwd          ->SetValue(0!=atol(gpApp->GetConfig(SZ_SECT_COMMON, SZ_KEY_PWD_READ)));
-    m_pChkCheckProdReq     ->SetValue(0!=atol(gpApp->GetConfig(SZ_SECT_COMMON, SZ_KEY_CHK_PROD_REQ)));
-    m_pChkMoveMode         ->SetValue(0!=atol(gpApp->GetConfig(SZ_SECT_COMMON, SZ_KEY_CHECK_MOVE_MODE)));
+    m_pChkLoadOrd          ->SetValue(0!=atol(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_LOAD_ORDER)));
+    m_pChkLoadRep          ->SetValue(0!=atol(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_LOAD_REP)));
+    m_pChkUnixStyle        ->SetValue(0!=stricmp(SZ_EOL_MS, gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_EOL)));
+    m_pChkHatchUnvisited   ->SetValue(0!=atol(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_HATCH_UNVISITED)));
+    m_pChkRClickCenters    ->SetValue(0!=atol(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_RCLICK_CENTERS)));
+//    m_pChk3WinLayout       ->SetValue(0!=atol(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_LAYOUT)));
+    m_pChkTeach            ->SetValue(0!=atol(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_CHECK_TEACH_LVL)));
+    m_pChkReadPwd          ->SetValue(0!=atol(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_PWD_READ)));
+    m_pChkCheckProdReq     ->SetValue(0!=atol(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_CHK_PROD_REQ)));
+    m_pChkMoveMode         ->SetValue(0!=atol(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_CHECK_MOVE_MODE)));
 
-    switch(atol(gpApp->GetConfig(SZ_SECT_COMMON, SZ_KEY_LAYOUT)))
+    switch(atol(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_LAYOUT)))
     {
       case AH_LAYOUT_1_WIN:   m_pRadio1Win->SetValue(true);   break;
       case AH_LAYOUT_2_WIN:   m_pRadio2Win->SetValue(true);   break;
       default             :   m_pRadio3Win->SetValue(true);   break;
     }
 
-    if (0==stricmp(gpApp->GetConfig(SZ_SECT_COMMON, SZ_KEY_ICONS), SZ_ICONS_ADVANCED))
+    if (0==stricmp(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_ICONS), SZ_ICONS_ADVANCED))
         m_pRadioIconsAdvanced->SetValue(true);
     else
         m_pRadioIconsSimple->SetValue(true);
@@ -321,7 +321,7 @@ void COptionsDialog::OnOk    (wxCommandEvent& event)
     if (m_IsValid && event.GetId()==wxID_OK)
     {
         m_IsValid = false;
-        DoApplyColors = ((m_pChkHatchUnvisited->GetValue()?1:0)!=atol(gpApp->GetConfig(SZ_SECT_COMMON, SZ_KEY_HATCH_UNVISITED)));
+        DoApplyColors = ((m_pChkHatchUnvisited->GetValue()?1:0)!=atol(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_HATCH_UNVISITED)));
 
 
         if (m_pRadio1Win->GetValue())
@@ -331,44 +331,44 @@ void COptionsDialog::OnOk    (wxCommandEvent& event)
         else
             layout = AH_LAYOUT_3_WIN;
 
-//        if (m_pChk3WinLayout->GetValue() != (0!=atol(gpApp->GetConfig(SZ_SECT_COMMON, SZ_KEY_LAYOUT))))
-        if (layout != atol(gpApp->GetConfig(SZ_SECT_COMMON, SZ_KEY_LAYOUT)))
+//        if (m_pChk3WinLayout->GetValue() != (0!=atol(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_LAYOUT))))
+        if (layout != atol(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_LAYOUT)))
             wxMessageBox(wxT("Please restart application for the changes to take effect"),
                          wxT("Warning"), wxOK | wxCENTRE | wxICON_EXCLAMATION);
 
 
-        gpApp->SetConfig(SZ_SECT_COMMON, SZ_KEY_LOAD_ORDER        , m_pChkLoadOrd          ->GetValue()?"1":"0");
-        gpApp->SetConfig(SZ_SECT_COMMON, SZ_KEY_LOAD_REP          , m_pChkLoadRep          ->GetValue()?"1":"0");
-        gpApp->SetConfig(SZ_SECT_COMMON, SZ_KEY_HATCH_UNVISITED   , m_pChkHatchUnvisited   ->GetValue()?"1":"0");
-        gpApp->SetConfig(SZ_SECT_COMMON, SZ_KEY_RCLICK_CENTERS    , m_pChkRClickCenters    ->GetValue()?"1":"0");
-//        gpApp->SetConfig(SZ_SECT_COMMON, SZ_KEY_LAYOUT            , m_pChk3WinLayout       ->GetValue()?"1":"0");
-        gpApp->SetConfig(SZ_SECT_COMMON, SZ_KEY_LAYOUT            , layout);
-        gpApp->SetConfig(SZ_SECT_COMMON, SZ_KEY_CHECK_TEACH_LVL   , m_pChkTeach            ->GetValue()?"1":"0");
-        gpApp->SetConfig(SZ_SECT_COMMON, SZ_KEY_PWD_READ          , m_pChkReadPwd          ->GetValue()?"1":"0");
-        gpApp->SetConfig(SZ_SECT_COMMON, SZ_KEY_CHK_PROD_REQ      , m_pChkCheckProdReq     ->GetValue()?"1":"0");
-        gpApp->SetConfig(SZ_SECT_COMMON, SZ_KEY_CHECK_MOVE_MODE   , m_pChkMoveMode         ->GetValue()?"1":"0");
+        gpConfigManager->SetConfig(SZ_SECT_COMMON, SZ_KEY_LOAD_ORDER        , m_pChkLoadOrd          ->GetValue()?"1":"0");
+        gpConfigManager->SetConfig(SZ_SECT_COMMON, SZ_KEY_LOAD_REP          , m_pChkLoadRep          ->GetValue()?"1":"0");
+        gpConfigManager->SetConfig(SZ_SECT_COMMON, SZ_KEY_HATCH_UNVISITED   , m_pChkHatchUnvisited   ->GetValue()?"1":"0");
+        gpConfigManager->SetConfig(SZ_SECT_COMMON, SZ_KEY_RCLICK_CENTERS    , m_pChkRClickCenters    ->GetValue()?"1":"0");
+//        gpConfigManager->SetConfig(SZ_SECT_COMMON, SZ_KEY_LAYOUT            , m_pChk3WinLayout       ->GetValue()?"1":"0");
+        gpConfigManager->SetConfig(SZ_SECT_COMMON, SZ_KEY_LAYOUT            , layout);
+        gpConfigManager->SetConfig(SZ_SECT_COMMON, SZ_KEY_CHECK_TEACH_LVL   , m_pChkTeach            ->GetValue()?"1":"0");
+        gpConfigManager->SetConfig(SZ_SECT_COMMON, SZ_KEY_PWD_READ          , m_pChkReadPwd          ->GetValue()?"1":"0");
+        gpConfigManager->SetConfig(SZ_SECT_COMMON, SZ_KEY_CHK_PROD_REQ      , m_pChkCheckProdReq     ->GetValue()?"1":"0");
+        gpConfigManager->SetConfig(SZ_SECT_COMMON, SZ_KEY_CHECK_MOVE_MODE   , m_pChkMoveMode         ->GetValue()?"1":"0");
 
 
         if (m_pChkUnixStyle->GetValue())
         {
-            gpApp->SetConfig(SZ_SECT_COMMON, SZ_KEY_EOL, SZ_EOL_UNIX);
+            gpConfigManager->SetConfig(SZ_SECT_COMMON, SZ_KEY_EOL, SZ_EOL_UNIX);
             EOL_FILE = EOL_UNIX;
         }
         else
         {
-            gpApp->SetConfig(SZ_SECT_COMMON, SZ_KEY_EOL, SZ_EOL_MS);
+            gpConfigManager->SetConfig(SZ_SECT_COMMON, SZ_KEY_EOL, SZ_EOL_MS);
             EOL_FILE = EOL_MS;
         }
 
-        gpApp->SetConfig(SZ_SECT_COMMON, SZ_KEY_ICONS, m_pRadioIconsAdvanced->GetValue() ? SZ_ICONS_ADVANCED : SZ_ICONS_SIMPLE);
+        gpConfigManager->SetConfig(SZ_SECT_COMMON, SZ_KEY_ICONS, m_pRadioIconsAdvanced->GetValue() ? SZ_ICONS_ADVANCED : SZ_ICONS_SIMPLE);
         
 
 
 
         if (DoApplyColors)
-            gpApp->ApplyColors();
-        gpApp->ApplyIcons();
-        gpApp->Redraw();
+            gpUIController->ApplyColors();
+        gpUIController->ApplyIcons();
+        gpUIController->Redraw();
     }
     StoreSize();
     EndModal(wxID_OK);
@@ -387,14 +387,14 @@ void COptionsDialog::OnCancel(wxCommandEvent& event)
         {
             if (m_bFontChanged[i])
             {
-/*              gpApp->m_Fonts[i]->SetPointSize(m_FontData[i].size    ) ;
-                gpApp->m_Fonts[i]->SetFamily   (m_FontData[i].family  ) ;
-                gpApp->m_Fonts[i]->SetStyle    (m_FontData[i].style   ) ;
-                gpApp->m_Fonts[i]->SetWeight   (m_FontData[i].weight  ) ;
-                gpApp->m_Fonts[i]->SetEncoding (m_FontData[i].encoding) ;
-                gpApp->m_Fonts[i]->SetFaceName (m_FontData[i].face    ) ;*/
-                delete gpApp->m_Fonts[i];
-                gpApp->m_Fonts[i] = new wxFont(m_FontData[i].size,
+/*              gpUIController->m_Fonts[i]->SetPointSize(m_FontData[i].size    ) ;
+                gpUIController->m_Fonts[i]->SetFamily   (m_FontData[i].family  ) ;
+                gpUIController->m_Fonts[i]->SetStyle    (m_FontData[i].style   ) ;
+                gpUIController->m_Fonts[i]->SetWeight   (m_FontData[i].weight  ) ;
+                gpUIController->m_Fonts[i]->SetEncoding (m_FontData[i].encoding) ;
+                gpUIController->m_Fonts[i]->SetFaceName (m_FontData[i].face    ) ;*/
+                delete gpUIController->m_Fonts[i];
+                gpUIController->m_Fonts[i] = new wxFont(m_FontData[i].size,
                                             static_cast<wxFontFamily>(m_FontData[i].family),
                                             static_cast<wxFontStyle>(m_FontData[i].style),
                                             static_cast<wxFontWeight>(m_FontData[i].weight),
@@ -407,13 +407,13 @@ void COptionsDialog::OnCancel(wxCommandEvent& event)
         }
 
         for (size_t i2=0; i2<m_ColorData.size(); i2++)
-            gpApp->SetConfig(SZ_SECT_COLORS, m_ColorData[i2].first.c_str(), m_ColorData[i2].second.c_str());
+            gpConfigManager->SetConfig(SZ_SECT_COLORS, m_ColorData[i2].first.c_str(), m_ColorData[i2].second.c_str());
 
         for (size_t i2=0; i2<m_FactionData.size(); i2++)
-            gpApp->SetConfig(SZ_SECT_PASSWORDS, m_FactionData[i2].first.c_str(), m_FactionData[i2].second.c_str());
+            gpConfigManager->SetConfig(SZ_SECT_PASSWORDS, m_FactionData[i2].first.c_str(), m_FactionData[i2].second.c_str());
 
-        gpApp->ApplyFonts();
-        gpApp->ApplyColors();
+        gpUIController->ApplyFonts();
+        gpUIController->ApplyColors();
     }
 
     StoreSize();
@@ -434,31 +434,31 @@ void COptionsDialog::OnFont    (wxCommandEvent& event)
         return;
 
     wxFontData data;
-    data.SetInitialFont(*gpApp->m_Fonts[fontidx]);
+    data.SetInitialFont(*gpUIController->m_Fonts[fontidx]);
     data.EnableEffects(false);
 
     wxFontDialog *dialog = new wxFontDialog(this, data);
-    wxString      title  = wxString::FromAscii(gpApp->m_FontDescr[fontidx]);
+    wxString      title  = wxString::FromAscii(gpUIController->m_FontDescr[fontidx]);
     dialog->SetTitle(title);
     if (dialog->ShowModal() == wxID_OK)
     {
         wxFontData retData = dialog->GetFontData();
         wxFont     retFont = retData.GetChosenFont();
 
-        gpApp->m_Fonts[fontidx]->SetPointSize(retFont.GetPointSize());
-        gpApp->m_Fonts[fontidx]->SetFamily   (retFont.GetFamily   ());
-        gpApp->m_Fonts[fontidx]->SetStyle    (retFont.GetStyle    ());
-        gpApp->m_Fonts[fontidx]->SetWeight   (retFont.GetWeight   ());
-        gpApp->m_Fonts[fontidx]->SetEncoding (retFont.GetEncoding ());
-        gpApp->m_Fonts[fontidx]->SetFaceName (retFont.GetFaceName ());
+        gpUIController->m_Fonts[fontidx]->SetPointSize(retFont.GetPointSize());
+        gpUIController->m_Fonts[fontidx]->SetFamily   (retFont.GetFamily   ());
+        gpUIController->m_Fonts[fontidx]->SetStyle    (retFont.GetStyle    ());
+        gpUIController->m_Fonts[fontidx]->SetWeight   (retFont.GetWeight   ());
+        gpUIController->m_Fonts[fontidx]->SetEncoding (retFont.GetEncoding ());
+        gpUIController->m_Fonts[fontidx]->SetFaceName (retFont.GetFaceName ());
 
         m_bFontChanged[fontidx] = true;
-//        delete gpApp->m_Fonts[fontidx];
-//        gpApp->m_Fonts[fontidx] = new wxFont(retFont);
+//        delete gpUIController->m_Fonts[fontidx];
+//        gpUIController->m_Fonts[fontidx] = new wxFont(retFont);
 
 
 
-        gpApp->ApplyFonts();
+        gpUIController->ApplyFonts();
     }
     dialog->Destroy();
 }
@@ -476,7 +476,7 @@ void COptionsDialog::OnColor    (wxCommandEvent& event)
         return;
 
     colname = m_pComboColors->GetStringSelection();
-    StrToColor(&colour, gpApp->GetConfig(SZ_SECT_COLORS, colname.mb_str()));
+    StrToColor(&colour, gpConfigManager->GetConfig(SZ_SECT_COLORS, colname.mb_str()));
 
     data.SetChooseFull(true);
     data.SetCustomColour(0,colour);
@@ -490,8 +490,8 @@ void COptionsDialog::OnColor    (wxCommandEvent& event)
         wxColour col = retData.GetColour();
 
         ColorToStr(newcolour, sizeof(newcolour), &col);
-        gpApp->SetConfig(SZ_SECT_COLORS, colname.mb_str(), newcolour);
-        gpApp->ApplyColors();
+        gpConfigManager->SetConfig(SZ_SECT_COLORS, colname.mb_str(), newcolour);
+        gpUIController->ApplyColors();
     }
     dialog->Destroy();
 }
@@ -506,7 +506,7 @@ void COptionsDialog::OnFaction(wxCommandEvent& event)
         return;
     }
 
-    m_pTxtPassword->SetValue( wxString::FromAscii(gpApp->GetConfig(SZ_SECT_PASSWORDS, m_pComboFactions->GetStringSelection().mb_str())));
+    m_pTxtPassword->SetValue( wxString::FromAscii(gpConfigManager->GetConfig(SZ_SECT_PASSWORDS, m_pComboFactions->GetStringSelection().mb_str())));
 }
 
 //--------------------------------------------------------------------------
@@ -516,7 +516,7 @@ void COptionsDialog::OnPassword(wxCommandEvent& event)
     if (wxNOT_FOUND == m_pComboFactions->GetSelection())
         return;
 
-    gpApp->SetConfig(SZ_SECT_PASSWORDS, m_pComboFactions->GetStringSelection().mb_str(), m_pTxtPassword->GetValue().mb_str());
+    gpConfigManager->SetConfig(SZ_SECT_PASSWORDS, m_pComboFactions->GetStringSelection().mb_str(), m_pTxtPassword->GetValue().mb_str());
 }
 
 //--------------------------------------------------------------------------

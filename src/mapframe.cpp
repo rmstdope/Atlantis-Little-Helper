@@ -340,7 +340,7 @@ void CMapFrame::Init(int layout, const char * szConfigSection)
     const char        * szConfigSectionHdr;
 
     szConfigSection    = GetConfigSection(layout);
-    szConfigSectionHdr = gpApp->GetListColSection(SZ_SECT_LIST_COL_UNIT, SZ_KEY_LIS_COL_UNITS_HEX);
+    szConfigSectionHdr = gpUIController->GetListColSection(SZ_SECT_LIST_COL_UNIT, SZ_KEY_LIS_COL_UNITS_HEX);
     CAhFrame::Init(layout, szConfigSection);
 
     switch (layout)
@@ -395,20 +395,20 @@ void CMapFrame::Init(int layout, const char * szConfigSection)
             m_Splitter3->SetMinimumPaneSize(2);
             m_Splitter4->SetMinimumPaneSize(2);
 
-            x = atol(gpApp->GetConfig(szConfigSection, SZ_KEY_HEIGHT_0));
+            x = atol(gpConfigManager->GetConfig(szConfigSection, SZ_KEY_HEIGHT_0));
             m_Splitter->SplitHorizontally(m_Splitter1, p2, x);
 
-            x  = atol(gpApp->GetConfig(szConfigSection, SZ_KEY_WIDTH_0));
+            x  = atol(gpConfigManager->GetConfig(szConfigSection, SZ_KEY_WIDTH_0));
             m_Splitter1->SplitVertically(p1, m_Splitter2, x);
 
-            x  = atol(gpApp->GetConfig(szConfigSection, SZ_KEY_HEIGHT_1));
+            x  = atol(gpConfigManager->GetConfig(szConfigSection, SZ_KEY_HEIGHT_1));
             m_Splitter2->SplitHorizontally(p3, m_Splitter3, x);
 
-            x  = atol(gpApp->GetConfig(szConfigSection, SZ_KEY_HEIGHT_2));
+            x  = atol(gpConfigManager->GetConfig(szConfigSection, SZ_KEY_HEIGHT_2));
             m_Splitter3->SplitHorizontally(p4, m_Splitter4, x);
 
 
-            x  = atol(gpApp->GetConfig(szConfigSection, SZ_KEY_WIDTH_1));
+            x  = atol(gpConfigManager->GetConfig(szConfigSection, SZ_KEY_WIDTH_1));
             m_Splitter4->SplitVertically(p5, p6, x);
 
             break;
@@ -420,7 +420,7 @@ void CMapFrame::Init(int layout, const char * szConfigSection)
             CEditPane         * p2;
             long                y0;
 
-            y0  = atol(gpApp->GetConfig(szConfigSection, SZ_KEY_HEIGHT_0));
+            y0  = atol(gpConfigManager->GetConfig(szConfigSection, SZ_KEY_HEIGHT_0));
             m_Splitter = new wxSplitterWindow(this, -1, wxDefaultPosition, wxDefaultSize,
                                               wxSP_3D | wxCLIP_CHILDREN);
 
@@ -461,27 +461,27 @@ void CMapFrame::Done(bool SetClosedFlag)
     switch (m_Layout)
     {
     case AH_LAYOUT_1_WIN:
-        gpApp->SetConfig(m_sConfigSection.c_str(), SZ_KEY_HEIGHT_0, m_Splitter ->GetSashPosition());
-        gpApp->SetConfig(m_sConfigSection.c_str(), SZ_KEY_WIDTH_0 , m_Splitter1->GetSashPosition());
-        gpApp->SetConfig(m_sConfigSection.c_str(), SZ_KEY_HEIGHT_1, m_Splitter2->GetSashPosition());
-        gpApp->SetConfig(m_sConfigSection.c_str(), SZ_KEY_HEIGHT_2, m_Splitter3->GetSashPosition());
-        gpApp->SetConfig(m_sConfigSection.c_str(), SZ_KEY_WIDTH_1 , m_Splitter4->GetSashPosition());
+        gpConfigManager->SetConfig(m_sConfigSection.c_str(), SZ_KEY_HEIGHT_0, m_Splitter ->GetSashPosition());
+        gpConfigManager->SetConfig(m_sConfigSection.c_str(), SZ_KEY_WIDTH_0 , m_Splitter1->GetSashPosition());
+        gpConfigManager->SetConfig(m_sConfigSection.c_str(), SZ_KEY_HEIGHT_1, m_Splitter2->GetSashPosition());
+        gpConfigManager->SetConfig(m_sConfigSection.c_str(), SZ_KEY_HEIGHT_2, m_Splitter3->GetSashPosition());
+        gpConfigManager->SetConfig(m_sConfigSection.c_str(), SZ_KEY_WIDTH_1 , m_Splitter4->GetSashPosition());
 
-        pUnitPane  = (CUnitPane*)gpApp->m_Panes[AH_PANE_UNITS_HEX];
+        pUnitPane  = (CUnitPane*)gpUIController->m_Panes[AH_PANE_UNITS_HEX];
         if (pUnitPane)
             pUnitPane->Done();
 
         break;
 
     case AH_LAYOUT_2_WIN:
-        gpApp->SetConfig(m_sConfigSection.c_str(), SZ_KEY_HEIGHT_0, m_Splitter->GetSashPosition());
+        gpConfigManager->SetConfig(m_sConfigSection.c_str(), SZ_KEY_HEIGHT_0, m_Splitter->GetSashPosition());
         break;
 
     case AH_LAYOUT_3_WIN:
         break;
     }
 
-    pMapPane  = (CMapPane* )gpApp->m_Panes[AH_PANE_MAP];
+    pMapPane  = (CMapPane* )gpUIController->m_Panes[AH_PANE_MAP];
     if (pMapPane)
         pMapPane->Done();
 
@@ -501,7 +501,7 @@ void CMapFrame::OnQuit(wxCommandEvent& WXUNUSED(event))
 
 void CMapFrame::OnQuitNoSave(wxCommandEvent& WXUNUSED(event))
 {
-    gpApp->m_DiscardChanges = true;
+    gpUIController->m_DiscardChanges = true;
 
     // true is to force the frame to close
     Close(true);
@@ -535,8 +535,8 @@ void CMapFrame::OnAbout(wxCommandEvent& WXUNUSED(event))
 
 void CMapFrame::OnToolbarCmd(wxCommandEvent& event)
 {
-    if (gpApp->m_Panes[AH_PANE_MAP])
-        ((CMapPane*)gpApp->m_Panes[AH_PANE_MAP])->OnToolbarCmd(event);
+    if (gpUIController->m_Panes[AH_PANE_MAP])
+        ((CMapPane*)gpUIController->m_Panes[AH_PANE_MAP])->OnToolbarCmd(event);
 }
 
 //--------------------------------------------------------------------
@@ -544,8 +544,8 @@ void CMapFrame::OnToolbarCmd(wxCommandEvent& event)
 void CMapFrame::OnToolbarUpdate(wxUpdateUIEvent& event)
 {
     bool Ok = false;
-    if (gpApp->m_Panes[AH_PANE_MAP])
-        Ok = ((CMapPane*)gpApp->m_Panes[AH_PANE_MAP])->IsToolActive(event);
+    if (gpUIController->m_Panes[AH_PANE_MAP])
+        Ok = ((CMapPane*)gpUIController->m_Panes[AH_PANE_MAP])->IsToolActive(event);
 
     event.Enable(false!=Ok); // otherwise that bitch VC++, well, bitches
 }
@@ -554,7 +554,7 @@ void CMapFrame::OnToolbarUpdate(wxUpdateUIEvent& event)
 
 void CMapFrame::OnViewBattlesAllUpdate(wxUpdateUIEvent& event)
 {
-    event.Enable(gpApp->m_pAtlantis->m_Battles.Count()>0);
+    event.Enable(gpGameData->m_pAtlantis->m_Battles.Count()>0);
 }
 
 
@@ -566,7 +566,7 @@ void CMapFrame::OnViewSkillsAllUpdate(wxUpdateUIEvent& event)
     const char  * szValue;
     int           sectidx;
 
-    sectidx = gpApp->GetSectionFirst(SZ_SECT_SKILLS, szName, szValue);
+    sectidx = gpConfigManager->GetSectionFirst(SZ_SECT_SKILLS, szName, szValue);
     event.Enable(sectidx>=0);
 }
 
@@ -574,7 +574,7 @@ void CMapFrame::OnViewSkillsAllUpdate(wxUpdateUIEvent& event)
 
 void CMapFrame::OnViewSkillsNewUpdate(wxUpdateUIEvent& event)
 {
-    event.Enable(gpApp->m_pAtlantis->m_Skills.Count()>0);
+    event.Enable(gpGameData->m_pAtlantis->m_Skills.Count()>0);
 }
 
 
@@ -586,7 +586,7 @@ void CMapFrame::OnViewItemsAllUpdate(wxUpdateUIEvent& event)
     const char  * szValue;
     int           sectidx;
 
-    sectidx = gpApp->GetSectionFirst(SZ_SECT_ITEMS, szName, szValue);
+    sectidx = gpConfigManager->GetSectionFirst(SZ_SECT_ITEMS, szName, szValue);
     event.Enable(sectidx>=0);
 }
 
@@ -594,7 +594,7 @@ void CMapFrame::OnViewItemsAllUpdate(wxUpdateUIEvent& event)
 
 void CMapFrame::OnViewItemsNewUpdate(wxUpdateUIEvent& event)
 {
-    event.Enable(gpApp->m_pAtlantis->m_Items.Count()>0);
+    event.Enable(gpGameData->m_pAtlantis->m_Items.Count()>0);
 }
 
 //--------------------------------------------------------------------
@@ -605,7 +605,7 @@ void CMapFrame::OnViewObjectsAllUpdate(wxUpdateUIEvent& event)
     const char  * szValue;
     int           sectidx;
 
-    sectidx = gpApp->GetSectionFirst(SZ_SECT_OBJECTS, szName, szValue);
+    sectidx = gpConfigManager->GetSectionFirst(SZ_SECT_OBJECTS, szName, szValue);
     event.Enable(sectidx>=0);
 }
 
@@ -613,42 +613,42 @@ void CMapFrame::OnViewObjectsAllUpdate(wxUpdateUIEvent& event)
 
 void CMapFrame::OnViewObjectsNewUpdate(wxUpdateUIEvent& event)
 {
-    event.Enable(gpApp->m_pAtlantis->m_Objects.Count()>0);
+    event.Enable(gpGameData->m_pAtlantis->m_Objects.Count()>0);
 }
 
 //--------------------------------------------------------------------
 
 void CMapFrame::OnViewEventsUpdate(wxUpdateUIEvent& event)
 {
-    event.Enable(!gpApp->m_pAtlantis->m_Events.Description.empty());
+    event.Enable(!gpGameData->m_pAtlantis->m_Events.Description.empty());
 }
 
 //--------------------------------------------------------------------
 
 void CMapFrame::OnViewSecurityEventsUpdate(wxUpdateUIEvent& event)
 {
-    event.Enable(!gpApp->m_pAtlantis->m_SecurityEvents.Description.empty());
+    event.Enable(!gpGameData->m_pAtlantis->m_SecurityEvents.Description.empty());
 }
 
 //--------------------------------------------------------------------
 
 void CMapFrame::OnViewNewProductsUpdate(wxUpdateUIEvent& event)
 {
-    event.Enable(gpApp->m_pAtlantis->m_NewProducts.Count() > 0);
+    event.Enable(gpGameData->m_pAtlantis->m_NewProducts.Count() > 0);
 }
 
 //--------------------------------------------------------------------
 
 void CMapFrame::OnViewErrorsUpdate(wxUpdateUIEvent& event)
 {
-    event.Enable(!gpApp->m_pAtlantis->m_Errors.Description.empty());
+    event.Enable(!gpGameData->m_pAtlantis->m_Errors.Description.empty());
 }
 
 //--------------------------------------------------------------------
 
 void CMapFrame::OnViewGatesUpdate(wxUpdateUIEvent& event)
 {
-    event.Enable(gpApp->m_pAtlantis->m_Gates.Count()>0);
+    event.Enable(gpGameData->m_pAtlantis->m_Gates.Count()>0);
 }
 
 //--------------------------------------------------------------------
@@ -656,9 +656,9 @@ void CMapFrame::OnViewGatesUpdate(wxUpdateUIEvent& event)
 void CMapFrame::OnCloseWindow(wxCloseEvent& event)
 {
     // This is the cental shutdown point!
-    if (gpApp->CanCloseApp())
+    if (gpUIController->CanCloseApp())
     {
-        gpApp->FrameClosing(this);
+        gpUIController->FrameClosing(this);
         Destroy();
     }
     else
@@ -669,185 +669,185 @@ void CMapFrame::OnCloseWindow(wxCloseEvent& event)
 
 void CMapFrame::OnLoadReport(wxCommandEvent& WXUNUSED(event))
 {
-    gpApp->LoadReport(false);
+    gpReportLoader->LoadReport(false);
 }
 
 //--------------------------------------------------------------------
 
 void CMapFrame::OnJoinReport(wxCommandEvent& WXUNUSED(event))
 {
-    gpApp->LoadReport(true);
+    gpReportLoader->LoadReport(true);
 }
 
 //--------------------------------------------------------------------
 
 void CMapFrame::OnLoadOrders(wxCommandEvent& WXUNUSED(event))
 {
-    gpApp->LoadOrders();
+    gpReportLoader->LoadOrders();
 }
 
 //--------------------------------------------------------------------
 
 void CMapFrame::OnSaveOrdersAs(wxCommandEvent& WXUNUSED(event))
 {
-    gpApp->SaveOrders(false);
+    gpReportLoader->SaveOrders(false);
 }
 
 //--------------------------------------------------------------------
 
 void CMapFrame::OnOptions(wxCommandEvent& event)
 {
-    gpApp->OpenOptionsDlg();
+    gpUIController->OpenOptionsDlg();
 }
 
 //--------------------------------------------------------------------
 
 void CMapFrame::OnViewSkillsAll(wxCommandEvent& event)
 {
-    gpApp->ViewShortNamedObjects(true, SZ_SECT_SKILLS, "Skills", gpApp->m_pAtlantis->m_Skills);
+    gpReportGenerator->ViewShortNamedObjects(true, SZ_SECT_SKILLS, "Skills", gpGameData->m_pAtlantis->m_Skills);
 }
 
 //--------------------------------------------------------------------
 
 void CMapFrame::OnViewSkillsNew(wxCommandEvent& event)
 {
-    gpApp->ViewShortNamedObjects(false, SZ_SECT_SKILLS, "Skills", gpApp->m_pAtlantis->m_Skills);
+    gpReportGenerator->ViewShortNamedObjects(false, SZ_SECT_SKILLS, "Skills", gpGameData->m_pAtlantis->m_Skills);
 }
 
 //--------------------------------------------------------------------
 
 void CMapFrame::OnViewItemsAll(wxCommandEvent& event)
 {
-    gpApp->ViewShortNamedObjects(true, SZ_SECT_ITEMS, "Items", gpApp->m_pAtlantis->m_Items);
+    gpReportGenerator->ViewShortNamedObjects(true, SZ_SECT_ITEMS, "Items", gpGameData->m_pAtlantis->m_Items);
 }
 
 //--------------------------------------------------------------------
 
 void CMapFrame::OnViewItemsNew(wxCommandEvent& event)
 {
-    gpApp->ViewShortNamedObjects(false, SZ_SECT_ITEMS, "Items", gpApp->m_pAtlantis->m_Items);
+    gpReportGenerator->ViewShortNamedObjects(false, SZ_SECT_ITEMS, "Items", gpGameData->m_pAtlantis->m_Items);
 }
 
 //--------------------------------------------------------------------
 
 void CMapFrame::OnViewObjectsAll(wxCommandEvent& event)
 {
-    gpApp->ViewShortNamedObjects(true, SZ_SECT_OBJECTS, "Objects", gpApp->m_pAtlantis->m_Objects);
+    gpReportGenerator->ViewShortNamedObjects(true, SZ_SECT_OBJECTS, "Objects", gpGameData->m_pAtlantis->m_Objects);
 }
 
 //--------------------------------------------------------------------
 
 void CMapFrame::OnViewObjectsNew(wxCommandEvent& event)
 {
-    gpApp->ViewShortNamedObjects(false, SZ_SECT_OBJECTS, "Objects", gpApp->m_pAtlantis->m_Objects);
+    gpReportGenerator->ViewShortNamedObjects(false, SZ_SECT_OBJECTS, "Objects", gpGameData->m_pAtlantis->m_Objects);
 }
 
 //--------------------------------------------------------------------
 
 void CMapFrame::OnViewBattlesAll(wxCommandEvent& event)
 {
-    gpApp->ViewBattlesAll();
+    gpReportGenerator->ViewBattlesAll();
 }
 
 //--------------------------------------------------------------------
 
 void CMapFrame::OnViewEvents(wxCommandEvent& event)
 {
-    gpApp->ViewEvents(true);
+    gpReportGenerator->ViewEvents(true);
 }
 
 //--------------------------------------------------------------------
 
 void CMapFrame::OnViewSecurityEvents(wxCommandEvent& event)
 {
-    gpApp->ViewSecurityEvents();
+    gpReportGenerator->ViewSecurityEvents();
 }
 
 //--------------------------------------------------------------------
 
 void CMapFrame::OnViewNewProducts(wxCommandEvent& event)
 {
-    gpApp->ViewNewProducts();
+    gpReportGenerator->ViewNewProducts();
 }
 
 //--------------------------------------------------------------------
 
 void CMapFrame::OnViewErrors(wxCommandEvent& event)
 {
-    gpApp->ViewEvents(false);
+    gpReportGenerator->ViewEvents(false);
 }
 
 //--------------------------------------------------------------------
 
 void CMapFrame::OnViewGates(wxCommandEvent& event)
 {
-    gpApp->ViewGates();
+    gpReportGenerator->ViewGates();
 }
 
 //--------------------------------------------------------------------
 
 void CMapFrame::OnViewCities(wxCommandEvent& event)
 {
-    gpApp->ViewCities();
+    gpReportGenerator->ViewCities();
 }
 
 //--------------------------------------------------------------------
 
 void CMapFrame::OnViewProvinces(wxCommandEvent& event)
 {
-    gpApp->ViewProvinces();
+    gpReportGenerator->ViewProvinces();
 }
 
 //--------------------------------------------------------------------
 
 void CMapFrame::OnViewFactionInfo(wxCommandEvent& event)
 {
-    gpApp->ViewFactionInfo();
+    gpReportGenerator->ViewFactionInfo();
 }
 
 //--------------------------------------------------------------------
 
 void CMapFrame::OnViewFactionOverview(wxCommandEvent& event)
 {
-    gpApp->ViewFactionOverview();
+    gpReportGenerator->ViewFactionOverview();
 }
 
 //--------------------------------------------------------------------
 
 void CMapFrame::OnWindowUnits(wxCommandEvent& event)
 {
-    gpApp->OpenUnitFrame();
+    gpUIController->OpenUnitFrame();
 }
 
 //--------------------------------------------------------------------
 
 void CMapFrame::OnWindowUnitsFltr(wxCommandEvent& event)
 {
-    gpApp->OpenUnitFrameFltr(true);
+    gpUIController->OpenUnitFrameFltr(true);
 }
 
 //--------------------------------------------------------------------
 
 void CMapFrame::OnWindowMessages(wxCommandEvent& event)
 {
-    gpApp->OpenMsgFrame();
+    gpUIController->OpenMsgFrame();
 }
 
 //--------------------------------------------------------------------
 
 void CMapFrame::OnWindowEditors(wxCommandEvent& event)
 {
-    gpApp->OpenEditsFrame();
+    gpUIController->OpenEditsFrame();
 }
 
 //--------------------------------------------------------------------
 
 void CMapFrame::OnApplyDefaultOrders(wxCommandEvent& event)
 {
-    gpApp->SetOrdersChanged(gpApp->m_pAtlantis->ApplyDefaultOrders(true) //(bool)atol(gpApp->GetConfig(SZ_SECT_COMMON, SZ_KEY_DEFAULT_EMPTY_ONLY)))
-                            || gpApp->GetOrdersChanged());
+    gpReportLoader->SetOrdersChanged(gpGameData->m_pAtlantis->ApplyDefaultOrders(true) //(bool)atol(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_DEFAULT_EMPTY_ONLY)))
+                            || gpReportLoader->GetOrdersChanged());
 
-    CUnitPane * p = (CUnitPane*)gpApp->m_Panes[AH_PANE_UNITS_HEX];
+    CUnitPane * p = (CUnitPane*)gpUIController->m_Panes[AH_PANE_UNITS_HEX];
     if (p)
         p->Update(p->m_pCurLand);
 
@@ -857,42 +857,42 @@ void CMapFrame::OnApplyDefaultOrders(wxCommandEvent& event)
 
 void CMapFrame::OnRerunOrders(wxCommandEvent& event)
 {
-    gpApp->RerunOrders();
+    gpReportLoader->RerunOrders();
 }
 
 //--------------------------------------------------------------------
 
 void CMapFrame::OnWriteMagesCSV(wxCommandEvent& event)
 {
-    gpApp->WriteMagesCSV();
+    gpReportGenerator->WriteMagesCSV();
 }
 
 //--------------------------------------------------------------------
 
 void CMapFrame::OnCheckMonthLongOrd(wxCommandEvent& event)
 {
-    gpApp->CheckMonthLongOrders();
+    gpReportGenerator->CheckMonthLongOrders();
 }
 
 //--------------------------------------------------------------------
 
 void CMapFrame::OnCheckTaxTrade(wxCommandEvent& event)
 {
-    gpApp->CheckTaxTrade();
+    gpReportGenerator->CheckTaxTrade();
 }
 
 //--------------------------------------------------------------------
 
 void CMapFrame::OnCheckProduction(wxCommandEvent& event)
 {
-    gpApp->CheckProduction();
+    gpReportGenerator->CheckProduction();
 }
 
 //--------------------------------------------------------------------
 
 void CMapFrame::OnCheckSailing(wxCommandEvent& event)
 {
-    gpApp->CheckSailing();
+    gpReportGenerator->CheckSailing();
 }
 
 
@@ -902,7 +902,7 @@ void CMapFrame::OnFindHexes(wxCommandEvent& event)
 {
     CMapPane * pMapPane;
 
-    pMapPane  = (CMapPane* )gpApp->m_Panes[AH_PANE_MAP];
+    pMapPane  = (CMapPane* )gpUIController->m_Panes[AH_PANE_MAP];
     if (pMapPane)
         pMapPane->FindHexes();
 
@@ -913,16 +913,16 @@ void CMapFrame::OnFindHexes(wxCommandEvent& event)
 
 void CMapFrame::OnExportHexes(wxCommandEvent& event)
 {
-    gpApp->ExportHexes();
+    gpReportGenerator->ExportHexes();
 }
 
 //--------------------------------------------------------------------
 
 void CMapFrame::OnFindTradeRoutes(wxCommandEvent& event)
 {
-    gpApp->FindTradeRoutes();
+    gpReportGenerator->FindTradeRoutes();
     
-    CMapPane * pMapPane  = (CMapPane* )gpApp->m_Panes[AH_PANE_MAP];
+    CMapPane * pMapPane  = (CMapPane* )gpUIController->m_Panes[AH_PANE_MAP];
     if (pMapPane)
     {
         pMapPane->RemoveRectangle();
@@ -934,7 +934,7 @@ void CMapFrame::OnFindTradeRoutes(wxCommandEvent& event)
 
 void CMapFrame::OnListCol(wxCommandEvent& event)
 {
-    gpApp->EditListColumns(event.GetId());
+    gpUIController->EditListColumns(event.GetId());
 }
 
 //--------------------------------------------------------------------
@@ -953,7 +953,7 @@ void CMapFrame::OnFlagNames(wxCommandEvent& event)
 
 void CMapFrame::OnFlagsAllSet(wxCommandEvent& event)
 {
-    gpApp->SetAllLandUnitFlags();
+    gpReportLoader->SetAllLandUnitFlags();
 }
 
 //--------------------------------------------------------------------

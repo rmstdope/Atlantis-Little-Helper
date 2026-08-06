@@ -174,7 +174,7 @@ void CUnitPane::Update(CLand * pLand)
 
 
     if ((0==m_pUnits->Count()) || !FullUpdate) // otherwise will be called from OnSelected()
-        gpApp->OnUnitHexSelectionChange(GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED));
+        gpSelectionState->OnUnitHexSelectionChange(GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED));
 }
 
 //--------------------------------------------------------------------------
@@ -250,7 +250,7 @@ void CUnitPane::Sort()
 
 void CUnitPane::ApplyFonts()
 {
-    SetFont(*gpApp->m_Fonts[FONT_UNIT_LIST]);
+    SetFont(*gpUIController->m_Fonts[FONT_UNIT_LIST]);
 }
 
 //--------------------------------------------------------------------------
@@ -266,7 +266,7 @@ void CUnitPane::LoadUnitListHdr()
     unsigned long     flags;
 
     m_pLayout->FreeAll();
-    i = gpApp->GetSectionFirst(m_sConfigSectionHdr.c_str(), szName, szValue);
+    i = gpConfigManager->GetSectionFirst(m_sConfigSectionHdr.c_str(), szName, szValue);
     while (i >= 0)
     {
         szValue = GetToken(S, szValue, ',');  width = atol(S.c_str());
@@ -279,13 +279,13 @@ void CUnitPane::LoadUnitListHdr()
             pLI = new CListLayoutItem(S.c_str(), szValue, width, flags);
             m_pLayout->Insert(pLI);
         }
-        i = gpApp->GetSectionNext(i, m_sConfigSectionHdr.c_str(), szName, szValue);
+        i = gpConfigManager->GetSectionNext(i, m_sConfigSectionHdr.c_str(), szName, szValue);
     }
 
     SetLayout();
-    SetSortName(0,  gpApp->GetConfig(m_sConfigSection.c_str(), SZ_KEY_SORT1));
-    SetSortName(1,  gpApp->GetConfig(m_sConfigSection.c_str(), SZ_KEY_SORT2));
-    SetSortName(2,  gpApp->GetConfig(m_sConfigSection.c_str(), SZ_KEY_SORT3));
+    SetSortName(0,  gpConfigManager->GetConfig(m_sConfigSection.c_str(), SZ_KEY_SORT1));
+    SetSortName(1,  gpConfigManager->GetConfig(m_sConfigSection.c_str(), SZ_KEY_SORT2));
+    SetSortName(2,  gpConfigManager->GetConfig(m_sConfigSection.c_str(), SZ_KEY_SORT3));
     Sort();
 }
 
@@ -327,7 +327,7 @@ void CUnitPane::SaveUnitListHdr()
     if (m_pLayout)
     {
         // we are naming items dynamically, so remove them first!
-        gpApp->RemoveSection(m_sConfigSectionHdr.c_str());
+        gpConfigManager->RemoveSection(m_sConfigSectionHdr.c_str());
 
         for (i=0; i<m_pLayout->Count(); i++)
         {
@@ -336,12 +336,12 @@ void CUnitPane::SaveUnitListHdr()
 
             Format(Key, "%03d", i);
             Format(Val, "%d, %lu, %s, %s", GetColumnWidth(i), pLI->m_Flags, pLI->m_Name, pLI->m_Caption);
-            gpApp->SetConfig(m_sConfigSectionHdr.c_str(), Key.c_str(), Val.c_str());
+            gpConfigManager->SetConfig(m_sConfigSectionHdr.c_str(), Key.c_str(), Val.c_str());
         }
 
-        gpApp->SetConfig(m_sConfigSection.c_str(), SZ_KEY_SORT1, GetSortName(0));
-        gpApp->SetConfig(m_sConfigSection.c_str(), SZ_KEY_SORT2, GetSortName(1));
-        gpApp->SetConfig(m_sConfigSection.c_str(), SZ_KEY_SORT3, GetSortName(2));
+        gpConfigManager->SetConfig(m_sConfigSection.c_str(), SZ_KEY_SORT1, GetSortName(0));
+        gpConfigManager->SetConfig(m_sConfigSection.c_str(), SZ_KEY_SORT2, GetSortName(1));
+        gpConfigManager->SetConfig(m_sConfigSection.c_str(), SZ_KEY_SORT3, GetSortName(2));
     }
 }
 
@@ -356,7 +356,7 @@ void CUnitPane::OnSelected(wxListEvent& event)
         if (m_pCurLand)
             m_pCurLand->guiUnit = pUnit->Id;
 
-        gpApp->OnUnitHexSelectionChange(event.m_itemIndex);
+        gpSelectionState->OnUnitHexSelectionChange(event.m_itemIndex);
     }
 }
 
@@ -519,15 +519,15 @@ void CUnitPane::OnPopupMenuTeach (wxCommandEvent& event)
 
     if (pUnit)
     {
-        pOrders = (CEditPane*)gpApp->m_Panes[AH_PANE_UNIT_COMMANDS];
+        pOrders = (CEditPane*)gpUIController->m_Panes[AH_PANE_UNIT_COMMANDS];
         if (pOrders)
             pOrders->SaveModifications();
 
         if (m_pCurLand)
             m_pCurLand->guiUnit = pUnit->Id;
 
-        gpApp->SetOrdersChanged(gpApp->m_pAtlantis->GenOrdersTeach(pUnit)
-                               || gpApp->GetOrdersChanged());
+        gpReportLoader->SetOrdersChanged(gpGameData->m_pAtlantis->GenOrdersTeach(pUnit)
+                               || gpReportLoader->GetOrdersChanged());
         Update(m_pCurLand);
     }
 }
@@ -542,7 +542,7 @@ void CUnitPane::OnPopupMenuSplit(wxCommandEvent& event)
 
     if (pUnit)
     {
-        pOrders = (CEditPane*)gpApp->m_Panes[AH_PANE_UNIT_COMMANDS];
+        pOrders = (CEditPane*)gpUIController->m_Panes[AH_PANE_UNIT_COMMANDS];
         if (pOrders)
             pOrders->SaveModifications();
 
@@ -553,7 +553,7 @@ void CUnitPane::OnPopupMenuSplit(wxCommandEvent& event)
 
         CUnitSplitDlg dlg(this, pUnit);
         if (wxID_OK == dlg.ShowModal()) // it will modify unit's orders
-            gpApp->SetOrdersChanged(true);
+            gpReportLoader->SetOrdersChanged(true);
 
         Update(m_pCurLand);
     }
@@ -569,15 +569,15 @@ void CUnitPane::OnPopupMenuShareSilv  (wxCommandEvent& event)
 
     if (pUnit)
     {
-        pOrders = (CEditPane*)gpApp->m_Panes[AH_PANE_UNIT_COMMANDS];
+        pOrders = (CEditPane*)gpUIController->m_Panes[AH_PANE_UNIT_COMMANDS];
         if (pOrders)
             pOrders->SaveModifications();
 
         if (m_pCurLand)
             m_pCurLand->guiUnit = pUnit->Id;
 
-        gpApp->SetOrdersChanged(gpApp->m_pAtlantis->ShareSilver(pUnit)
-                               || gpApp->GetOrdersChanged());
+        gpReportLoader->SetOrdersChanged(gpGameData->m_pAtlantis->ShareSilver(pUnit)
+                               || gpReportLoader->GetOrdersChanged());
         Update(m_pCurLand);
     }
 }
@@ -594,7 +594,7 @@ void CUnitPane::OnPopupMenuGiveEverything (wxCommandEvent& event)
 
     if (pUnit)
     {
-        pOrders = (CEditPane*)gpApp->m_Panes[AH_PANE_UNIT_COMMANDS];
+        pOrders = (CEditPane*)gpUIController->m_Panes[AH_PANE_UNIT_COMMANDS];
         if (pOrders)
             pOrders->SaveModifications();
 
@@ -603,8 +603,8 @@ void CUnitPane::OnPopupMenuGiveEverything (wxCommandEvent& event)
 
         N = wxGetTextFromUser(wxT("Give everything to unit"), wxT("Confirm"));
 
-        gpApp->SetOrdersChanged(gpApp->m_pAtlantis->GenGiveEverything(pUnit, N.mb_str())
-                               || gpApp->GetOrdersChanged());
+        gpReportLoader->SetOrdersChanged(gpGameData->m_pAtlantis->GenGiveEverything(pUnit, N.mb_str())
+                               || gpReportLoader->GetOrdersChanged());
         Update(m_pCurLand);
     }
 
@@ -620,15 +620,15 @@ void CUnitPane::OnPopupMenuDiscardJunk(wxCommandEvent& WXUNUSED(event))
 
     if (pUnit)
     {
-        pOrders = (CEditPane*)gpApp->m_Panes[AH_PANE_UNIT_COMMANDS];
+        pOrders = (CEditPane*)gpUIController->m_Panes[AH_PANE_UNIT_COMMANDS];
         if (pOrders)
             pOrders->SaveModifications();
 
         if (m_pCurLand)
             m_pCurLand->guiUnit = pUnit->Id;
 
-        gpApp->SetOrdersChanged(gpApp->m_pAtlantis->DiscardJunkItems(pUnit, gpApp->GetConfig(SZ_SECT_UNITPROP_GROUPS, PRP_JUNK_ITEMS))
-                               || gpApp->GetOrdersChanged());
+        gpReportLoader->SetOrdersChanged(gpGameData->m_pAtlantis->DiscardJunkItems(pUnit, gpConfigManager->GetConfig(SZ_SECT_UNITPROP_GROUPS, PRP_JUNK_ITEMS))
+                               || gpReportLoader->GetOrdersChanged());
         Update(m_pCurLand);
     }
 }
@@ -644,23 +644,23 @@ void CUnitPane::OnPopupMenuDetectSpies(wxCommandEvent& WXUNUSED(event))
 
     if (pUnit)
     {
-        DoCheck = atol(gpApp->GetConfig(SZ_SECT_COMMON, SZ_KEY_SPY_DETECT_WARNING));
+        DoCheck = atol(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_SPY_DETECT_WARNING));
         if (DoCheck &&
             wxYES != wxMessageBox(wxT("Really generate orders for spy detection?  It might freeze the program on Linux!"), wxT("Confirm"), wxYES_NO, nullptr))
             return;
 
-        pOrders = (CEditPane*)gpApp->m_Panes[AH_PANE_UNIT_COMMANDS];
+        pOrders = (CEditPane*)gpUIController->m_Panes[AH_PANE_UNIT_COMMANDS];
         if (pOrders)
             pOrders->SaveModifications();
 
         if (m_pCurLand)
             m_pCurLand->guiUnit = pUnit->Id;
 
-        gpApp->SetOrdersChanged(gpApp->m_pAtlantis->DetectSpies(pUnit,
-                                                                atol(gpApp->GetConfig(SZ_SECT_COMMON, SZ_KEY_SPY_DETECT_LO)),
-                                                                atol(gpApp->GetConfig(SZ_SECT_COMMON, SZ_KEY_SPY_DETECT_HI)),
-                                                                atol(gpApp->GetConfig(SZ_SECT_COMMON, SZ_KEY_SPY_DETECT_AMT)))
-                               || gpApp->GetOrdersChanged());
+        gpReportLoader->SetOrdersChanged(gpGameData->m_pAtlantis->DetectSpies(pUnit,
+                                                                atol(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_SPY_DETECT_LO)),
+                                                                atol(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_SPY_DETECT_HI)),
+                                                                atol(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_SPY_DETECT_AMT)))
+                               || gpReportLoader->GetOrdersChanged());
         Update(m_pCurLand);
     }
 }
@@ -678,13 +678,13 @@ void CUnitPane::OnPopupMenuAddUnitToTracking (wxCommandEvent& WXUNUSED(event))
     bool         found = false;
     bool         ManyUnits = (GetSelectedItemCount() > 1);
 
-    sectidx = gpApp->GetSectionFirst(SZ_SECT_UNIT_TRACKING, szName, szValue);
+    sectidx = gpConfigManager->GetSectionFirst(SZ_SECT_UNIT_TRACKING, szName, szValue);
     while (sectidx >= 0)
     {
         if (!S.empty())
             S << ",";
         S << szName;
-        sectidx = gpApp->GetSectionNext(sectidx, SZ_SECT_UNIT_TRACKING, szName, szValue);
+        sectidx = gpConfigManager->GetSectionNext(sectidx, SZ_SECT_UNIT_TRACKING, szName, szValue);
     }
     if (S.empty())
         S = "Default";
@@ -702,7 +702,7 @@ void CUnitPane::OnPopupMenuAddUnitToTracking (wxCommandEvent& WXUNUSED(event))
                 pUnit = GetUnit(idx);
                 found = false;
 
-                szValue = gpApp->GetConfig(SZ_SECT_UNIT_TRACKING, dlg.m_Choice.c_str());
+                szValue = gpConfigManager->GetConfig(SZ_SECT_UNIT_TRACKING, dlg.m_Choice.c_str());
                 while (szValue && *szValue)
                 {
                     szValue = GetToken(S, szValue, ',');
@@ -716,12 +716,12 @@ void CUnitPane::OnPopupMenuAddUnitToTracking (wxCommandEvent& WXUNUSED(event))
                     wxMessageBox(wxT("The unit is already in the group."));
                 else
                 {
-                    S = gpApp->GetConfig(SZ_SECT_UNIT_TRACKING, dlg.m_Choice.c_str());
+                    S = gpConfigManager->GetConfig(SZ_SECT_UNIT_TRACKING, dlg.m_Choice.c_str());
                     TrimRight(S, TRIM_ALL);
                     if (!S.empty())
                         S << ",";
                     S << pUnit->Id;
-                    gpApp->SetConfig(SZ_SECT_UNIT_TRACKING, dlg.m_Choice.c_str(), S.c_str());
+                    gpConfigManager->SetConfig(SZ_SECT_UNIT_TRACKING, dlg.m_Choice.c_str(), S.c_str());
                 }
 
                 idx   = GetNextItem(idx, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
@@ -798,7 +798,7 @@ void CUnitPane::OnPopupMenuIssueOrders(wxCommandEvent& event)
         return;
 
 
-    pOrders = (CEditPane*)gpApp->m_Panes[AH_PANE_UNIT_COMMANDS];
+    pOrders = (CEditPane*)gpUIController->m_Panes[AH_PANE_UNIT_COMMANDS];
     if (pOrders)
         pOrders->SaveModifications();
 
@@ -819,8 +819,8 @@ void CUnitPane::OnPopupMenuIssueOrders(wxCommandEvent& event)
 
     if (Changed)
     {
-        gpApp->SetOrdersChanged(true);
-        gpApp->m_pAtlantis->RunOrders(m_pCurLand);
+        gpReportLoader->SetOrdersChanged(true);
+        gpGameData->m_pAtlantis->RunOrders(m_pCurLand);
         Update(m_pCurLand);
     }
 }

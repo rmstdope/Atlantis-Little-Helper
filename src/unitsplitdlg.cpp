@@ -179,7 +179,7 @@ void CUnitSplitDlg::OnOk(wxCommandEvent& event)
     wxString     sBoo;
     const char * p;
 
-    pLand = gpApp->m_pAtlantis->GetLand(m_pUnit->LandId);
+    pLand = gpGameData->m_pAtlantis->GetLand(m_pUnit->LandId);
     if (pLand)
         id = pLand->GetNextNewUnitNo();
     else
@@ -213,7 +213,7 @@ void CUnitSplitDlg::OnOk(wxCommandEvent& event)
     }
 
     if (pLand)
-        gpApp->m_pAtlantis->RunOrders(pLand);
+        gpGameData->m_pAtlantis->RunOrders(pLand);
 
     StoreSize();
     EndModal(wxID_OK);

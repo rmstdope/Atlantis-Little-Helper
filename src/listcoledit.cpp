@@ -163,9 +163,9 @@ void CListHeaderEditDlg::LoadSetCombo()
     const char * setselect;
     int          x=0, i=0;
 
-    setselect   = gpApp->GetConfig(SZ_SECT_LIST_COL_CURRENT, m_WorkKey.c_str());
+    setselect   = gpConfigManager->GetConfig(SZ_SECT_LIST_COL_CURRENT, m_WorkKey.c_str());
     setnameoffs = strlen(SZ_SECT_LIST_COL_UNIT);
-    setsection  = gpApp->GetNextSectionName(CONFIG_FILE_CONFIG, SZ_SECT_LIST_COL_UNIT);
+    setsection  = gpConfigManager->GetNextSectionName(CONFIG_FILE_CONFIG, SZ_SECT_LIST_COL_UNIT);
     while (setsection)
     {
         if (0!=strnicmp(setsection, SZ_SECT_LIST_COL_UNIT, setnameoffs))
@@ -174,7 +174,7 @@ void CListHeaderEditDlg::LoadSetCombo()
         if (0==stricmp(setsection, setselect))
             x = i;
         i++;
-        setsection = gpApp->GetNextSectionName(CONFIG_FILE_CONFIG, setsection);
+        setsection = gpConfigManager->GetNextSectionName(CONFIG_FILE_CONFIG, setsection);
     }
     m_cbSetName->SetSelection(x);
 }
@@ -185,7 +185,7 @@ void CListHeaderEditDlg::LoadListSrc()
 {
     m_SourceIdx       = -1;
     m_lstSource->ClearAll();
-    for (const auto& propname : gpApp->m_pAtlantis->m_UnitPropertyNames)
+    for (const auto& propname : gpGameData->m_pAtlantis->m_UnitPropertyNames)
     {
         m_lstSource->InsertItem(m_lstSource->GetItemCount() , wxString::FromAscii(propname.c_str()));
     }
@@ -220,7 +220,7 @@ void CListHeaderEditDlg::LoadListDest(const char * szNewName)
 
     Section << SZ_SECT_LIST_COL_UNIT << m_SetName;
 
-    sectidx = gpApp->GetSectionFirst(Section.c_str(), szName, szValue);
+    sectidx = gpConfigManager->GetSectionFirst(Section.c_str(), szName, szValue);
     while (sectidx >= 0)
     {
 // 001 = 87, 0, faction, FName
@@ -238,7 +238,7 @@ void CListHeaderEditDlg::LoadListDest(const char * szNewName)
         if (!m_Fields.Insert(pField))
             delete pField;
 
-        sectidx = gpApp->GetSectionNext(sectidx, Section.c_str(), szName, szValue);
+        sectidx = gpConfigManager->GetSectionNext(sectidx, Section.c_str(), szName, szValue);
     }
 }
 
@@ -271,7 +271,7 @@ void  CListHeaderEditDlg::SaveListDest()
         m_cbSetName->Append(wxString::FromAscii(m_SetName.c_str()));
 
     Section << SZ_SECT_LIST_COL_UNIT << m_SetName;
-    gpApp->RemoveSection(Section.c_str());
+    gpConfigManager->RemoveSection(Section.c_str());
 
     for (x=0; x<m_lstDest->GetItemCount(); x++)
     {
@@ -281,7 +281,7 @@ void  CListHeaderEditDlg::SaveListDest()
             pField = m_Fields.At(idx);
             Format(S, "%03d", x);
             Format(Value, "%d, %lu, %s, %s", pField->width, pField->flags, pField->PropName.c_str(), pField->Caption.c_str());
-            gpApp->SetConfig(Section.c_str(), S.c_str(), Value.c_str());
+            gpConfigManager->SetConfig(Section.c_str(), S.c_str(), Value.c_str());
         }
     }
 
@@ -307,8 +307,8 @@ void  CListHeaderEditDlg::AddItem()
     else
     {
         {
-            auto it__ = gpApp->m_pAtlantis->m_UnitPropertyTypes.find(Dummy.PropName.c_str());
-            if (it__ != gpApp->m_pAtlantis->m_UnitPropertyTypes.end())
+            auto it__ = gpGameData->m_pAtlantis->m_UnitPropertyTypes.find(Dummy.PropName.c_str());
+            if (it__ != gpGameData->m_pAtlantis->m_UnitPropertyTypes.end())
                 if (eLong == (EValueType)it__->second)
                     flags = LIST_FLAG_ALIGN_RIGHT;
         }
@@ -389,7 +389,7 @@ void CListHeaderEditDlg::OnButton(wxCommandEvent& event)
     case wxID_OK:
         SaveListDest();
         S << SZ_SECT_LIST_COL_UNIT << m_SetName;
-        gpApp->SetConfig(SZ_SECT_LIST_COL_CURRENT, m_WorkKey.c_str(), S.c_str());
+        gpConfigManager->SetConfig(SZ_SECT_LIST_COL_CURRENT, m_WorkKey.c_str(), S.c_str());
         StoreSize();
         EndModal(wxID_OK);
         break;

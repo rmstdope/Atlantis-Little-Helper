@@ -104,15 +104,15 @@ void CEditsFrame::Init(int layout, const char * szConfigSection)
         p4->Init();
 
 
-        y  = atol(gpApp->GetConfig(szConfigSection, SZ_KEY_HEIGHT_0));
+        y  = atol(gpConfigManager->GetConfig(szConfigSection, SZ_KEY_HEIGHT_0));
         m_Splitter1->SetMinimumPaneSize(2);
         m_Splitter1->SplitHorizontally(p1, m_Splitter2, y);
 
-        y  = atol(gpApp->GetConfig(szConfigSection, SZ_KEY_HEIGHT_1));
+        y  = atol(gpConfigManager->GetConfig(szConfigSection, SZ_KEY_HEIGHT_1));
         m_Splitter2->SetMinimumPaneSize(2);
         m_Splitter2->SplitHorizontally(p2, m_Splitter3, y);
 
-        x  = atol(gpApp->GetConfig(szConfigSection, SZ_KEY_WIDTH_0));
+        x  = atol(gpConfigManager->GetConfig(szConfigSection, SZ_KEY_WIDTH_0));
         m_Splitter3->SetMinimumPaneSize(2);
         m_Splitter3->SplitVertically(p3, p4, x);
 
@@ -128,9 +128,9 @@ void CEditsFrame::Done(bool SetClosedFlag)
     switch (m_Layout)
     {
     case AH_LAYOUT_3_WIN:
-        gpApp->SetConfig(m_sConfigSection.c_str(), SZ_KEY_HEIGHT_0, m_Splitter1->GetSashPosition());
-        gpApp->SetConfig(m_sConfigSection.c_str(), SZ_KEY_HEIGHT_1, m_Splitter2->GetSashPosition());
-        gpApp->SetConfig(m_sConfigSection.c_str(), SZ_KEY_WIDTH_0 , m_Splitter3->GetSashPosition());
+        gpConfigManager->SetConfig(m_sConfigSection.c_str(), SZ_KEY_HEIGHT_0, m_Splitter1->GetSashPosition());
+        gpConfigManager->SetConfig(m_sConfigSection.c_str(), SZ_KEY_HEIGHT_1, m_Splitter2->GetSashPosition());
+        gpConfigManager->SetConfig(m_sConfigSection.c_str(), SZ_KEY_WIDTH_0 , m_Splitter3->GetSashPosition());
 
         break;
 
@@ -145,7 +145,7 @@ void CEditsFrame::Done(bool SetClosedFlag)
 
 void CEditsFrame::OnCloseWindow(wxCloseEvent& event)
 {
-    gpApp->FrameClosing(this);
+    gpUIController->FrameClosing(this);
     Destroy();
 }
 
