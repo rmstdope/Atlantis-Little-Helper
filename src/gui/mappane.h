@@ -25,6 +25,7 @@
 
 class CLand;
 class CPlane;
+class CHexFilterDlg;
 
 #define SHOW_COORD   0x0001
 #define SHOW_NAMES   0x0002

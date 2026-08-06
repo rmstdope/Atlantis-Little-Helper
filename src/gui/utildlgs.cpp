@@ -30,7 +30,9 @@
 #include "atlaparser.h"
 #include "consts.h"
 #include "consts_ah.h"
-#include "ahapp.h"
+#include "configmanager.h"
+#include "uicontroller.h"
+#include "selectionstate.h"
 #include "ahframe.h"
 #include "utildlgs.h"
 

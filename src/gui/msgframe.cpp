@@ -26,7 +26,7 @@
 #include "consts.h"
 #include "consts_ah.h"
 
-#include "ahapp.h"
+#include "uicontroller.h"
 #include "ahframe.h"
 #include "editpane.h"
 #include "msgframe.h"

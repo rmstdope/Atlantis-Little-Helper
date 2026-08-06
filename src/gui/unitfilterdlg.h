@@ -20,8 +20,7 @@
 #ifndef __AH_UTIL_UNIT_FILTER_DIALOG_INCL__
 #define __AH_UTIL_UNIT_FILTER_DIALOG_INCL__
 
-
-#define UNIT_SIMPLE_FLTR_COUNT 3
+#include "consts.h"
 
 extern const char * UNIT_FILTER_OPERATION[];
 

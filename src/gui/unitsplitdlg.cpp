@@ -29,7 +29,8 @@
 #include "files.h"
 #include "atlaparser.h"
 #include "consts_ah.h"
-#include "ahapp.h"
+#include "gamedatamanager.h"
+#include "uicontroller.h"
 #include "ahframe.h"
 
 #include "unitsplitdlg.h"

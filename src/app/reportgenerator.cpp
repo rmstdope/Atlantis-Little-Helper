@@ -35,7 +35,6 @@
 #include "uicontroller.h"
 #include "selectionstate.h"
 #include "reportloader.h"
-#include "ahapp.h"
 #include "ahframe.h"
 #include "mapframe.h"
 #include "mappane.h"

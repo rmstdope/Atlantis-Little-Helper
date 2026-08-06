@@ -27,7 +27,9 @@
 #include "files.h"
 #include "consts.h"
 #include "consts_ah.h"
-#include "ahapp.h"
+#include "atlaparser.h"
+#include "configmanager.h"
+#include "uicontroller.h"
 
 GameRules * gpGameRules = nullptr;
 

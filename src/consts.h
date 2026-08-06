@@ -64,5 +64,7 @@
 
 #define STUDENTS_PER_TEACHER 10
 
+#define UNIT_SIMPLE_FLTR_COUNT 3
+
 #endif
 

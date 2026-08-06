@@ -25,10 +25,8 @@
 #include "files.h"
 #include "consts.h"
 #include "consts_ah.h"
-#include "ahapp.h"
-#include "ahframe.h"
 #include "atlaparser.h"
-#include "unitfilterdlg.h"
+#include "gamedatamanager.h"
 
 ConfigManager * gpConfigManager = nullptr;
 
