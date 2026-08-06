@@ -419,7 +419,7 @@ void CUnitPaneFltr::OnIdle(wxIdleEvent& event)
 
 //--------------------------------------------------------------------------
 
-void CUnitPaneFltr::OnPopupMenuSetSort  (wxCommandEvent& event)
+void CUnitPaneFltr::OnPopupMenuSetSort  (wxCommandEvent& WXUNUSED(event))
 {
     m_ColClicked = m_ColClickedFltr;
 }
@@ -446,7 +446,7 @@ void CUnitPaneFltr::OnRClick(wxListEvent& event)
 
 //--------------------------------------------------------------------------
 
-void CUnitPaneFltr::OnPopupMenuFilter  (wxCommandEvent& event)
+void CUnitPaneFltr::OnPopupMenuFilter  (wxCommandEvent& WXUNUSED(event))
 {
     CUnitFilterDlg dlg(m_pParent, m_sConfigSection.c_str());
 
@@ -463,7 +463,7 @@ void CUnitPaneFltr::OnPopupMenuFilter  (wxCommandEvent& event)
 //--------------------------------------------------------------------------
 
 
-void CUnitPaneFltr::OnPopupMenuIssueOrders(wxCommandEvent& event)
+void CUnitPaneFltr::OnPopupMenuIssueOrders(wxCommandEvent& WXUNUSED(event))
 {
     long           idx;
     CUnit        * pUnit;

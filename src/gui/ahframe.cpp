@@ -151,21 +151,21 @@ void CAhFrame::OnSaveOrders(wxCommandEvent& WXUNUSED(event))
 
 //--------------------------------------------------------------------------
 
-void CAhFrame::OnNextUnit(wxCommandEvent& event)
+void CAhFrame::OnNextUnit(wxCommandEvent& WXUNUSED(event))
 {
     gpSelectionState->SelectNextUnit();
 }
 
 //--------------------------------------------------------------------------
 
-void CAhFrame::OnPrevUnit(wxCommandEvent& event)
+void CAhFrame::OnPrevUnit(wxCommandEvent& WXUNUSED(event))
 {
     gpSelectionState->SelectPrevUnit();
 }
 
 //--------------------------------------------------------------------------
 
-void CAhFrame::OnUnitList(wxCommandEvent& event)
+void CAhFrame::OnUnitList(wxCommandEvent& WXUNUSED(event))
 {
     gpSelectionState->SelectUnitsPane();
 }
@@ -173,7 +173,7 @@ void CAhFrame::OnUnitList(wxCommandEvent& event)
 //--------------------------------------------------------------------------
 
 
-void CAhFrame::OnOrders(wxCommandEvent& event)
+void CAhFrame::OnOrders(wxCommandEvent& WXUNUSED(event))
 {
     gpSelectionState->SelectOrdersPane();
 }
@@ -255,7 +255,6 @@ void CResizableDlg::OnClose(wxCloseEvent& event)
 }
 
 //==========================================================================
-
 
 
 

@@ -265,7 +265,7 @@ void CShowDescriptionListDlg::SaveAs()
 
 //--------------------------------------------------------------------------
 
-void CShowDescriptionListDlg::OnLBDClick(wxCommandEvent & event)
+void CShowDescriptionListDlg::OnLBDClick(wxCommandEvent & WXUNUSED(event))
 {
     CBaseObject  * pObj;
 
@@ -280,7 +280,7 @@ void CShowDescriptionListDlg::OnLBDClick(wxCommandEvent & event)
 
 //--------------------------------------------------------------------------
 
-void CShowDescriptionListDlg::OnLBSelect(wxCommandEvent & event)
+void CShowDescriptionListDlg::OnLBSelect(wxCommandEvent & WXUNUSED(event))
 {
     CBaseObject  * pObj;
     std::string           S;

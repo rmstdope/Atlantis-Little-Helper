@@ -443,7 +443,7 @@ void UIController::EditPaneDClicked(CEditPane * pPane)
             x++;
         }
 #endif
-        if (position > src.size())
+        if (position > static_cast<long>(src.size()))
             position = src.size();
 
         p = src.c_str();

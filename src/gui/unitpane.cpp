@@ -515,7 +515,7 @@ void CUnitPane::OnRClick(wxListEvent& event)
 
 //--------------------------------------------------------------------------
 
-void CUnitPane::OnPopupMenuTeach (wxCommandEvent& event)
+void CUnitPane::OnPopupMenuTeach (wxCommandEvent& WXUNUSED(event))
 {
     long         idx   = GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
     CUnit      * pUnit = GetUnit(idx);
@@ -538,7 +538,7 @@ void CUnitPane::OnPopupMenuTeach (wxCommandEvent& event)
 
 //--------------------------------------------------------------------------
 
-void CUnitPane::OnPopupMenuSplit(wxCommandEvent& event)
+void CUnitPane::OnPopupMenuSplit(wxCommandEvent& WXUNUSED(event))
 {
     long         idx   = GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
     CUnit      * pUnit = GetUnit(idx);
@@ -565,7 +565,7 @@ void CUnitPane::OnPopupMenuSplit(wxCommandEvent& event)
 
 //--------------------------------------------------------------------------
 
-void CUnitPane::OnPopupMenuShareSilv  (wxCommandEvent& event)
+void CUnitPane::OnPopupMenuShareSilv  (wxCommandEvent& WXUNUSED(event))
 {
     long         idx   = GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
     CUnit      * pUnit = GetUnit(idx);
@@ -589,7 +589,7 @@ void CUnitPane::OnPopupMenuShareSilv  (wxCommandEvent& event)
 
 //--------------------------------------------------------------------------
 
-void CUnitPane::OnPopupMenuGiveEverything (wxCommandEvent& event)
+void CUnitPane::OnPopupMenuGiveEverything (wxCommandEvent& WXUNUSED(event))
 {
     long         idx   = GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
     CUnit      * pUnit = GetUnit(idx);
@@ -787,7 +787,7 @@ void CUnitPane::OnPopupMenuUnitFlags (wxCommandEvent& WXUNUSED(event))
 
 //--------------------------------------------------------------------------
 
-void CUnitPane::OnPopupMenuIssueOrders(wxCommandEvent& event)
+void CUnitPane::OnPopupMenuIssueOrders(wxCommandEvent& WXUNUSED(event))
 {
     long         idx;
     CUnit      * pUnit;

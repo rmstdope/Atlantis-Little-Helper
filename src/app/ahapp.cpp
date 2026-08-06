@@ -393,7 +393,7 @@ void GetDirFromPath(const char * path, std::string & dir)
 
     dir = path;
     p   = dir.c_str() + (dir.size()-1);
-    while (*p!='\\' && *p!='/' && n<dir.size())
+    while (*p!='\\' && *p!='/' && static_cast<size_t>(n) < dir.size())
     {
         p--;
         n++;

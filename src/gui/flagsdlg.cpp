@@ -188,7 +188,7 @@ CUnitFlagsDlg::~CUnitFlagsDlg()
 
 //--------------------------------------------------------------------------
 
-void CUnitFlagsDlg::OnOk(wxCommandEvent& event)
+void CUnitFlagsDlg::OnOk(wxCommandEvent& WXUNUSED(event))
 {
     int i, x;
     std::string sKey;
@@ -223,7 +223,7 @@ void CUnitFlagsDlg::OnOk(wxCommandEvent& event)
 
 //--------------------------------------------------------------------------
 
-void CUnitFlagsDlg::OnCancel(wxCommandEvent& event)
+void CUnitFlagsDlg::OnCancel(wxCommandEvent& WXUNUSED(event))
 {
     StoreSize();
     EndModal(wxID_CANCEL);
@@ -356,4 +356,3 @@ void CMapFlagDlg::OnButton(wxCommandEvent& event)
 }
 
 //--------------------------------------------------------------------------
-

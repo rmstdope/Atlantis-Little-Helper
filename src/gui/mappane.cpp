@@ -53,9 +53,6 @@
 
 
 const double     cos30               = sqrt(3.0)/2;
-const double     tan30               = 1/sqrt(3.0);
-
-static wxPoint   glb_PopupPoint;
 CLand          * glb_pPopupLand = nullptr;
 
 #define          MAX_DP_BORDER      1
@@ -591,7 +588,6 @@ CEdgeStructProperties * CMapPane::GetEdgeProps(const char * name)
     int          n;
     CEdgeStructProperties * pEdgeProp; //
     CEdgeStructProperties   Dummy;
-    int                  idx;
 
     Dummy.name = name;
     auto it = std::lower_bound(m_EdgeProps.begin(), m_EdgeProps.end(), &Dummy,
@@ -825,7 +821,7 @@ bool CMapPane::SetHexSize(int HexSizeIdx)
 
 //--------------------------------------------------------------------------
 
-void CMapPane::DrawHexTest(int NoX, int NoY, wxDC * pDC, CLand * pLand)
+void CMapPane::DrawHexTest(int /*NoX*/, int /*NoY*/, wxDC * /*pDC*/, CLand * /*pLand*/)
 {
     /*
     if (!ValidHexNo(NoX, NoY))
@@ -839,7 +835,7 @@ void CMapPane::DrawHexTest(int NoX, int NoY, wxDC * pDC, CLand * pLand)
 
 //--------------------------------------------------------------------------
 
-void CMapPane::DrawEdge(wxDC * pDC, CPlane * pPlane)
+void CMapPane::DrawEdge(wxDC * /*pDC*/, CPlane * /*pPlane*/)
 {
 
 }
@@ -1819,7 +1815,7 @@ void CMapPane::DrawHexFlags(wxDC * pDC, CLand * pLand, int x0, int y0)
 void CMapPane::GetNextIconPos(wxPoint * point, int Position)
 {
     bool reverse=false;
-    int x1,y1,x2,y2;
+    int x1,y1,x2;
     int spacer = m_HexSize / 4;
     if(spacer < 2) spacer = 2;
     int increment_x = ICON_SIZE + (spacer / 4) + 1;
@@ -1833,13 +1829,11 @@ void CMapPane::GetNextIconPos(wxPoint * point, int Position)
             x1 = point[1].x + (spacer / 4);
             x2 = (point[2].x + point[1].x) / 2 + spacer;
             y1 = point[1].y + spacer + ICON_SIZE;
-            y2 = y1;
             break;
         case(TOP_RIGHT_CORNER):
             x1 = (point[2].x + point[1].x) / 2 + (spacer / 4);
             x2 = point[2].x - ICON_SIZE - (spacer / 4);
             y1 = point[2].y + spacer + ICON_SIZE;
-            y2 = y1;
             reverse=true;
             increment_x = - ICON_SIZE - (spacer / 4) - 1;
             break;
@@ -1847,7 +1841,6 @@ void CMapPane::GetNextIconPos(wxPoint * point, int Position)
             x1 = (point[2].x + point[1].x) / 2 + (spacer / 2);
             x2 = point[3].x - (spacer / 2) - ICON_SIZE - 1;
             y1 = point[3].y + (ICON_SIZE / 2) + 1;
-            y2 = y1;
             reverse = true;
             increment_x = - ICON_SIZE - (spacer / 4) - 1;
             break;
@@ -1855,19 +1848,16 @@ void CMapPane::GetNextIconPos(wxPoint * point, int Position)
             x1 = point[0].x + (spacer / 2) + 2;
             x2 = (point[2].x + point[1].x) / 2 - (spacer / 2) - ICON_SIZE - 1;
             y1 = point[0].y + (ICON_SIZE / 2) + 1;
-            y2 = y1;
             break;
         case(BOTTOM_LEFT_CORNER):
             x1 = point[5].x + (spacer / 4);
             x2 = (point[2].x + point[1].x) / 2 + spacer;
             y1 = point[5].y - spacer;
-            y2 = y1;
             break;
         case(BOTTOM_RIGHT_CORNER):
             x1 = (point[2].x + point[1].x) / 2 + (spacer / 4);
             x2 = point[4].x - ICON_SIZE - (spacer / 4);
             y1 = point[4].y - spacer;
-            y2 = y1;
             reverse=true;
             increment_x = - ICON_SIZE - (spacer / 4) - 1;
             break;
@@ -1875,7 +1865,6 @@ void CMapPane::GetNextIconPos(wxPoint * point, int Position)
             x1 = (point[0].x + point[3].x) / 2 - spacer + ICON_SIZE + 1;
             x2 = (point[0].x + point[3].x) / 2 + spacer - ICON_SIZE - 1;
             y1 = point[0].y - ICON_SIZE - 1;
-            y2 = point[0].y + ICON_SIZE + 1;
             break;
     }
     
@@ -1924,7 +1913,7 @@ void CMapPane::GetNextIconPos(wxPoint * point, int Position)
 //--------------------------------------------------------------------------
 
 
-void CMapPane::DrawOneHex(int NoX, int NoY, int x0, int y0, wxDC * pDC, CLand * pLand, CPlane * pPlane)
+void CMapPane::DrawOneHex(int /*NoX*/, int /*NoY*/, int x0, int y0, wxDC * pDC, CLand * pLand, CPlane * /*pPlane*/)
 {
 
 //    char          buf[128]  = {0};
@@ -1932,9 +1921,6 @@ void CMapPane::DrawOneHex(int NoX, int NoY, int x0, int y0, wxDC * pDC, CLand * 
     //long          x;
     //EValueType    type;
     wxBrush     * pBrush;
-    wxColour      pUnitColor;
-    wxColour      pGuardColor;
-    wxColour      pDarkColor;
 //    wxPen       * pPen;
 
 
@@ -2222,7 +2208,7 @@ void CMapPane::DrawHex(int NoX, int NoY, wxDC * pDC, CLand * pLand, CPlane * pPl
 
 //--------------------------------------------------------------------------
 
-void CMapPane::DrawOneHexBorder(int x0, int y0, wxDC * pDC, bool IsSelected, bool FullBorder, wxPen ** pPens, int ExitBits)
+void CMapPane::DrawOneHexBorder(int x0, int y0, wxDC * pDC, bool IsSelected, bool /*FullBorder*/, wxPen ** pPens, int ExitBits)
 {
     int  i;
     int  IsExit;
@@ -2731,14 +2717,19 @@ void CMapPane::OnPaint(wxPaintEvent &WXUNUSED(event))
 
         nx = nx1-1;
         while (++nx <= nx2)
+        {
             for (ny=ny1-1; ny<=ny2+1; ny++)
             {
                 pLand = gpGameData->m_pAtlantis->GetLand(nx, ny, m_SelPlane, true);
                 if ((m_ShowState & SHOW_NAMES)
-                       &&(m_Detail>=NAME_DETAIL)&&(pLand && !pLand->CityName.empty()))
+                    && (m_Detail >= NAME_DETAIL)
+                    && (pLand && !pLand->CityName.empty()))
+                {
                     m_pCities->Insert(pLand);
+                }
                 DrawHex(nx, ny, &dc, pLand, pPlane, &rect);
             }
+        }
 
     /*
         for (dp=0; dp<=MAX_DP_BORDER; dp++)
@@ -2746,11 +2737,13 @@ void CMapPane::OnPaint(wxPaintEvent &WXUNUSED(event))
         */
             nx = nx1-1;
             while (++nx <= nx2)
+            {
                 for (ny=ny1-1; ny<=ny2+1; ny++)
                 {
                     pLand = gpGameData->m_pAtlantis->GetLand(nx, ny, m_SelPlane, true);
                     DrawHexBorder(nx, ny, &dc, pLand, false, pPlane, &rect, MAX_DP_BORDER /*dp*/, false);
                 }
+            }
     /*
         }
         */
@@ -2991,7 +2984,7 @@ void CMapPane::RedrawTracksForUnit(CPlane * pPlane, CUnit * pUnit, wxDC * pDC, b
 
 void CMapPane::DrawSingleTrack(int X, int Y, int wx, int wy, wxDC * pDC, CUnit * pUnit, CPlane * pPlane,int copyno)
 {
-    int            i, X1, Y1, Z;
+    int            X1, Y1, Z;
     long           HexId;
     int            wx0, wy0;
     int            wx_a, wy_a, wx0_a, wy0_a;
@@ -3024,7 +3017,7 @@ void CMapPane::DrawSingleTrack(int X, int Y, int wx, int wy, wxDC * pDC, CUnit *
         // nullptr, but it might be mutually exclusive with pMoveA3Points?
         return;
     }
-    for (i=0; i<pUnit->pMovement->size(); i++)
+    for (size_t i=0; i<pUnit->pMovement->size(); i++)
     {
         wx0 = wx;
         wy0 = wy;
@@ -3066,13 +3059,13 @@ void CMapPane::DrawSingleTrack(int X, int Y, int wx, int wy, wxDC * pDC, CUnit *
         if (Arcadia3Sail)
         {
             pDC->DrawLine(wx0_a, wy0_a, wx_a, wy_a);
-            if (i == pUnit->pMovement->size()-1)
+            if (i + 1 == pUnit->pMovement->size())
                 DrawTrackArrow(pDC, wx0_a, wy0_a, wx_a, wy_a);
         }
         else
         {
             pDC->DrawLine(wx0, wy0, wx, wy);
-            if (i == pUnit->pMovement->size()-1)
+            if (i + 1 == pUnit->pMovement->size())
                 DrawTrackArrow(pDC, wx0, wy0, wx, wy);
         }
     }
@@ -3481,12 +3474,10 @@ bool CMapPane::HexIsSelected(CLand * pLand)
 
     LandIdToCoord(pLand->Id, x,y,z);
     GetHexCenter(x,y, wx, wy);
-    if (
-        (m_Rect_x1 < m_Rect_x2 && wx > m_Rect_x1 && wx < m_Rect_x2 ||
-         m_Rect_x1 > m_Rect_x2 && wx < m_Rect_x1 && wx > m_Rect_x2)   &&
-        (m_Rect_y1 < m_Rect_y2 && wy > m_Rect_y1 && wy < m_Rect_y2 ||
-         m_Rect_y1 > m_Rect_y2 && wy < m_Rect_y1 && wy > m_Rect_y2)
-         )
+    if ((((m_Rect_x1 < m_Rect_x2) && (wx > m_Rect_x1) && (wx < m_Rect_x2))
+        || ((m_Rect_x1 > m_Rect_x2) && (wx < m_Rect_x1) && (wx > m_Rect_x2)))
+        && (((m_Rect_y1 < m_Rect_y2) && (wy > m_Rect_y1) && (wy < m_Rect_y2))
+        || ((m_Rect_y1 > m_Rect_y2) && (wy < m_Rect_y1) && (wy > m_Rect_y2))))
         return true;
     else
         return false;
@@ -3777,7 +3768,7 @@ void CMapPane::OnPopupMenuFlag(wxCommandEvent& WXUNUSED(event))
 
 //--------------------------------------------------------------------------
 
-void CMapPane::OnPopupMenuBattles(wxCommandEvent & event)
+void CMapPane::OnPopupMenuBattles(wxCommandEvent & WXUNUSED(event))
 {
     int       i;
     long      id;
@@ -3798,7 +3789,7 @@ void CMapPane::OnPopupMenuBattles(wxCommandEvent & event)
 
 //--------------------------------------------------------------------------
 
-void CMapPane::OnPopupWhoMovesHere(wxCommandEvent & event)
+void CMapPane::OnPopupWhoMovesHere(wxCommandEvent & WXUNUSED(event))
 {
     CLand  * pCurLand;
     CPlane * pCurPlane;
@@ -3817,7 +3808,7 @@ void CMapPane::OnPopupWhoMovesHere(wxCommandEvent & event)
 
 //--------------------------------------------------------------------------
 
-void CMapPane::OnPopupFinancial   (wxCommandEvent & event)
+void CMapPane::OnPopupFinancial   (wxCommandEvent & WXUNUSED(event))
 {
     CLand  * pCurLand;
 
@@ -3827,7 +3818,7 @@ void CMapPane::OnPopupFinancial   (wxCommandEvent & event)
 
 //--------------------------------------------------------------------------
 
-void CMapPane::OnPopupNewHex(wxCommandEvent & event)
+void CMapPane::OnPopupNewHex(wxCommandEvent & WXUNUSED(event))
 {
     CPlane * pPlane   = (CPlane*)gpGameData->m_pAtlantis->m_Planes.At(m_SelPlane);
     gpSelectionState->AddTempHex(m_SelHexX, m_SelHexY, m_SelPlane);
@@ -3838,7 +3829,7 @@ void CMapPane::OnPopupNewHex(wxCommandEvent & event)
 //--------------------------------------------------------------------------
 
 
-void CMapPane::OnPopupDeleteHex(wxCommandEvent & event)
+void CMapPane::OnPopupDeleteHex(wxCommandEvent & WXUNUSED(event))
 {
     CPlane * pPlane   = (CPlane*)gpGameData->m_pAtlantis->m_Planes.At(m_SelPlane);
     gpSelectionState->DelTempHex(m_SelHexX, m_SelHexY, m_SelPlane);
@@ -3847,7 +3838,7 @@ void CMapPane::OnPopupDeleteHex(wxCommandEvent & event)
 
 //--------------------------------------------------------------------------
 
-void CMapPane::OnPopupDistanceRing(wxCommandEvent & event)
+void CMapPane::OnPopupDistanceRing(wxCommandEvent & WXUNUSED(event))
 {
     m_RingRadius = wxGetNumberFromUser( wxT("Ring radius should be no more than 16,\nCancel removes the ring."), 
                                         wxT("Enter ring radius"), 
@@ -3871,7 +3862,7 @@ void CMapPane::OnPopupDistanceRing(wxCommandEvent & event)
 
 //--------------------------------------------------------------------------
 
-void CMapPane::OnEraseBackground(wxEraseEvent& event)
+void CMapPane::OnEraseBackground(wxEraseEvent& WXUNUSED(event))
 {
 }
 

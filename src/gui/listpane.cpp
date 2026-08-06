@@ -175,7 +175,9 @@ void CListPane::SetData(eSelMode selmode, long seldata, bool FullUpdate)
 
     info.m_mask   = wxLIST_MASK_TEXT;
     if (m_pData && m_pLayout)
-        for (row=0; row<m_pData->Count(); row++)
+    {
+        const int rowCount = static_cast<int>(m_pData->Count());
+        for (row=0; row<rowCount; row++)
         {
             dataitem = (TPropertyHolder*)m_pData->At(row);
             info.m_itemId = row;
@@ -201,6 +203,7 @@ void CListPane::SetData(eSelMode selmode, long seldata, bool FullUpdate)
                     default:
                         break;
                     }
+    }
                 }
 
                 info.m_format = (layoutitem->m_Flags&LIST_FLAG_ALIGN_RIGHT)?wxLIST_FORMAT_RIGHT:wxLIST_FORMAT_LEFT;

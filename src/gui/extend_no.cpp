@@ -56,7 +56,7 @@ void   CPythonEmbedder::CheckForPythonError()
 
 //-------------------------------------------------------------------------
 
-eEErr  CPythonEmbedder::InitUnitFilter(const char * userfilter, std::string & sPythonFilter)
+eEErr  CPythonEmbedder::InitUnitFilter(const char * /*userfilter*/, std::string & /*sPythonFilter*/)
 {
     ShowError(SZ_NO_PYTHON);
     return E_PY_DISABLED;
@@ -70,14 +70,14 @@ void   CPythonEmbedder::DoneUnitFilter()
 
 //-------------------------------------------------------------------------
 
-eEErr  CPythonEmbedder::RunUnitFilter(CUnit * pUnit, bool & success)
+eEErr  CPythonEmbedder::RunUnitFilter(CUnit * /*pUnit*/, bool & /*success*/)
 {
     return E_PY_DISABLED;
 }
 
 //-------------------------------------------------------------------------
 
-void   CPythonEmbedder::GetCommonCode(std::string & code)
+void   CPythonEmbedder::GetCommonCode(std::string & /*code*/)
 {
 }
 

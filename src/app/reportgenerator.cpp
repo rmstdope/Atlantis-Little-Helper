@@ -644,8 +644,8 @@ void ReportGenerator::ViewFactionOverview()
     CUnit         * pUnit;
     std::string            propname;
     std::string            Skill;
-    int             skilllen;
-    int             maxproplen = 0;
+    size_t          skilllen;
+    size_t          maxproplen = 0;
     std::string Report;
     CMapPane      * pMapPane  = (CMapPane* )gpUIController->m_Panes[AH_PANE_MAP];
     bool            Selected  = false;
@@ -686,7 +686,7 @@ void ReportGenerator::ViewFactionOverview()
 
                 // skip 'skill days' property
                 if (IsASkillRelatedProperty(propname.c_str()) &&
-                     FindSubStrR(propname, PRP_SKILL_POSTFIX) != propname.size()-skilllen)
+                     static_cast<size_t>(FindSubStrR(propname, PRP_SKILL_POSTFIX)) != propname.size()-skilllen)
                     continue;
 
                 // skip some properties which can not be aggegated
@@ -708,7 +708,7 @@ void ReportGenerator::ViewFactionOverview()
                     (eLong==type) )
                     do
                     {
-                        if (FindSubStrR(propname, PRP_SKILL_POSTFIX) == propname.size()-skilllen)
+                        if (static_cast<size_t>(FindSubStrR(propname, PRP_SKILL_POSTFIX)) == propname.size()-skilllen)
                         {
                                 // it is a skill
 
@@ -781,7 +781,6 @@ void ReportGenerator::CheckMonthLongOrders()
 {
     static const char dup_ord_msg[] = ";--- Duplicate month long orders";
     static const char no_ord_msg[]  = ";--- No month long orders";
-    int                  x;
     CUnit              * pUnit;
     const char         * src;
     const char         * dupord;
@@ -1010,7 +1009,7 @@ void ReportGenerator::ShowUnitsMovingIntoHex(long CurHexId, CPlane * pCurPlane)
 void ReportGenerator::ShowLandFinancial(CLand * pCurLand)
 {
     CUnit            * pUnit;
-    int                idx, factidx;
+    int                idx;
     long               CurFaction;
     long               SilvOrg = 0;
     long               SilvRes = 0;

@@ -59,11 +59,10 @@ void CMsgFrame::Init(int layout, const char * szConfigSection)
 
 //--------------------------------------------------------------------
 
-void CMsgFrame::OnCloseWindow(wxCloseEvent& event)
+void CMsgFrame::OnCloseWindow(wxCloseEvent& WXUNUSED(event))
 {
     gpUIController->FrameClosing(this);
     Destroy();
 }
 
 //--------------------------------------------------------------------
-
