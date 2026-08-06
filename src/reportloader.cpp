@@ -34,6 +34,7 @@
 #include "gamedatamanager.h"
 #include "uicontroller.h"
 #include "selectionstate.h"
+#include "reportgenerator.h"
 #include "ahapp.h"
 #include "ahframe.h"
 #include "mapframe.h"
@@ -901,12 +902,12 @@ void ReportLoader::PostLoadReport()
     {
         CBaseColl   Coll;
         Coll.Insert(&gpGameData->m_pAtlantis->m_HexEvents);
-        gpApp->ShowDescriptionList(Coll, "Hex Events");
+        gpReportGenerator->ShowDescriptionList(Coll, "Hex Events");
     }
 
     // show newly discovered products (advanced resources), if any
     if (gpGameData->m_pAtlantis->m_NewProducts.Count() > 0)
-        gpApp->ShowDescriptionList(gpGameData->m_pAtlantis->m_NewProducts, "New products");
+        gpReportGenerator->ShowDescriptionList(gpGameData->m_pAtlantis->m_NewProducts, "New products");
 
     if (pUnitPaneF)
         pUnitPaneF->Update(nullptr);

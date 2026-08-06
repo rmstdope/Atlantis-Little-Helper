@@ -704,112 +704,112 @@ void CMapFrame::OnOptions(wxCommandEvent& event)
 
 void CMapFrame::OnViewSkillsAll(wxCommandEvent& event)
 {
-    gpApp->ViewShortNamedObjects(true, SZ_SECT_SKILLS, "Skills", gpGameData->m_pAtlantis->m_Skills);
+    gpReportGenerator->ViewShortNamedObjects(true, SZ_SECT_SKILLS, "Skills", gpGameData->m_pAtlantis->m_Skills);
 }
 
 //--------------------------------------------------------------------
 
 void CMapFrame::OnViewSkillsNew(wxCommandEvent& event)
 {
-    gpApp->ViewShortNamedObjects(false, SZ_SECT_SKILLS, "Skills", gpGameData->m_pAtlantis->m_Skills);
+    gpReportGenerator->ViewShortNamedObjects(false, SZ_SECT_SKILLS, "Skills", gpGameData->m_pAtlantis->m_Skills);
 }
 
 //--------------------------------------------------------------------
 
 void CMapFrame::OnViewItemsAll(wxCommandEvent& event)
 {
-    gpApp->ViewShortNamedObjects(true, SZ_SECT_ITEMS, "Items", gpGameData->m_pAtlantis->m_Items);
+    gpReportGenerator->ViewShortNamedObjects(true, SZ_SECT_ITEMS, "Items", gpGameData->m_pAtlantis->m_Items);
 }
 
 //--------------------------------------------------------------------
 
 void CMapFrame::OnViewItemsNew(wxCommandEvent& event)
 {
-    gpApp->ViewShortNamedObjects(false, SZ_SECT_ITEMS, "Items", gpGameData->m_pAtlantis->m_Items);
+    gpReportGenerator->ViewShortNamedObjects(false, SZ_SECT_ITEMS, "Items", gpGameData->m_pAtlantis->m_Items);
 }
 
 //--------------------------------------------------------------------
 
 void CMapFrame::OnViewObjectsAll(wxCommandEvent& event)
 {
-    gpApp->ViewShortNamedObjects(true, SZ_SECT_OBJECTS, "Objects", gpGameData->m_pAtlantis->m_Objects);
+    gpReportGenerator->ViewShortNamedObjects(true, SZ_SECT_OBJECTS, "Objects", gpGameData->m_pAtlantis->m_Objects);
 }
 
 //--------------------------------------------------------------------
 
 void CMapFrame::OnViewObjectsNew(wxCommandEvent& event)
 {
-    gpApp->ViewShortNamedObjects(false, SZ_SECT_OBJECTS, "Objects", gpGameData->m_pAtlantis->m_Objects);
+    gpReportGenerator->ViewShortNamedObjects(false, SZ_SECT_OBJECTS, "Objects", gpGameData->m_pAtlantis->m_Objects);
 }
 
 //--------------------------------------------------------------------
 
 void CMapFrame::OnViewBattlesAll(wxCommandEvent& event)
 {
-    gpApp->ViewBattlesAll();
+    gpReportGenerator->ViewBattlesAll();
 }
 
 //--------------------------------------------------------------------
 
 void CMapFrame::OnViewEvents(wxCommandEvent& event)
 {
-    gpApp->ViewEvents(true);
+    gpReportGenerator->ViewEvents(true);
 }
 
 //--------------------------------------------------------------------
 
 void CMapFrame::OnViewSecurityEvents(wxCommandEvent& event)
 {
-    gpApp->ViewSecurityEvents();
+    gpReportGenerator->ViewSecurityEvents();
 }
 
 //--------------------------------------------------------------------
 
 void CMapFrame::OnViewNewProducts(wxCommandEvent& event)
 {
-    gpApp->ViewNewProducts();
+    gpReportGenerator->ViewNewProducts();
 }
 
 //--------------------------------------------------------------------
 
 void CMapFrame::OnViewErrors(wxCommandEvent& event)
 {
-    gpApp->ViewEvents(false);
+    gpReportGenerator->ViewEvents(false);
 }
 
 //--------------------------------------------------------------------
 
 void CMapFrame::OnViewGates(wxCommandEvent& event)
 {
-    gpApp->ViewGates();
+    gpReportGenerator->ViewGates();
 }
 
 //--------------------------------------------------------------------
 
 void CMapFrame::OnViewCities(wxCommandEvent& event)
 {
-    gpApp->ViewCities();
+    gpReportGenerator->ViewCities();
 }
 
 //--------------------------------------------------------------------
 
 void CMapFrame::OnViewProvinces(wxCommandEvent& event)
 {
-    gpApp->ViewProvinces();
+    gpReportGenerator->ViewProvinces();
 }
 
 //--------------------------------------------------------------------
 
 void CMapFrame::OnViewFactionInfo(wxCommandEvent& event)
 {
-    gpApp->ViewFactionInfo();
+    gpReportGenerator->ViewFactionInfo();
 }
 
 //--------------------------------------------------------------------
 
 void CMapFrame::OnViewFactionOverview(wxCommandEvent& event)
 {
-    gpApp->ViewFactionOverview();
+    gpReportGenerator->ViewFactionOverview();
 }
 
 //--------------------------------------------------------------------
@@ -864,35 +864,35 @@ void CMapFrame::OnRerunOrders(wxCommandEvent& event)
 
 void CMapFrame::OnWriteMagesCSV(wxCommandEvent& event)
 {
-    gpApp->WriteMagesCSV();
+    gpReportGenerator->WriteMagesCSV();
 }
 
 //--------------------------------------------------------------------
 
 void CMapFrame::OnCheckMonthLongOrd(wxCommandEvent& event)
 {
-    gpApp->CheckMonthLongOrders();
+    gpReportGenerator->CheckMonthLongOrders();
 }
 
 //--------------------------------------------------------------------
 
 void CMapFrame::OnCheckTaxTrade(wxCommandEvent& event)
 {
-    gpApp->CheckTaxTrade();
+    gpReportGenerator->CheckTaxTrade();
 }
 
 //--------------------------------------------------------------------
 
 void CMapFrame::OnCheckProduction(wxCommandEvent& event)
 {
-    gpApp->CheckProduction();
+    gpReportGenerator->CheckProduction();
 }
 
 //--------------------------------------------------------------------
 
 void CMapFrame::OnCheckSailing(wxCommandEvent& event)
 {
-    gpApp->CheckSailing();
+    gpReportGenerator->CheckSailing();
 }
 
 
@@ -913,14 +913,14 @@ void CMapFrame::OnFindHexes(wxCommandEvent& event)
 
 void CMapFrame::OnExportHexes(wxCommandEvent& event)
 {
-    gpApp->ExportHexes();
+    gpReportGenerator->ExportHexes();
 }
 
 //--------------------------------------------------------------------
 
 void CMapFrame::OnFindTradeRoutes(wxCommandEvent& event)
 {
-    gpApp->FindTradeRoutes();
+    gpReportGenerator->FindTradeRoutes();
     
     CMapPane * pMapPane  = (CMapPane* )gpUIController->m_Panes[AH_PANE_MAP];
     if (pMapPane)

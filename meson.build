@@ -22,6 +22,7 @@ ah_sources = files(
   'src/uicontroller.cpp',
   'src/selectionstate.cpp',
   'src/reportloader.cpp',
+  'src/reportgenerator.cpp',
   'src/ahapp.cpp',
   'src/ahframe.cpp',
   'src/consts_ah.cpp',

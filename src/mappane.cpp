@@ -3791,7 +3791,7 @@ void CMapPane::OnPopupMenuBattles(wxCommandEvent & event)
         if (gpGameData->m_pAtlantis->LandStrCoordToId(pBattle->LandStrId.c_str(), id) && id==m_pPopupLand->Id)
             Battles.Insert(pBattle);
     }
-    gpApp->ShowDescriptionList(Battles, "Battles");
+    gpReportGenerator->ShowDescriptionList(Battles, "Battles");
 
     Battles.DeleteAll();
 }
@@ -3812,7 +3812,7 @@ void CMapPane::OnPopupWhoMovesHere(wxCommandEvent & event)
     else
         HexId = LandCoordToId(m_SelHexX, m_SelHexY, m_SelPlane);
     
-    gpApp->ShowUnitsMovingIntoHex(HexId, pCurPlane);
+    gpReportGenerator->ShowUnitsMovingIntoHex(HexId, pCurPlane);
 }
 
 //--------------------------------------------------------------------------
@@ -3822,7 +3822,7 @@ void CMapPane::OnPopupFinancial   (wxCommandEvent & event)
     CLand  * pCurLand;
 
     pCurLand  = gpGameData->m_pAtlantis->GetLand(m_SelHexX, m_SelHexY, m_SelPlane, true);
-    gpApp->ShowLandFinancial(pCurLand);
+    gpReportGenerator->ShowLandFinancial(pCurLand);
 }
 
 //--------------------------------------------------------------------------

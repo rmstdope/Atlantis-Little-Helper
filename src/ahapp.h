@@ -35,16 +35,11 @@
 #include "uicontroller.h"
 #include "selectionstate.h"
 #include "reportloader.h"
+#include "reportgenerator.h"
 
 class CAhFrame;
 class CEditPane;
 class CHexFilterDlg;
-
-enum eHexIncl {HexNew,
-               HexCurrent,
-               HexSelected, // inside a rectangle by mouse dragging
-               HexAll,
-               };
 
 void FontToStr(const wxFont * font, std::string & s);
 wxFont * NewFontFromStr(const char * p);
@@ -67,47 +62,13 @@ public:
     virtual bool         OnInit() override;
     virtual int          OnExit() override;
 
-
-    void                 WriteMagesCSV();
-    void                 ShowDescriptionList(CBaseColl & Items, const char * title); // Collection of CBaseObject
-    void                 ShowDescriptionList(CBaseCollById & Items, const char * title);
-//    void                 ViewSkills(bool ViewAll);
-    void                 ViewShortNamedObjects(bool ViewAll, const char * szSection, const char * szHeader, CBaseColl & ListNew);
-    void                 ViewBattlesAll();
-    void                 ViewEvents(bool DoEvents);
-    void                 ViewSecurityEvents();
-    void                 ViewNewProducts();
-    void                 ViewGates();
-    void                 ViewCities();
-    void                 ViewProvinces();
-    void                 ViewFactionInfo();
-    void                 ViewFactionOverview();
-    void                 ViewFactionOverview_IncrementValue(long FactionId, const char * factionname, CBaseCollById & Factions, const char * propname, long value);
-    void                 CheckMonthLongOrders();
-    void                 CheckProduction();
-    void                 CheckSailing();
-    void                 CheckTaxDetails  (CLand  * pLand, CTaxProdDetailsCollByFaction & TaxDetails);
-    void                 CheckTradeDetails(CLand  * pLand, CTaxProdDetailsCollByFaction & TradeDetails);
-    void                 CheckTaxTrade();
-    void                 ExportHexes();
-    void                 FindTradeRoutes();
-    void                 ViewMovedUnits();
-    void                 ShowUnitsMovingIntoHex(long CurHexId, CPlane * pCurPlane);
-    void                 ShowLandFinancial(CLand * pCurLand);
-
     std::unique_ptr<ConfigManager> m_pConfigManager;
     std::unique_ptr<GameRules> m_pGameRules;
     std::unique_ptr<GameDataManager> m_pGameData;
     std::unique_ptr<UIController> m_pUIController;
     std::unique_ptr<SelectionState> m_pSelectionState;
     std::unique_ptr<ReportLoader> m_pReportLoader;
-
-
-private:
-    bool                 GetExportHexOptions(std::string & FName, std::string & FMode, SAVE_HEX_OPTIONS & options, eHexIncl & HexIncl,
-                                             bool & InclTurnNoAcl);
-    void                 ExportOneHex(CFileWriter & Dest, CPlane * pPlane, CLand * pLand, SAVE_HEX_OPTIONS & options, bool InclTurnNoAcl, bool OnlyNew);
-
+    std::unique_ptr<ReportGenerator> m_pReportGenerator;
 };
 
 //-------------------------------------------------------------------------------
