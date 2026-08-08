@@ -21,6 +21,7 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
+  actions: write
   contents: read
 
 jobs:
@@ -210,6 +211,7 @@ jobs:
     needs: [validate, build]
     runs-on: ubuntu-latest
     permissions:
+      actions: read
       contents: write
     env:
       GH_TOKEN: ${{ github.token }}
