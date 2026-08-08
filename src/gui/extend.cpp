@@ -31,9 +31,6 @@
 #include <cstring>
 
 
-static CAtlaParser * gpPythonAtlantis = nullptr;
-
-
 #define CHECK_NULL_PTR(ptr, err, msg) \
 if (!ptr)                             \
 {                                     \

@@ -288,14 +288,11 @@ void SelectionState::OnUnitHexSelectionChange(long idx)
     CEditPane   * pDescription;
     CEditPane   * pOrders;
     CEditPane   * pComments;
-    CFaction    * pFaction;
     CUnit       * pUnit;
 
 
     m_SelUnitIdx = idx;
     pUnit        = GetSelectedUnit(); // depends on m_SelUnitIdx
-    pFaction     = pUnit?pUnit->pFaction:nullptr;
-
     pDescription = (CEditPane*)gpUIController->m_Panes[AH_PANE_UNIT_DESCR   ];
     pOrders      = (CEditPane*)gpUIController->m_Panes[AH_PANE_UNIT_COMMANDS];
     pComments    = (CEditPane*)gpUIController->m_Panes[AH_PANE_UNIT_COMMENTS];

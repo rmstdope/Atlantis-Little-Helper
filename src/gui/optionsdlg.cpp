@@ -422,7 +422,7 @@ void COptionsDialog::OnCancel(wxCommandEvent& event)
 
 //--------------------------------------------------------------------------
 
-void COptionsDialog::OnFont    (wxCommandEvent& event)
+void COptionsDialog::OnFont    (wxCommandEvent& WXUNUSED(event))
 {
     long fontidx;
 
@@ -465,7 +465,7 @@ void COptionsDialog::OnFont    (wxCommandEvent& event)
 
 //--------------------------------------------------------------------------
 
-void COptionsDialog::OnColor    (wxCommandEvent& event)
+void COptionsDialog::OnColor    (wxCommandEvent& WXUNUSED(event))
 {
     wxColour     colour;
     wxColourData data;
@@ -498,7 +498,7 @@ void COptionsDialog::OnColor    (wxCommandEvent& event)
 
 //--------------------------------------------------------------------------
 
-void COptionsDialog::OnFaction(wxCommandEvent& event)
+void COptionsDialog::OnFaction(wxCommandEvent& WXUNUSED(event))
 {
     if (wxNOT_FOUND == m_pComboFactions->GetSelection())
     {
@@ -511,7 +511,7 @@ void COptionsDialog::OnFaction(wxCommandEvent& event)
 
 //--------------------------------------------------------------------------
 
-void COptionsDialog::OnPassword(wxCommandEvent& event)
+void COptionsDialog::OnPassword(wxCommandEvent& WXUNUSED(event))
 {
     if (wxNOT_FOUND == m_pComboFactions->GetSelection())
         return;

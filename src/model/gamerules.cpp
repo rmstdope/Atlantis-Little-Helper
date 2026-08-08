@@ -788,7 +788,7 @@ bool GameRules::IsRawMagicSkill(const char * skillname)
     std::string           S;
 
     S = skillname;
-    if (FindSubStrR(S, PRP_SKILL_POSTFIX) == S.size()-postlen)
+    if (FindSubStrR(S, PRP_SKILL_POSTFIX) == static_cast<int>(S.size())-postlen)
     {
         DelSubStr(S, S.size()-postlen, postlen);
         return IsMagicSkill(S.c_str());

@@ -290,7 +290,7 @@ class CBaseCollById
 public:
     CBaseCollById();
     CBaseCollById(int /*nDelta*/);
-    ~CBaseCollById() { FreeAll(); }
+    virtual ~CBaseCollById() { FreeAll(); }
 
     int   Count()     const { return (int)m_items.size(); }
     void* At(int i)   const { return (i >= 0 && i < (int)m_items.size()) ? m_items[i] : nullptr; }

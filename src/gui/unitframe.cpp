@@ -170,11 +170,10 @@ void CUnitFrame::Done(bool SetClosedFlag)
 //--------------------------------------------------------------------
 
 
-void CUnitFrame::OnCloseWindow(wxCloseEvent& event)
+void CUnitFrame::OnCloseWindow(wxCloseEvent& WXUNUSED(event))
 {
     gpUIController->FrameClosing(this);
     Destroy();
 }
 
 //--------------------------------------------------------------------
-

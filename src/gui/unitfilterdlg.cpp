@@ -223,7 +223,7 @@ void CUnitFilterDlg::Init()
     int          count;
     int          i;
     const char * item;
-    int          skilllen;
+    size_t       skilllen;
     std::string         S;
 
     skilllen    = strlen(PRP_SKILL_POSTFIX);
@@ -239,13 +239,13 @@ void CUnitFilterDlg::Init()
             // do not show 'skill days' property
             S = item;
             if (!IsASkillRelatedProperty(S.c_str()) ||
-                FindSubStrR(S, PRP_SKILL_POSTFIX) == S.size()-skilllen)
+                static_cast<size_t>(FindSubStrR(S, PRP_SKILL_POSTFIX)) == S.size()-skilllen)
             {
                  m_cbProperty[count]->Append(wxString::FromAscii(item));
             }
         }
 
-        for (i=0; (unsigned)i<sizeof(UNIT_FILTER_OPERATION)/sizeof(*UNIT_FILTER_OPERATION); i++)
+        for (i=0; i<static_cast<int>(sizeof(UNIT_FILTER_OPERATION)/sizeof(*UNIT_FILTER_OPERATION)); i++)
         {
             item = UNIT_FILTER_OPERATION[i];
             m_cbCompare[count]->Append(wxString::FromAscii(item));

@@ -24,6 +24,8 @@
 class CUnitPane: public CListPane
 {
 public:
+    using CListPane::Update;
+
     CUnitPane(wxWindow *parent, wxWindowID id = list_units_hex);
     virtual void Init(CAhFrame * pParentFrame, const char * szConfigSection, const char * szConfigSectionHdr);
     virtual void Done();

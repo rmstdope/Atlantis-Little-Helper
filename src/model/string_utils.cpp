@@ -322,7 +322,7 @@ char * GetInteger(std::string & out, const char * Src, bool & Valid)
         Src++;
     }
 
-    Valid = out.size() > 1 || out.size() == 1 && out[0] != '-';
+    Valid = (out.size() > 1) || ((out.size() == 1) && (out[0] != '-'));
 
     return (char*)Src;
 }
@@ -333,7 +333,7 @@ char * GetDouble(std::string & out, const char * Src, bool & Valid)
 
     while (Src)
     {
-        if ( (*Src>='0') && (*Src<='9') || (*Src=='.') )
+        if (((*Src>='0') && (*Src<='9')) || (*Src=='.'))
             out.push_back(*Src);
         else
             if ( ('-'==*Src) && out.empty() )
@@ -343,7 +343,7 @@ char * GetDouble(std::string & out, const char * Src, bool & Valid)
         Src++;
     }
 
-    Valid = out.size() > 1 || out.size() == 1 && out[0] != '-' && out[0] != '.';
+    Valid = (out.size() > 1) || ((out.size() == 1) && (out[0] != '-') && (out[0] != '.'));
 
     return (char*)Src;
 }

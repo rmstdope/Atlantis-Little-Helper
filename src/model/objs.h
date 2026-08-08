@@ -69,7 +69,7 @@ public:
     TObject() {};
     virtual ~TObject() {};
 
-    virtual bool HandleEvent(TEvent * event) {return false;};
+    virtual bool HandleEvent(TEvent * /*event*/) {return false;};
 };
 
 //-------------------------------------------------------------------

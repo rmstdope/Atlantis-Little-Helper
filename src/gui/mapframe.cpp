@@ -657,7 +657,7 @@ void CMapFrame::OnViewGatesUpdate(wxUpdateUIEvent& event)
 
 //--------------------------------------------------------------------
 
-void CMapFrame::OnCloseWindow(wxCloseEvent& event)
+void CMapFrame::OnCloseWindow(wxCloseEvent& WXUNUSED(event))
 {
     // This is the cental shutdown point!
     if (gpUIController->CanCloseApp())
@@ -699,154 +699,154 @@ void CMapFrame::OnSaveOrdersAs(wxCommandEvent& WXUNUSED(event))
 
 //--------------------------------------------------------------------
 
-void CMapFrame::OnOptions(wxCommandEvent& event)
+void CMapFrame::OnOptions(wxCommandEvent& WXUNUSED(event))
 {
     gpUIController->OpenOptionsDlg();
 }
 
 //--------------------------------------------------------------------
 
-void CMapFrame::OnViewSkillsAll(wxCommandEvent& event)
+void CMapFrame::OnViewSkillsAll(wxCommandEvent& WXUNUSED(event))
 {
     gpReportGenerator->ViewShortNamedObjects(true, SZ_SECT_SKILLS, "Skills", gpGameData->m_pAtlantis->m_Skills);
 }
 
 //--------------------------------------------------------------------
 
-void CMapFrame::OnViewSkillsNew(wxCommandEvent& event)
+void CMapFrame::OnViewSkillsNew(wxCommandEvent& WXUNUSED(event))
 {
     gpReportGenerator->ViewShortNamedObjects(false, SZ_SECT_SKILLS, "Skills", gpGameData->m_pAtlantis->m_Skills);
 }
 
 //--------------------------------------------------------------------
 
-void CMapFrame::OnViewItemsAll(wxCommandEvent& event)
+void CMapFrame::OnViewItemsAll(wxCommandEvent& WXUNUSED(event))
 {
     gpReportGenerator->ViewShortNamedObjects(true, SZ_SECT_ITEMS, "Items", gpGameData->m_pAtlantis->m_Items);
 }
 
 //--------------------------------------------------------------------
 
-void CMapFrame::OnViewItemsNew(wxCommandEvent& event)
+void CMapFrame::OnViewItemsNew(wxCommandEvent& WXUNUSED(event))
 {
     gpReportGenerator->ViewShortNamedObjects(false, SZ_SECT_ITEMS, "Items", gpGameData->m_pAtlantis->m_Items);
 }
 
 //--------------------------------------------------------------------
 
-void CMapFrame::OnViewObjectsAll(wxCommandEvent& event)
+void CMapFrame::OnViewObjectsAll(wxCommandEvent& WXUNUSED(event))
 {
     gpReportGenerator->ViewShortNamedObjects(true, SZ_SECT_OBJECTS, "Objects", gpGameData->m_pAtlantis->m_Objects);
 }
 
 //--------------------------------------------------------------------
 
-void CMapFrame::OnViewObjectsNew(wxCommandEvent& event)
+void CMapFrame::OnViewObjectsNew(wxCommandEvent& WXUNUSED(event))
 {
     gpReportGenerator->ViewShortNamedObjects(false, SZ_SECT_OBJECTS, "Objects", gpGameData->m_pAtlantis->m_Objects);
 }
 
 //--------------------------------------------------------------------
 
-void CMapFrame::OnViewBattlesAll(wxCommandEvent& event)
+void CMapFrame::OnViewBattlesAll(wxCommandEvent& WXUNUSED(event))
 {
     gpReportGenerator->ViewBattlesAll();
 }
 
 //--------------------------------------------------------------------
 
-void CMapFrame::OnViewEvents(wxCommandEvent& event)
+void CMapFrame::OnViewEvents(wxCommandEvent& WXUNUSED(event))
 {
     gpReportGenerator->ViewEvents(true);
 }
 
 //--------------------------------------------------------------------
 
-void CMapFrame::OnViewSecurityEvents(wxCommandEvent& event)
+void CMapFrame::OnViewSecurityEvents(wxCommandEvent& WXUNUSED(event))
 {
     gpReportGenerator->ViewSecurityEvents();
 }
 
 //--------------------------------------------------------------------
 
-void CMapFrame::OnViewNewProducts(wxCommandEvent& event)
+void CMapFrame::OnViewNewProducts(wxCommandEvent& WXUNUSED(event))
 {
     gpReportGenerator->ViewNewProducts();
 }
 
 //--------------------------------------------------------------------
 
-void CMapFrame::OnViewErrors(wxCommandEvent& event)
+void CMapFrame::OnViewErrors(wxCommandEvent& WXUNUSED(event))
 {
     gpReportGenerator->ViewEvents(false);
 }
 
 //--------------------------------------------------------------------
 
-void CMapFrame::OnViewGates(wxCommandEvent& event)
+void CMapFrame::OnViewGates(wxCommandEvent& WXUNUSED(event))
 {
     gpReportGenerator->ViewGates();
 }
 
 //--------------------------------------------------------------------
 
-void CMapFrame::OnViewCities(wxCommandEvent& event)
+void CMapFrame::OnViewCities(wxCommandEvent& WXUNUSED(event))
 {
     gpReportGenerator->ViewCities();
 }
 
 //--------------------------------------------------------------------
 
-void CMapFrame::OnViewProvinces(wxCommandEvent& event)
+void CMapFrame::OnViewProvinces(wxCommandEvent& WXUNUSED(event))
 {
     gpReportGenerator->ViewProvinces();
 }
 
 //--------------------------------------------------------------------
 
-void CMapFrame::OnViewFactionInfo(wxCommandEvent& event)
+void CMapFrame::OnViewFactionInfo(wxCommandEvent& WXUNUSED(event))
 {
     gpReportGenerator->ViewFactionInfo();
 }
 
 //--------------------------------------------------------------------
 
-void CMapFrame::OnViewFactionOverview(wxCommandEvent& event)
+void CMapFrame::OnViewFactionOverview(wxCommandEvent& WXUNUSED(event))
 {
     gpReportGenerator->ViewFactionOverview();
 }
 
 //--------------------------------------------------------------------
 
-void CMapFrame::OnWindowUnits(wxCommandEvent& event)
+void CMapFrame::OnWindowUnits(wxCommandEvent& WXUNUSED(event))
 {
     gpUIController->OpenUnitFrame();
 }
 
 //--------------------------------------------------------------------
 
-void CMapFrame::OnWindowUnitsFltr(wxCommandEvent& event)
+void CMapFrame::OnWindowUnitsFltr(wxCommandEvent& WXUNUSED(event))
 {
     gpUIController->OpenUnitFrameFltr(true);
 }
 
 //--------------------------------------------------------------------
 
-void CMapFrame::OnWindowMessages(wxCommandEvent& event)
+void CMapFrame::OnWindowMessages(wxCommandEvent& WXUNUSED(event))
 {
     gpUIController->OpenMsgFrame();
 }
 
 //--------------------------------------------------------------------
 
-void CMapFrame::OnWindowEditors(wxCommandEvent& event)
+void CMapFrame::OnWindowEditors(wxCommandEvent& WXUNUSED(event))
 {
     gpUIController->OpenEditsFrame();
 }
 
 //--------------------------------------------------------------------
 
-void CMapFrame::OnApplyDefaultOrders(wxCommandEvent& event)
+void CMapFrame::OnApplyDefaultOrders(wxCommandEvent& WXUNUSED(event))
 {
     gpReportLoader->SetOrdersChanged(gpGameData->m_pAtlantis->ApplyDefaultOrders(true) //(bool)atol(gpConfigManager->GetConfig(SZ_SECT_COMMON, SZ_KEY_DEFAULT_EMPTY_ONLY)))
                             || gpReportLoader->GetOrdersChanged());
@@ -859,42 +859,42 @@ void CMapFrame::OnApplyDefaultOrders(wxCommandEvent& event)
 
 //--------------------------------------------------------------------
 
-void CMapFrame::OnRerunOrders(wxCommandEvent& event)
+void CMapFrame::OnRerunOrders(wxCommandEvent& WXUNUSED(event))
 {
     gpReportLoader->RerunOrders();
 }
 
 //--------------------------------------------------------------------
 
-void CMapFrame::OnWriteMagesCSV(wxCommandEvent& event)
+void CMapFrame::OnWriteMagesCSV(wxCommandEvent& WXUNUSED(event))
 {
     gpReportGenerator->WriteMagesCSV();
 }
 
 //--------------------------------------------------------------------
 
-void CMapFrame::OnCheckMonthLongOrd(wxCommandEvent& event)
+void CMapFrame::OnCheckMonthLongOrd(wxCommandEvent& WXUNUSED(event))
 {
     gpReportGenerator->CheckMonthLongOrders();
 }
 
 //--------------------------------------------------------------------
 
-void CMapFrame::OnCheckTaxTrade(wxCommandEvent& event)
+void CMapFrame::OnCheckTaxTrade(wxCommandEvent& WXUNUSED(event))
 {
     gpReportGenerator->CheckTaxTrade();
 }
 
 //--------------------------------------------------------------------
 
-void CMapFrame::OnCheckProduction(wxCommandEvent& event)
+void CMapFrame::OnCheckProduction(wxCommandEvent& WXUNUSED(event))
 {
     gpReportGenerator->CheckProduction();
 }
 
 //--------------------------------------------------------------------
 
-void CMapFrame::OnCheckSailing(wxCommandEvent& event)
+void CMapFrame::OnCheckSailing(wxCommandEvent& WXUNUSED(event))
 {
     gpReportGenerator->CheckSailing();
 }
@@ -902,7 +902,7 @@ void CMapFrame::OnCheckSailing(wxCommandEvent& event)
 
 //--------------------------------------------------------------------
 
-void CMapFrame::OnFindHexes(wxCommandEvent& event)
+void CMapFrame::OnFindHexes(wxCommandEvent& WXUNUSED(event))
 {
     CMapPane * pMapPane;
 
@@ -915,14 +915,14 @@ void CMapFrame::OnFindHexes(wxCommandEvent& event)
 
 //--------------------------------------------------------------------
 
-void CMapFrame::OnExportHexes(wxCommandEvent& event)
+void CMapFrame::OnExportHexes(wxCommandEvent& WXUNUSED(event))
 {
     gpReportGenerator->ExportHexes();
 }
 
 //--------------------------------------------------------------------
 
-void CMapFrame::OnFindTradeRoutes(wxCommandEvent& event)
+void CMapFrame::OnFindTradeRoutes(wxCommandEvent& WXUNUSED(event))
 {
     gpReportGenerator->FindTradeRoutes();
     
@@ -943,7 +943,7 @@ void CMapFrame::OnListCol(wxCommandEvent& event)
 
 //--------------------------------------------------------------------
 
-void CMapFrame::OnFlagNames(wxCommandEvent& event)
+void CMapFrame::OnFlagNames(wxCommandEvent& WXUNUSED(event))
 {
     CUnitFlagsDlg dlg(this, eNames, 0);
 
@@ -955,7 +955,7 @@ void CMapFrame::OnFlagNames(wxCommandEvent& event)
 
 //--------------------------------------------------------------------
 
-void CMapFrame::OnFlagsAllSet(wxCommandEvent& event)
+void CMapFrame::OnFlagsAllSet(wxCommandEvent& WXUNUSED(event))
 {
     gpReportLoader->SetAllLandUnitFlags();
 }

@@ -71,7 +71,7 @@ void CEditorForPane::OnKillFocus(wxFocusEvent& event)
     event.Skip();
 }
 
-void CEditorForPane::OnMouseEvent(wxMouseEvent& event)
+void CEditorForPane::OnMouseEvent(wxMouseEvent& WXUNUSED(event))
 {
     // maybe it can be handled in the parent control, but just to be sure
     m_pParent->OnMouseDClick();

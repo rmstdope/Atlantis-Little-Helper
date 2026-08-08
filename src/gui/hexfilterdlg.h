@@ -79,7 +79,7 @@ private:
 
     bool         m_bReady;
 
-    DECLARE_EVENT_TABLE();
+    DECLARE_EVENT_TABLE()
 };
 
 
