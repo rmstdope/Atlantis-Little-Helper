@@ -75,6 +75,7 @@ test_sources = files(
   'tests/gamerules_tests.cpp',
   'tests/uicontroller_stub.cpp',
   'tests/file_io_regression_tests.cpp',
+  'tests/string_utils_regression_tests.cpp',
 )
 
 # HAVE_PYTHON is passed directly as a compile define rather than through a
