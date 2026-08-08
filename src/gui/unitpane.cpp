@@ -377,7 +377,7 @@ CUnit * CUnitPane::GetUnit(long index)
     if (GetItem(info))
     {
         pUnit = (CUnit*)m_pUnits->At(info.m_itemId);
-        wxASSERT(pUnit && (pUnit->Id == info.m_data));  // just make sure we've got the right unit
+        wxASSERT(pUnit && (pUnit->Id == static_cast<long>(info.m_data)));  // just make sure we've got the right unit
     }
 
     return pUnit;
